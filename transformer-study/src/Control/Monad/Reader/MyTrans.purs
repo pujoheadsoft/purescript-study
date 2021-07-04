@@ -57,8 +57,10 @@ instance applicativeReaderT :: Applicative m => Applicative (ReaderT r m) where
   pure = ReaderT <<< const <<< pure
 
 instance bindReaderT :: Bind m => Bind (ReaderT r m) where
-  bind (ReaderT m) k = ReaderT \r ->
-    m r >>= \a -> case k a of ReaderT f -> f r
+  -- `k`はモナド`ReaderT`の内容`m`を引数にとり、モナド`ReaderT`を返す関数
+  bind (ReaderT m) k = ReaderT -- ReaderTを返す。その内容は以下関数。
+    -- 環境rを受け取り、
+    (\r -> m r >>= \a -> case k a of ReaderT f -> f r)
 
 instance monadReaderT :: Monad m => Monad (ReaderT r m)
 
