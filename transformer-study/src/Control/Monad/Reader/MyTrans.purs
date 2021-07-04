@@ -57,10 +57,15 @@ instance applicativeReaderT :: Applicative m => Applicative (ReaderT r m) where
   pure = ReaderT <<< const <<< pure
 
 instance bindReaderT :: Bind m => Bind (ReaderT r m) where
-  -- `k`はモナド`ReaderT`の内容`m`を引数にとり、モナド`ReaderT`を返す関数
+  -- k はモナド ReaderT の内容 m を引数にとり、モナド ReaderT を返す関数。
+  -- bindの定義は forall a b. m a -> (a -> m b) -> m b なので
+  -- k には m(↑の定義でいうa)を渡したいが、 m は(r -> monad a)という関数であるため直接は渡せない。
   bind (ReaderT m) k = ReaderT -- ReaderTを返す。その内容は以下関数。
-    -- 環境rを受け取り、
-    (\r -> m r >>= \a -> case k a of ReaderT f -> f r)
+    -- 環境rを受け取ってまずはm(r -> monad a)にrを渡す。結果はmonadになっているので、bindが使える。
+    (\r -> m r >>= 
+      -- ↑の(m r)の結果が引数 a になっている。ここでようやく↑の k を適用できる。
+      -- k の結果は ReaderT になるので、パターンマッチ。そして ReaderTの値は環境を受け取る関数なので、(f r)として適用。
+      \a -> case k a of ReaderT f -> f r)
 
 instance monadReaderT :: Monad m => Monad (ReaderT r m)
 
