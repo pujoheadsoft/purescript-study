@@ -14,6 +14,9 @@ newtype ReaderT :: forall k. Type -> (k -> Type) -> k -> Type
 newtype ReaderT r m a = ReaderT (r -> m a)
 
 -- ReaderTモナド上で計算を実行する
+-- 結果は (r -> m a) という関数なので、実際にはこれに r を渡すことで実行する
+-- つまり runReaderT readerT r カッコをつけてわかりやすくすると ( (runReaderT readerT) r ) 
+-- こうした場合の結果は m a
 runReaderT :: forall r m a. ReaderT r m a -> (r -> m a)
 runReaderT (ReaderT x) = x
 
@@ -56,16 +59,19 @@ instance applyReaderT :: Apply m => Apply (ReaderT r m) where
 instance applicativeReaderT :: Applicative m => Applicative (ReaderT r m) where
   pure = ReaderT <<< const <<< pure
 
-instance bindReaderT :: Bind m => Bind (ReaderT r m) where
-  -- k はモナド ReaderT の内容 m を引数にとり、モナド ReaderT を返す関数。
-  -- bindの定義は forall a b. m a -> (a -> m b) -> m b なので
-  -- k には m(↑の定義でいうa)を渡したいが、 m は(r -> monad a)という関数であるため直接は渡せない。
-  bind (ReaderT m) k = ReaderT -- ReaderTを返す。その内容は以下関数。
-    -- 環境rを受け取ってまずはm(r -> monad a)にrを渡す。結果はmonadになっているので、bindが使える。
-    (\r -> m r >>= 
-      -- ↑の(m r)の結果が引数 a になっている。ここでようやく↑の k を適用できる。
-      -- k の結果は ReaderT になるので、パターンマッチ。そして ReaderTの値は環境を受け取る関数なので、(f r)として適用。
-      \a -> case k a of ReaderT f -> f r)
+instance bindReaderT :: Bind monad => Bind (ReaderT reader monad) where
+  -- bind :: m a -> (a -> m b) -> m b という形なので、この場合
+  -- x は ReaderT, f は ReaderTを返す関数となる。 (a -> ReaderT (r -> m b)) のような形。
+  -- f がこのような形なのは、bindの第一引数 m a の a と、第二引数の (a -> m b) の a は任意の型だから。
+  -- ただしこの定義上 a はモナド(Bind (ReaderT reader monad) のmonad)の中身の型でなければならない。
+  bind x f = ReaderT \r -> 
+    -- 環境 r を引数にReaderTモナド x 上で計算を実行。結果はReaderTの(中の)モナドが扱う型の値。
+    -- この計算の結果はモナドなので bind (>>=) が使える。つまりbindの中でラップしているモナドのbindを利用している。これが肝。
+    (runReaderT x r) >>= 
+      -- a は上記モナドの値。それを f に食わせる。
+      -- 上述の通り f の結果はReaderTを返す関数なので、rを引数にReaderTモナドの計算を実行して返す。
+      -- その結果はまたモナドなので、これにて ReaderT \r -> m b の形が完成する。
+      (\a -> runReaderT (f a) r)
 
 instance monadReaderT :: Monad m => Monad (ReaderT r m)
 

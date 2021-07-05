@@ -37,8 +37,9 @@ spec = do
 
     describe "Bindである" do
       it "第2引数の関数を第1引数の結果に適用させることを連鎖させられる" do
-        let actual = (testReaderT >>= (\_ -> ReaderT (\x -> Just (x <> "!")))) 
-        runReaderT actual "test" `shouldEqual` Just "test!"
+        let actual = ReaderT (\r -> Just $ length r) -- 環境の値の長さを返す
+                      >>= (\a -> ReaderT (\r -> Just $ r <> " length is " <> show a)) -- 前処理の結果(Int)を結合する(型が異なっても繋げられる)
+        runReaderT actual "env" `shouldEqual` Just "env length is 3"
 
     describe "MonadAskである" do
       it "askで環境の値を問い合わせることができる" do
