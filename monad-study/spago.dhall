@@ -13,13 +13,18 @@ to generate this file without the comments in this block.
 { name = "my-project"
 , dependencies =
   [ "aff"
+  , "catenable-lists"
   , "console"
   , "effect"
+  , "either"
   , "maybe"
+  , "monad-control"
   , "prelude"
   , "psci-support"
   , "spec"
   , "spec-discovery"
+  , "tuples"
+  , "unsafe-coerce"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs", "test/**/*.purs" ]
