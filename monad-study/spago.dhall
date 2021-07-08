@@ -23,6 +23,7 @@ to generate this file without the comments in this block.
   , "psci-support"
   , "spec"
   , "spec-discovery"
+  , "transformers"
   , "tuples"
   , "unsafe-coerce"
   ]

@@ -9,4 +9,4 @@ import Test.Spec.Reporter.Console (consoleReporter)
 import Test.Spec.Runner (runSpec)
 
 main :: Effect Unit
-main = discover "Data\\..*Spec" >>= runSpec [consoleReporter] >>> launchAff_
+main = discover "\\..*Spec" >>= runSpec [consoleReporter] >>> launchAff_

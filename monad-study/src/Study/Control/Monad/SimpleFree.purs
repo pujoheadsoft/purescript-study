@@ -16,19 +16,21 @@ class MonadFree f m where
   wrap :: forall a. f (m a) -> m a
 
 instance functorFree :: (Functor f) => Functor (Free f) where
-  map f = go where
-    go (Pure a) = Pure (f a)
-    go (Free fa) = Free (go <$> fa)
+  map f = _map where
+    _map (Pure a) = Pure (f a)
+    _map (Free fa) = Free (_map <$> fa) -- 再帰
 
 instance applyFree :: (Functor f) => Apply (Free f) where
-  apply = ap
+  apply = ap -- apはMonadであれば使える関数
 
 instance applicativeFree :: (Functor f) => Applicative (Free f) where
   pure = Pure
 
 instance bindFree :: (Functor f) => Bind (Free f) where
   bind (Pure a) f = f a
-  bind (Free m) f = Free ((<$>) (\a -> a >>= f) m)
+  -- ここでFunctorを利用している
+  -- Freeの中にFreeがあるようなネスト構造の場合、そのFreeの型もFunctorであるので、再帰的にbind関数を呼び出せる。
+  bind (Free m) f = Free ((\a -> a >>= f) <$> m)
 
 instance monadFree :: (Functor f) => Monad (Free f)
 
