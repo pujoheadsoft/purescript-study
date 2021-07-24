@@ -18,15 +18,19 @@ to generate this file without the comments in this block.
   , "effect"
   , "either"
   , "exists"
+  , "free"
   , "maybe"
   , "monad-control"
+  , "newtype"
   , "prelude"
   , "psci-support"
   , "spec"
   , "spec-discovery"
   , "transformers"
   , "tuples"
+  , "typelevel-prelude"
   , "unsafe-coerce"
+  , "variant"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs", "test/**/*.purs" ]

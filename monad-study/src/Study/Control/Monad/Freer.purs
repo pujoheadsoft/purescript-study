@@ -86,3 +86,6 @@ instance bindFreer :: Bind (Freer f) where
 
 createBind :: forall f a b. (f b) -> (b -> (Freer f a)) -> Freer f a
 createBind m fn = Bind $ mkExists $ FreerBindF m fn
+
+send :: forall f a. f a -> Freer f a
+send t = createBind t (\a -> Pure a)
