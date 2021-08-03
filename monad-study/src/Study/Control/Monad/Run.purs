@@ -50,13 +50,13 @@ send v = (Run <<< liftF) v
 
 
 lift
-  :: forall proxy sym r1 r2 f a
-  . Row.Cons sym f r1 r2
+  :: forall proxy sym tail row f a
+  . Row.Cons sym f tail row
   => IsSymbol sym
   => Functor f
   => proxy sym
   -> f a
-  -> Run r2 a
+  -> Run row a
 lift p = Run <<< liftF <<< inj p
 
 peel
