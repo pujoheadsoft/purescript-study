@@ -23,12 +23,12 @@ liftReader :: forall e a r. Reader e a -> Run (READER e + r) a
 liftReader = liftReaderAt _reader
 
 liftReaderAt ::
-  forall proxy t e a r s
-  . IsSymbol s
-  => Row.Cons s (Reader e) t r
-  => proxy s
+  forall proxy symbol tail row e a
+   . IsSymbol symbol
+  => Row.Cons symbol (Reader e) tail row
+  => proxy symbol
   -> Reader e a
-  -> Run r a
+  -> Run row a
 liftReaderAt = Run.lift
 
 ask :: forall e r. Run (READER e + r) e
