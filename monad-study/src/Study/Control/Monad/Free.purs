@@ -18,10 +18,12 @@ data Free f a = Free (FreeView f Val Val) (CatList (ExpF f))
 
 newtype ExpF f = ExpF (Val -> Free f Val)
 
-data FreeView f a b = Return a | Bind (f b) (b -> Free f a)
+data FreeView f a b = 
+    Return a 
+  | Bind (f b) (b -> Free f a)
 
+-- 型計算に必要な型（データは不要なので型だけでよい）
 data Val
-
 
 instance eqFree :: (Functor f, Eq1 f, Eq a) => Eq (Free f a) where
   eq x y = case resume x, resume y of
@@ -94,13 +96,16 @@ instance traversableFree :: Traversable f => Traversable (Free f) where
       Right a -> pure <$> f a
   sequence tma = traverse identity tma
 
+-- ~>は自然変換。あるFunctorを別のFunctorに変換する
+-- つまり任意のFunctor fをFreeに包まれたFunctor fに変換する
 liftF :: forall f. f ~> Free f
 liftF f = fromView (Bind (unsafeCoerceF f) (pure <<< unsafeCoerceVal))
+  -- FreeViewのBindの定義は、Bind (f b) (b -> Free f a)
   where
-  unsafeCoerceF :: forall a. f a -> f Val
+  unsafeCoerceF :: forall a. f a -> f Val -- Functor a を Functor Valに変換
   unsafeCoerceF = unsafeCoerce
 
-  unsafeCoerceVal :: forall a. Val -> a
+  unsafeCoerceVal :: forall a. Val -> a -- 型Valを任意の値に変換
   unsafeCoerceVal = unsafeCoerce
 
 wrap :: forall f a. f (Free f a) -> Free f a
@@ -155,6 +160,7 @@ resume' k j f = case toView f of
   Return a -> j a
   Bind g i -> k g i
 
+-- FreeViewをもとにFreeを生成
 fromView :: forall f a. FreeView f a Val -> Free f a
 fromView f = Free (unsafeCoerceFreeView f) empty
   where
