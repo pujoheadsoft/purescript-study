@@ -43,11 +43,12 @@ resume
   -> b
 resume k1 k2 = resume' (\x f -> k1 (Run <<< f <$> x)) k2 <<< unwrap
 
+-- VariantFを受け取って、Runを返す
 -- liftFでFreeモナドを作ってRunに食わせている
 send :: forall a r. VariantF r a -> Run r a
 send v = (Run <<< liftF) v
 
-
+-- proxyとfunctorを受け取って、Runを返す
 lift
   :: forall proxy symbol tail row f a
   . Row.Cons symbol f tail row

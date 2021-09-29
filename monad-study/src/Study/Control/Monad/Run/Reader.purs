@@ -29,7 +29,7 @@ liftReaderAt ::
   => proxy symbol
   -> Reader e a
   -> Run row a
-liftReaderAt = Run.lift
+liftReaderAt p r = Run.lift p r
 
 ask :: forall e r. Run (READER e + r) e
 ask = askAt _reader
