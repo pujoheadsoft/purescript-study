@@ -59,11 +59,11 @@ runReader = runReaderAt _reader
 
 runReaderAt ::
   forall proxy t e a r s
-  . IsSymbol s
-  => Row.Cons s (Reader e) t r
-  => proxy s
-  -> e
-  -> Run r a
+  . IsSymbol s -- Symbolである
+  => Row.Cons s (Reader e) t r -- r は Symbol s の値として (Reader e) を持っていないといけない
+  => proxy s -- Symbol s
+  -> e       -- 環境 e
+  -> Run r a -- Run r a
   -> Run t a
 runReaderAt sym = loop
   where

@@ -28,7 +28,9 @@ import Unsafe.Coerce (unsafeCoerce)
   Free 
     (FreeView f Val Val) 
     (CatList (ExpF (Val -> Free f Val)))
-  FreeView と CatList を持っているが、CatListはFreeを持っており再帰的な定義になっている。
+  FreeView と CatList を持っているが、CatListはExpFの中にFreeを持っており再帰的な定義になっている。
+
+  f a のaはどこにいってしまうのか？
 -}
 data Free f a = Free (FreeView f Val Val) (CatList (ExpF f))
 
