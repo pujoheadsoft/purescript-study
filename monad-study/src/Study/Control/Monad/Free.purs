@@ -36,6 +36,13 @@ data Free f a = Free (FreeView f Val Val) (CatList (ExpF f))
 
 newtype ExpF f = ExpF (Val -> Free f Val)
 
+{-
+  ReturnとBindは、Applyのpure関数とBindのbind関数を型で表現している。
+  Return: 単にaを持っているだけ。
+  Bind: (f b) と bを受け取ってFree f aを返す関数
+  bind関数の定義が、forall a b. m a -> (a -> m b) -> m b であることを考えると構造が似ていることがわかる。
+  命名はよくわからんが、こいつは型で分岐するための重要な要素っぽい。
+-}
 data FreeView f a b = 
     Return a 
   | Bind (f b) (b -> Free f a)
@@ -212,12 +219,19 @@ fromView f = Free (unsafeCoerceFreeView f) empty
   unsafeCoerceFreeView :: FreeView f a Val -> FreeView f Val Val
   unsafeCoerceFreeView = unsafeCoerce
 
--- FreeからFreeViewに変換
+{-
+  FreeからFreeViewに変換する
+  FreeとFreeViewが持っている f a は同じ型
+  f a は任意の型とはしているが、Freeの定義的にfはFreeViewだし、aはCatListとなる。
+  参考: Free (FreeView f Val Val) (CatList (ExpF f))
+-}
 toView :: forall f a. Free f a -> FreeView f a Val
-toView (Free v s) = -- vはFreeView、sはCatList
+toView (Free v s) =
   case v of
+    -- FreeViewが単なるReturnだった場合
     Return a ->
-      case uncons s of
+      case uncons s of -- uncons は Catenableリストを最初の要素と残りの要素からなる `Tuple` に分解する。
+        -- CatListがない場合は、単にaを型変換して返す
         Nothing ->
           Return (unsafeCoerceVal a)
         Just (Tuple h t) ->
