@@ -34,6 +34,9 @@ import Unsafe.Coerce (unsafeCoerce)
 -}
 data Free f a = Free (FreeView f Val Val) (CatList (ExpF f))
 
+{-
+  Val から Free f Val を返す関数
+-}
 newtype ExpF f = ExpF (Val -> Free f Val)
 
 {-
@@ -224,33 +227,49 @@ fromView f = Free (unsafeCoerceFreeView f) empty
   FreeとFreeViewが持っている f a は同じ型
   f a は任意の型とはしているが、Freeの定義的にfはFreeViewだし、aはCatListとなる。
   参考: Free (FreeView f Val Val) (CatList (ExpF f))
+        FreeView f a b = Return a | Bind (f b) (b -> Free f a)
+        ExpF f = ExpF (Val -> Free f Val)
 -}
 toView :: forall f a. Free f a -> FreeView f a Val
 toView (Free v s) =
   case v of
-    -- FreeViewが単なるReturnだった場合
+    -- FreeViewがReturnだった場合
     Return a ->
       case uncons s of -- uncons は Catenableリストを最初の要素と残りの要素からなる `Tuple` に分解する。
-        -- CatListがない場合は、単にaを型変換して返す
+        -- CatListがない場合は、単にaを型変換してReturnに包んで返す。ReturnはFreeView。aはFree f Valになっているということか。
         Nothing ->
           Return (unsafeCoerceVal a)
+        -- ある場合はheadとtailのTupleに分解される。tailはCatList。CatListの型はExpF f。
         Just (Tuple h t) ->
+          -- 1. runExpF h を実行して (Val -> Free h Val)
+          -- 2. (Val -> Free h Val) a を実行して Free h a
+          -- 3. ConcatF (Free h a) t を実行して (Free h a) と t を結合したCatListを持つFreeすなわち(Free h (a <> t))にする
+          -- 4. unsafeCoerceFreeして型変換しつつ再帰呼び出し
+          --    これをunsafeで呼び出してOKということはライブラリ的に、hは絶対FreeViewになっているということか。
           toView (unsafeCoerceFree (concatF ((runExpF h) a) t))
+    -- FreeViewがBindだったら新たなBindを返す
     Bind f k ->
-      Bind f (\a -> unsafeCoerceFree (concatF (k a) s))
-      -- Bind (f b) (b -> Free f a)
+      -- もとの入れ物fはそのままで、関数だけ変換する
+      -- 返るのはBindなので型的にはFreeViewとなり正しい。
+      --   新たな関数の説明:
+      --   渡された値xに元の関数kを適用させる。kは(b -> Free f a)という定義なので、Free f aが返る。
+      --   そのFree f aと大元のFree v sが持っていたCatList sを結合したFree f (a <> s)とする。
+      Bind f (\x -> unsafeCoerceFree (concatF (k x) s))
   where
   -- 内部で持つCatList l と r を結合して返す(<>はCatListの<>。CatListはSemigroupの実装でもある)
+  -- FreeViewはそのままで、CatListだけが結合された新たなFreeが返る
   concatF :: Free f Val -> CatList (ExpF f) -> Free f Val
   concatF (Free v' l) r = Free v' (l <> r)
 
-  -- ExpFの中身を取り出す
+  -- ExpFの中身(Val -> Free f Val)を取り出す
   runExpF :: ExpF f -> (Val -> Free f Val)
   runExpF (ExpF k) = k
 
+  -- Free の中身を変換して返す
   unsafeCoerceFree :: Free f Val -> Free f a
   unsafeCoerceFree = unsafeCoerce
 
+  -- Val から a に変換して返す
   unsafeCoerceVal :: Val -> a
   unsafeCoerceVal = unsafeCoerce
 
