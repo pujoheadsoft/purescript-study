@@ -54,8 +54,12 @@ asksAt ::
   -> Run r a
 asksAt sym f = liftReaderAt sym (Reader f)
 
-runReader :: forall e a r. e -> Run (READER e + r) a -> Run r a
-runReader = runReaderAt _reader
+runReader ::
+  forall e a r. 
+  e -- 環境
+  -> Run (READER e + r) a -- Run
+  -> Run r a -- 新たなRun
+runReader = runReaderAt _reader -- e と Run が渡される
 
 runReaderAt ::
   forall proxy t e a r s
@@ -71,7 +75,7 @@ runReaderAt sym = loop
   loop e r = case Run.peel r of
     Left a -> case handle a of
       Left (Reader k) ->
-        loop e (k e)
+        loop e (k e) -- kをeに適用した結果で再帰
       Right a' ->
         Run.send a' >>= runReaderAt sym e
     Right a ->

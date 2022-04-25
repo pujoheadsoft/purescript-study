@@ -59,11 +59,14 @@ lift
   -> Run row a
 lift p f = (Run <<< liftF <<< inj p) f
 
+{-
+  Runを受け取ってEitherを返す
+-}
 peel
   :: forall a r
   . Run r a
   -> Either (VariantF r (Run r a)) a
-peel = resume Left Right
+peel = resume Left Right -- Runも渡している
 
 extract :: forall a. Run () a -> a
 extract = unwrap >>> runFree \_ -> unsafeCrashWith "Run: the impossible happend"

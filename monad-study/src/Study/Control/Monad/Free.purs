@@ -50,7 +50,7 @@ data FreeView f a b =
     Return a 
   | Bind (f b) (b -> Free f a)
 
--- 型計算に必要な型（データは不要なので型だけでよい）
+-- | 型計算に必要な型（データは不要なので型だけでよい）
 data Val
 
 instance eqFree :: (Functor f, Eq1 f, Eq a) => Eq (Free f a) where
@@ -127,10 +127,17 @@ instance traversableFree :: Traversable f => Traversable (Free f) where
 {-
   任意のFunctor fをFreeに包まれたFunctor fに変換する
   (~>は自然変換。あるFunctorを別のFunctorに変換する)
+  Freeの持つCatListは空になっている
 -}
 liftF :: forall f. f ~> Free f
-liftF f = fromView (Bind (unsafeCoerceF f) (pure <<< unsafeCoerceVal))
-  -- BindはFreeViewの型コンストラクタで、Bindの定義は、Bind (f b) (b -> Free f a)
+liftF f 
+  -- BindはFreeViewの型コンストラクタ。Bindの定義: Bind (f b) (b -> Free f a)
+  -- unsafeCoerceFは単なる変換
+  -- (pure <<< unsafeCoerceVal)は合成関数。
+  -- pureはfromView <<< Returnで、ReturnはFreeViewなので
+  -- fromViewの定義: forall f a. FreeView f a Val -> Free f a から Bindの(b -> Free f a)に合致する
+  -- つまり(pure <<< unsafeCoerceVal)はほとんど何の手も加えない
+  = fromView (Bind (unsafeCoerceF f) (pure <<< unsafeCoerceVal))
   where
   unsafeCoerceF :: forall a. f a -> f Val -- Functor a を Functor Valに変換
   unsafeCoerceF = unsafeCoerce
@@ -202,22 +209,27 @@ runFree k free = go free
                                   -- この結果を関数 k に食わす。それをgoに渡して再帰している。
                                   -- Returnになるまで再帰され、最終的に a が返る
 
-resume :: forall f a. Functor f => Free f a -> Either (f (Free f a)) a
+resume
+  :: forall f a
+  . Functor f => Free f a
+  -> Either (f (Free f a)) a
 resume = resume' (\g i -> Left (i <$> g)) Right
 
 resume' 
-  :: forall f a r
-  . (forall b. f b -> (b -> Free f a) -> r)
-  -> (a -> r)
+  :: forall f a r -- Freeの定義からfはFreeViewで、aはCatListなはず。
+  . (forall b. f b -> (b -> Free f a) -> r) -- FreeViewである f b と、b を Freeに変換する関数を受け取って、rに変換する関数
+  -> (a -> r) -- CatList a から r を返す関数
   -> Free f a
   -> r
-resume' k j f = case toView f of
-  Return a -> j a
-  Bind g i -> k g i
+resume' k j f = case toView f of -- Free f を toViewに渡して FreeView に変換
+  Return a -> j a -- Returnだったらjを適用
+  Bind g i -> k g i -- Bindだったらkを適用
 
--- FreeViewからFreeに変換
+{-
+  FreeViewからFreeに変換
+-}
 fromView :: forall f a. FreeView f a Val -> Free f a
-fromView f = Free (unsafeCoerceFreeView f) empty
+fromView f = Free (unsafeCoerceFreeView f) empty -- FreeViewと空のCatListでFreeを作る
   where
   unsafeCoerceFreeView :: FreeView f a Val -> FreeView f Val Val
   unsafeCoerceFreeView = unsafeCoerce
