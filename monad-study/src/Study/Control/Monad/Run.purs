@@ -1,15 +1,23 @@
-module Study.Control.Monad.Run where
+module Study.Control.Monad.Run
+  ( Run(..)
+  , extract
+  , lift
+  , peel
+  , resume
+  , run
+  , send
+  )
+  where
 
 import Prelude
 
---import Control.Monad.Free (Free, liftF, resume', runFree)
-import Study.Control.Monad.Free (Free, resume', liftF, runFree)
+import Data.Either (Either(..))
 import Data.Functor.Variant (VariantF, inj)
 import Data.Newtype (class Newtype, unwrap)
 import Data.Symbol (class IsSymbol)
-import Data.Either (Either(..))
-import Prim.Row as Row
 import Partial.Unsafe (unsafeCrashWith)
+import Prim.Row as Row
+import Study.Control.Monad.Free (Free, resume', liftF, runFree)
 
 -- data VariantF :: Row (Type -> Type) -> Type -> Type
 -- data VariantF f a
@@ -42,6 +50,7 @@ resume
   -> Run r a
   -> b
 resume k1 k2 = resume' (\x f -> k1 (Run <<< f <$> x)) k2 <<< unwrap
+-- resume k1 k2 r = resume' (\x f -> k1 (Run <<< f <$> x)) k2 (unwrap r)
 
 -- VariantFを受け取って、Runを返す
 -- liftFでFreeモナドを作ってRunに食わせている
@@ -66,7 +75,42 @@ peel
   :: forall a r
   . Run r a
   -> Either (VariantF r (Run r a)) a
+
 peel = resume Left Right -- Runも渡している
+
+{-
+peelの説明
+
+peelは Either (VariantF r (Run r a)) a を戻り値の型としている
+つまりresumeの定義のbがこれになる。
+これとLeft Rightと省略されているRunをresumeの定義にあてはめるとこうなる
+(LeftもRightも何かを受け取ってbを返す関数、(x -> b)という形の関数のため、peelに渡せる)
+
+resume
+  :: forall a b r
+   . (VariantF r (Run r a) -> b) -- Left  つまり (VariantF r (Run r a) -> Either (VariantF r (Run r a)) a)
+  -> (a -> b)                    -- Right つまり (a                    -> Either (VariantF r (Run r a)) a)
+  -> Run r a                     -- Run r a
+  -> b                           -- Either (VariantF r (Run r a)) a
+resume k1 k2 run = resume'
+  (\x f -> k1 (Run <<< f <$> x))
+  k2 <<< unwrap
+  run
+
+
+resume' 
+  :: forall f a r -- Freeの定義からfはFreeViewで、aはCatListなはず。
+  . (forall b. f b -> (b -> Free f a) -> r) -- FreeViewである f b と、b を Freeに変換する関数を受け取って、rに変換する関数
+  -> (a -> r) -- CatList a から r を返す関数
+  -> Free f a
+  -> r
+-}
 
 extract :: forall a. Run () a -> a
 extract = unwrap >>> runFree \_ -> unsafeCrashWith "Run: the impossible happend"
+
+-- execute1 :: String -> String -> String
+-- execute1 k1 k2 = ""
+
+-- execute2 :: String -> String
+-- execute2 a = execute1 "" ((toUpper <<< toUpper <<< toUpper) a)
