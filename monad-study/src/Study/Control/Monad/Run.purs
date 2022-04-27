@@ -42,21 +42,6 @@ run k = loop
   loop :: Run r a -> m a
   loop = resume (\a -> loop =<< k a) pure
 
-
-resume
-  :: forall a b r
-   . (VariantF r (Run r a) -> b)
-  -> (a -> b)
-  -> Run r a
-  -> b
-resume k1 k2 = resume' (\x f -> k1 (Run <<< f <$> x)) k2 <<< unwrap
--- resume k1 k2 r = resume' (\x f -> k1 (Run <<< f <$> x)) k2 (unwrap r)
-
--- VariantFを受け取って、Runを返す
--- liftFでFreeモナドを作ってRunに食わせている
-send :: forall a r. VariantF r a -> Run r a
-send v = (Run <<< liftF) v
-
 -- proxyとfunctorを受け取って、Runを返す
 lift
   :: forall proxy symbol tail row f a
@@ -97,7 +82,6 @@ resume k1 k2 run = resume'
   k2 <<< unwrap
   run
 
-
 resume' 
   :: forall f a r -- Freeの定義からfはFreeViewで、aはCatListなはず。
   . (forall b. f b -> (b -> Free f a) -> r) -- FreeViewである f b と、b を Freeに変換する関数を受け取って、rに変換する関数
@@ -106,11 +90,20 @@ resume'
   -> r
 -}
 
+resume
+  :: forall a b r
+   . (VariantF r (Run r a) -> b)
+  -> (a -> b)
+  -> Run r a
+  -> b
+resume k1 k2 = resume' (\x f -> k1 (Run <<< f <$> x)) k2 <<< unwrap
+-- resume k1 k2 z = ((resume' (\x f -> k1 (Run <<< f <$> x)) k2) <<< unwrap) z この2つと同じ意味
+-- resume k1 k2 z = resume' (\x f -> k1 (Run <<< f <$> x)) k2 (unwrap z)
+
+-- VariantFを受け取って、Runを返す
+-- liftFでFreeモナドを作ってRunに食わせている
+send :: forall a r. VariantF r a -> Run r a
+send v = (Run <<< liftF) v
+
 extract :: forall a. Run () a -> a
 extract = unwrap >>> runFree \_ -> unsafeCrashWith "Run: the impossible happend"
-
--- execute1 :: String -> String -> String
--- execute1 k1 k2 = ""
-
--- execute2 :: String -> String
--- execute2 a = execute1 "" ((toUpper <<< toUpper <<< toUpper) a)
