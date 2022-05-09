@@ -1,4 +1,7 @@
-module Study.Control.Monad.Run.Reader where
+module Study.Control.Monad.Run.Reader
+  ( Reader
+  )
+  where
 
 import Prelude
 import Data.Symbol (class IsSymbol)
@@ -71,11 +74,13 @@ runReaderAt ::
   -> Run t a
 runReaderAt sym = loop
   where
-  handle = on sym Left Right
+  handle = on sym Left Right -- symがあったらLeft、なかったらRightになる
   loop e r = case Run.peel r of
     Left a -> case handle a of
+      -- symがあったら
       Left (Reader k) ->
         loop e (k e) -- kをeに適用した結果で再帰
+      -- symがなかったら
       Right a' ->
         Run.send a' >>= runReaderAt sym e
     Right a ->

@@ -222,8 +222,8 @@ resume'
   -> Free f a
   -> r
 resume' k j f = case toView f of -- Free f を toViewに渡して FreeView に変換
-  Return a -> j a -- Returnだったらjを適用
   Bind g i -> k g i -- Bindだったらkを適用
+  Return a -> j a -- Returnだったらjを適用
 
 {-
   FreeViewからFreeに変換

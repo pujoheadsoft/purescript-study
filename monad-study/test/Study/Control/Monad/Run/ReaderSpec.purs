@@ -1,16 +1,19 @@
-module Study.Control.Monad.Run.ReaderSpec where
+module Study.Control.Monad.Run.ReaderSpec
+  ( spec
+  )
+  where
 
 import Prelude
-import Test.Spec
+import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
-import Study.Control.Monad.Run (Run(..), extract)
+import Study.Control.Monad.Run (Run, extract)
 import Study.Control.Monad.Run.Reader (runReader, ask, READER)
 import Type.Row (type (+))
 
 readWithPlus10 :: forall r. Run (READER Int + r) Int
 readWithPlus10 = do
   x <- ask
-  pure (x + 10)
+  pure (x + 10) -- RunはApplicativeを実装しているのでpureはRun。
 
 spec :: Spec Unit
 spec = do

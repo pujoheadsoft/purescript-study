@@ -55,6 +55,15 @@ lift p f = (Run <<< liftF <<< inj p) f
 
 {-
   Runを受け取ってEitherを返す
+  Runの中のFreeの中のFreeViewの型がBindだったらLeftが返り、ReturnだったらRightが返る。
+
+  この関数とresume関数の内容は、Free.pursのresume関数に酷似している。
+
+  [Run.pursのresumeの内容をpeelが渡している引数で展開したもの]
+  resume' (\x f -> Left (Run <<< f <$> x)) Right <<< unwrap
+
+  [Freeのresume]
+  resume = resume' (\g i -> Left (i <$> g)) Right
 -}
 peel
   :: forall a r
@@ -99,6 +108,30 @@ resume
 resume k1 k2 = resume' (\x f -> k1 (Run <<< f <$> x)) k2 <<< unwrap
 -- resume k1 k2 z = ((resume' (\x f -> k1 (Run <<< f <$> x)) k2) <<< unwrap) z この2つと同じ意味
 -- resume k1 k2 z = resume' (\x f -> k1 (Run <<< f <$> x)) k2 (unwrap z)
+{-
+  この関数は b を返すようになっている。
+  そして引数で受け取っている2つの関数がどちらも b を返す。
+　更に1つ目の引数の (RUn r a) と3つ目の引数は一致している。
+
+内容の説明(↓のresume'の定義を参照しつつ)
+  (\x f -> k1 (Run <<< f <$> x)) : 定義をもとに展開すると (\(f b) (b -> Free f a) -> k1 (Run <<< f <$> x)) となる。
+                                   つまり (f b) の b に (b -> Free f a) をfmapし (f (Free f a)) としたものを Run に食わせて更にk1を適用する。
+                                   ↑のpeelだとk1はLeft
+
+  k2 これは k2 をそのまま渡している
+  unwrap これはRunの中身を取り出している。すなわち (Free (VariantF r) a)。
+
+[resume'の定義] (関数が返す型が、1つ目と2つ目の関数が返す型と一致しているのは↑と同じ)
+resume' 
+  :: forall f a r -- Freeの定義からfはFreeViewで、aはCatListなはず。
+  . (forall b. f b -> (b -> Free f a) -> r) -- FreeViewである f b と、b を Freeに変換する関数を受け取って、rに変換する関数
+  -> (a -> r) -- CatList a から r を返す関数
+  -> Free f a
+  -> r
+
+[Freeの定義]
+data Free f a = Free (FreeView f Val Val) (CatList (ExpF f))
+-}
 
 -- VariantFを受け取って、Runを返す
 -- liftFでFreeモナドを作ってRunに食わせている
