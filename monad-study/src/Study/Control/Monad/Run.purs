@@ -42,16 +42,30 @@ run k = loop
   loop :: Run r a -> m a
   loop = resume (\a -> loop =<< k a) pure
 
--- proxyとfunctorを受け取って、Runを返す
+{-
+  proxyとfunctorを受け取って、Runを返す
+  functorをRunに持ち上げる(lift)？という意味合いか
+-}
 lift
   :: forall proxy symbol tail row f a
   . Row.Cons symbol f tail row
   => IsSymbol symbol
   => Functor f
-  => proxy symbol
-  -> f a
-  -> Run row a
+  => proxy symbol -- proxy ここまでの定義で、↓のRunのrowはこのsymbolを持っていないといけない
+  -> f a          -- functor 型aは↓のRunの型aと一致
+  -> Run row a    -- Run
 lift p f = (Run <<< liftF <<< inj p) f
+{-
+  [liftの説明]
+  inj p は タグを指定してバリアントに値を取り込む関数。即ち VariantF(symbolの名前 :: 型) となる。値はf。
+  (Variantのinjは、Functorを受け取れるようになっており、その場合の型はVariantFになる)
+
+  liftFは、Functor fをFreeに包まれたFunctor fに変換する。即ち Free VariantF(symbolの名前 :: 型)
+
+  更に↑のFreeをRunで包む。即ち Run (Free VariantF(symbolの名前 :: 型))
+
+  Runの定義が、Run (Free (VariantF r) a)なのできっちり当てはまる
+-}
 
 {-
   Runを受け取ってEitherを返す
@@ -73,7 +87,7 @@ peel
 peel = resume Left Right -- Runも渡している
 
 {-
-peelの説明
+[peelの説明]
 
 peelは Either (VariantF r (Run r a)) a を戻り値の型としている
 つまりresumeの定義のbがこれになる。

@@ -33,9 +33,13 @@ liftReaderAt ::
   -> Reader e a
   -> Run row a
 liftReaderAt p r = Run.lift p r
+-- proxyとReaderを渡す
+-- Run.liftは proxy p とfunctor r を受け取るが、Readerは↑のderiveでFunctorになっているので渡すことができる
+-- ここではpの値としてrが設定されたRunが返ってくる。こんな感じ Run (Free (VariantF (symbolの名前 :: 型))), symbolに紐づく値はr
+-- Run (Free (VariantF r) a)
 
 ask :: forall e r. Run (READER e + r) e
-ask = askAt _reader
+ask = askAt _reader -- proxyを渡してRunを返す
 
 askAt ::
   forall proxy t e r s
@@ -44,6 +48,13 @@ askAt ::
   => proxy s
   -> Run r e
 askAt sym = asksAt sym identity
+{-
+  呼び出しを追っていくと、これは↓のようになることがわかる。
+    Run.lift sym (Reader identity)
+
+  返ってくるのはこうなる
+  Run (Free (VariantF (symの名前 :: 型))), symbolに紐づく値は(Reader identity)
+-}
 
 asks :: forall e r a. (e -> a) -> Run (READER e + r) a
 asks = asksAt _reader
@@ -53,9 +64,9 @@ asksAt ::
   . IsSymbol s
   => Row.Cons s (Reader e) t r
   => proxy s
-  -> (e -> a)
-  -> Run r a
-asksAt sym f = liftReaderAt sym (Reader f)
+  -> (e -> a) -- この関数の引数の型は↑のReaderの型eと一致、更に返す型は↓のRunの型aと一致している
+  -> Run r a -- 返すのはRun
+asksAt sym f = liftReaderAt sym (Reader f) -- Readerは関数を持つのでfを渡せる
 
 runReader ::
   forall e a r. 
