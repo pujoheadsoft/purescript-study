@@ -83,17 +83,23 @@ runReaderAt ::
   -> Run t a
 runReaderAt sym = loop
   where
-  handle = on sym Left Right -- symがあったらLeft、なかったらRightになる
+  -- symがあったらLeft、なかったらRightになる
+  handle = on sym Left Right
+  -- eは環境(例えばint値や文字列など)、rはRunの中身なのでFree
   loop e r = case Run.peel r of
+    -- LeftってことはFreeViewがBindだったってこと
+    -- このときの r は Free (Bind CatList) みたいな形
     Left a -> case handle a of
       -- symがあったら
       Left (Reader k) ->
-        trace ("Left Left") \_ ->
+        trace (k e) \_ ->
         loop e (k e) -- kをeに適用した結果で再帰
-      -- symがなかったら
+      -- symがなかったら(これはRunの中身が合成されてる場合？readr + wirterみたいな)
       Right a' ->
         trace ("Left Right") \_ ->
         Run.send a' >>= runReaderAt sym e
+    -- RightってことはFreeViewがReturnだったってこと
+    -- このときの r は Free (Return CatList) みたいな形
     Right a ->
-      trace ("Right") \_ ->
+      trace (r) \_ ->
       pure a
