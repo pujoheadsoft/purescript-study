@@ -1,7 +1,4 @@
-module Study.Control.Monad.Run.Reader
-  ( Reader
-  )
-  where
+module Study.Control.Monad.Run.Reader where
 
 import Prelude
 import Data.Symbol (class IsSymbol)
@@ -12,6 +9,7 @@ import Type.Row (type (+))
 import Data.Functor.Variant (on)
 import Study.Control.Monad.Run (Run)
 import Study.Control.Monad.Run as Run
+import Debug (debugger, spy, spyWith, trace, traceM)
 
 newtype Reader e a = Reader (e -> a)
 
@@ -90,10 +88,12 @@ runReaderAt sym = loop
     Left a -> case handle a of
       -- symがあったら
       Left (Reader k) ->
+        trace ("Left Left") \_ ->
         loop e (k e) -- kをeに適用した結果で再帰
       -- symがなかったら
       Right a' ->
+        trace ("Left Right") \_ ->
         Run.send a' >>= runReaderAt sym e
     Right a ->
+      trace ("Right") \_ ->
       pure a
-

@@ -15,6 +15,7 @@ to generate this file without the comments in this block.
   [ "aff"
   , "catenable-lists"
   , "console"
+  , "debug"
   , "effect"
   , "either"
   , "exists"
