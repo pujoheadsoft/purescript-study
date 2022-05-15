@@ -18,6 +18,7 @@ import Data.Symbol (class IsSymbol)
 import Partial.Unsafe (unsafeCrashWith)
 import Prim.Row as Row
 import Study.Control.Monad.Free (Free, resume', liftF, runFree)
+import Debug (debugger, spy, spyWith, trace, traceM)
 
 -- data VariantF :: Row (Type -> Type) -> Type -> Type
 -- data VariantF f a

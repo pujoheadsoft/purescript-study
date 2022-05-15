@@ -12,6 +12,7 @@ import Data.Maybe (Maybe(..))
 import Data.Ord (class Ord1, compare1)
 import Data.Traversable (class Traversable, traverse)
 import Data.Tuple (Tuple(..))
+import Debug (trace)
 import Unsafe.Coerce (unsafeCoerce)
 
 {-
@@ -222,8 +223,12 @@ resume'
   -> Free f a
   -> r
 resume' k j f = case toView f of -- Free f を toViewに渡して FreeView に変換
-  Bind g i -> k g i -- Bindだったらkを適用
-  Return a -> j a -- Returnだったらjを適用
+  Bind g i ->
+    trace ({m: "Free resume' Bind", free: f, "k: g iに適用する関数(forall b. f b -> (b -> Free f a) -> r)": k, "g: (f b)": g, "i: (b -> Free f a)": i}) \_ ->
+    k g i -- Bindだったらkを適用
+  Return a ->
+    trace ({m: "Free resume' Return", free: f, a: a}) \_ ->
+    j a -- Returnだったらjを適用
 
 {-
   FreeViewからFreeに変換

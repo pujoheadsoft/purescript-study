@@ -13,8 +13,9 @@ import Debug (traceM)
 
 readWithPlus10 :: forall r. Run (READER Int + r) Int
 readWithPlus10 = do
+  traceM ("readWithPlus10 before ask")
   x <- ask
-  traceM ("readWithPlus10")
+  traceM ("readWithPlus10 after ask")
   pure (x + 10) -- RunはApplicativeを実装しているのでpureはRun。
 
 spec :: Spec Unit

@@ -92,7 +92,7 @@ runReaderAt sym = loop
     Left a -> case handle a of
       -- symがあったら
       Left (Reader k) ->
-        trace (k e) \_ ->
+        trace ("Left Left") \_ ->
         loop e (k e) -- kをeに適用した結果で再帰
       -- symがなかったら(これはRunの中身が合成されてる場合？readr + wirterみたいな)
       Right a' ->
