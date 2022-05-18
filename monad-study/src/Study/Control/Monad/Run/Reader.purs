@@ -1,15 +1,16 @@
 module Study.Control.Monad.Run.Reader where
 
 import Prelude
-import Data.Symbol (class IsSymbol)
+
 import Data.Either (Either(..))
-import Type.Proxy (Proxy(..))
-import Prim.Row as Row
-import Type.Row (type (+))
 import Data.Functor.Variant (on)
+import Data.Symbol (class IsSymbol)
+import Debug (debugger, trace)
+import Prim.Row as Row
 import Study.Control.Monad.Run (Run)
 import Study.Control.Monad.Run as Run
-import Debug (debugger, spy, spyWith, trace, traceM)
+import Type.Proxy (Proxy(..))
+import Type.Row (type (+))
 
 newtype Reader e a = Reader (e -> a)
 
@@ -30,22 +31,21 @@ liftReaderAt ::
   => proxy symbol
   -> Reader e a
   -> Run row a
-liftReaderAt p r = Run.lift p r
+liftReaderAt p r = trace({m: "Reader: liftReaderAt", proxy: p, reader: r}) \_ -> Run.lift p r
 -- proxyとReaderを渡す
 -- Run.liftは proxy p とfunctor r を受け取るが、Readerは↑のderiveでFunctorになっているので渡すことができる
 -- ここではpの値としてrが設定されたRunが返ってくる。こんな感じ Run (Free (VariantF (symbolの名前 :: 型))), symbolに紐づく値はr
 -- Run (Free (VariantF r) a)
 
+{-
+  askは Run (READER e + r) e そのもの
+  Readerの関数は identity なので、渡されたものをそのまま返すことになる。
+  あとこれはaskAtを呼んだ結果がaskに代入されているみたいな感じ。つまりaskAtはaskが呼ばれたときに呼ばれるわけではない。
+  (デバッグしてみると、askを呼ぶより前にAskAtが呼ばれていることからもわかる)
+-}
 ask :: forall e r. Run (READER e + r) e
 ask = askAt _reader -- proxyを渡してRunを返す
 
-askAt ::
-  forall proxy t e r s
-  . IsSymbol s
-  => Row.Cons s (Reader e) t r
-  => proxy s
-  -> Run r e
-askAt sym = asksAt sym identity
 {-
   呼び出しを追っていくと、これは↓のようになることがわかる。
     Run.lift sym (Reader identity)
@@ -53,6 +53,14 @@ askAt sym = asksAt sym identity
   返ってくるのはこうなる
   Run (Free (VariantF (symの名前 :: 型))), symbolに紐づく値は(Reader identity)
 -}
+askAt ::
+  forall proxy t e r s
+  . IsSymbol s
+  => Row.Cons s (Reader e) t r
+  => proxy s
+  -> Run r e
+-- askAt sym = trace({m: "Reader: askAt", sym: sym}) \_ -> asksAt sym identity
+askAt sym = trace({m: "Reader: askAt", sym: sym}) \_ -> asksAt sym (\x -> trace({m: "Reader: askAt identity", x: x}) \_ -> x)
 
 asks :: forall e r a. (e -> a) -> Run (READER e + r) a
 asks = asksAt _reader
@@ -64,14 +72,14 @@ asksAt ::
   => proxy s
   -> (e -> a) -- この関数の引数の型は↑のReaderの型eと一致、更に返す型は↓のRunの型aと一致している
   -> Run r a -- 返すのはRun
-asksAt sym f = liftReaderAt sym (Reader f) -- Readerは関数を持つのでfを渡せる
+asksAt sym f = trace({m: "Reader: asksAt", sym: sym, f: f}) \_ -> liftReaderAt sym (Reader f) -- Readerは関数を持つのでfを渡せる
 
 runReader ::
   forall e a r. 
   e -- 環境
   -> Run (READER e + r) a -- Run
   -> Run r a -- 新たなRun
-runReader = runReaderAt _reader -- e と Run が渡される
+runReader e r = trace({m: "Reader: runReader", e: e}) \_ -> runReaderAt _reader e r -- e と Run が渡される
 
 runReaderAt ::
   forall proxy t e a r s
@@ -81,7 +89,7 @@ runReaderAt ::
   -> e       -- 環境 e
   -> Run r a -- Run r a
   -> Run t a
-runReaderAt sym = loop
+runReaderAt sym env run = loop env run
   where
   -- symがあったらLeft、なかったらRightになる
   handle = on sym Left Right

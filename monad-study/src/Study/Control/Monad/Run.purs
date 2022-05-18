@@ -15,10 +15,10 @@ import Data.Either (Either(..))
 import Data.Functor.Variant (VariantF, inj)
 import Data.Newtype (class Newtype, unwrap)
 import Data.Symbol (class IsSymbol)
+import Debug (debugger, spy, spyWith, trace, traceM)
 import Partial.Unsafe (unsafeCrashWith)
 import Prim.Row as Row
 import Study.Control.Monad.Free (Free, resume', liftF, runFree)
-import Debug (debugger, spy, spyWith, trace, traceM)
 
 -- data VariantF :: Row (Type -> Type) -> Type -> Type
 -- data VariantF f a
@@ -55,7 +55,7 @@ lift
   => proxy symbol -- proxy ここまでの定義で、↓のRunのrowはこのsymbolを持っていないといけない
   -> f a          -- functor 型aは↓のRunの型aと一致
   -> Run row a    -- Run
-lift p f = (Run <<< liftF <<< inj p) f
+lift p f = trace({m: "Run: lift", proxy: p, f: f}) \_ -> (Run <<< liftF <<< inj p) f
 {-
   [liftの説明]
   inj p は タグを指定してバリアントに値を取り込む関数。即ち VariantF(symbolの名前 :: 型) となる。値はf。
@@ -85,7 +85,7 @@ peel
   . Run r a
   -> Either (VariantF r (Run r a)) a
 
-peel = resume Left Right -- Runも渡している
+peel r = trace({m: "Run: peel"}) \_ -> resume Left Right r -- Runも渡している
 
 {-
 [peelの説明]
@@ -120,7 +120,7 @@ resume
   -> (a -> b)
   -> Run r a
   -> b
-resume k1 k2 = resume' (\x f -> k1 (Run <<< f <$> x)) k2 <<< unwrap
+resume k1 k2 = trace({m: "Run: resume"}) \_ -> resume' (\x f -> k1 (Run <<< f <$> x)) k2 <<< unwrap
 -- resume k1 k2 z = ((resume' (\x f -> k1 (Run <<< f <$> x)) k2) <<< unwrap) z この2つと同じ意味
 -- resume k1 k2 z = resume' (\x f -> k1 (Run <<< f <$> x)) k2 (unwrap z)
 {-
@@ -154,4 +154,5 @@ send :: forall a r. VariantF r a -> Run r a
 send v = (Run <<< liftF) v
 
 extract :: forall a. Run () a -> a
-extract = unwrap >>> runFree \_ -> unsafeCrashWith "Run: the impossible happend"
+extract r = trace("Run: extract") \_ -> 
+  (unwrap >>> runFree \_ -> unsafeCrashWith "Run: the impossible happend") r
