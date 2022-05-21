@@ -78,6 +78,8 @@ instance freeFunctor :: Functor (Free f) where
 
 instance freeBind :: Bind (Free f) where
   bind (Free v s) k = 
+    -- viewは同じで、CatListにbindの関数kを結合した新しいFreeを返す
+    -- 一連の処理で最初にくるFreeは↓pureで作られたFree(jsをdebugするとわかる)
     Free v (snoc s (ExpF (unsafeCoerceBind k)))
     where
     unsafeCoerceBind :: forall a b. (a -> Free f b) -> Val -> Free f Val
@@ -250,7 +252,7 @@ fromView f = Free (unsafeCoerceFreeView f) empty -- FreeViewと空のCatListでF
 -}
 toView :: forall f a. Free f a -> FreeView f a Val
 toView (Free v s) =
-  trace({m: "Free: toView", v: v, s: s}) \_ -> debugger \_ ->
+  trace({m: "Free: toView", v: v, s: s}) \_ -> -- debugger \_ ->
   case v of
     -- FreeViewがReturnだった場合
     Return a ->
@@ -268,7 +270,7 @@ toView (Free v s) =
           -- 4. unsafeCoerceFreeして型変換しつつ再帰呼び出し
           --    これをunsafeで呼び出してOKということはライブラリ的に、hは絶対FreeViewになっているということか。
           trace({m: "Free: toView(Return a)", head: h, tail: t, a: a}) \_ ->
-          toView (unsafeCoerceFree (concatF ((runExpF h) a) t))
+          toView (unsafeCoerceFree (concatF ((runExpF h) a) t)) -- runExpFで{m: 'readWithPlus10: ask (before)'}
     -- FreeViewがBindだったら新たなBindを返す
     Bind f k ->
       -- もとの入れ物fはそのままで、関数だけ変換する

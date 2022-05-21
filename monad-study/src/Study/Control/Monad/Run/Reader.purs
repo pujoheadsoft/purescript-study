@@ -89,7 +89,7 @@ runReaderAt ::
   -> e       -- 環境 e
   -> Run r a -- Run r a
   -> Run t a
-runReaderAt sym env run = loop env run
+runReaderAt sym env run = debugger \_ -> loop env run
   where
   -- symがあったらLeft、なかったらRightになる
   handle = on sym Left Right

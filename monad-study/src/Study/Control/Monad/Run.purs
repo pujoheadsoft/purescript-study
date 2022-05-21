@@ -84,7 +84,6 @@ peel
   :: forall a r
   . Run r a
   -> Either (VariantF r (Run r a)) a
-
 peel r = trace({m: "Run: peel"}) \_ -> resume Left Right r -- Runも渡している
 
 {-
