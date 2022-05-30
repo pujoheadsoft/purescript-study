@@ -1,16 +1,16 @@
 module Main where
 
 import Data.Maybe
-import Data.Show (show)
 import Prelude
-
+import Data.Show (show)
+import Debug (debugger, trace, traceM)
 import Effect (Effect)
 import Effect.Console (log)
-
-import Study.Control.Monad.Run (Run, extract)
+import Effect.Console as Console
+import Study.Control.Monad.Run (Run, extract, runCont)
+import Study.Control.Monad.Run as Run
 import Study.Control.Monad.Run.Reader (runReader, ask, READER)
 import Type.Row (type (+))
-import Debug (traceM, trace, debugger)
 
 -- main :: Effect Unit
 -- main = do
@@ -32,15 +32,14 @@ getValue3 :: Maybe String
 getValue3 = (<>) <$> (Just "x") <*> (Just "y")
 
 -- これはRunを返している
-readWithPlus10 :: forall r. Run (READER Int + r) Int
-readWithPlus10 = do
-  traceM({m: "readWithPlus10: ask (before)"})
+readWithPlus :: forall r. Run (READER Int + r) Int
+readWithPlus = do
+--  traceM({m: "readWithPlus10: ask (before)"})
   x <- ask
-  traceM({m: "readWithPlus10: ask (after)", x: x})
-  pure (x + 10) -- RunはApplicativeを実装しているのでpureはRun。
-
+  y <- pure (x + 10)
+--  traceM({m: "readWithPlus10: ask (after)", x: x})
+  pure (y + 20) -- RunはApplicativeを実装しているのでpureはRun。
+    
 main :: Effect Unit
 main = do
-  -- traceM({m: "main", r: readWithPlus10})
-  -- trace({m: "main", r: readWithPlus10}) \_ -> log("")
-  trace(extract (runReader 100 readWithPlus10)) \_ -> log("")
+ trace(extract (runReader 100 readWithPlus)) \_ -> log("")

@@ -1,4 +1,17 @@
-module Study.Control.Monad.Run.Reader where
+module Study.Control.Monad.Run.Reader
+  ( READER
+  , Reader(..)
+  , _reader
+  , ask
+  , askAt
+  , asks
+  , asksAt
+  , liftReader
+  , liftReaderAt
+  , runReader
+  , runReaderAt
+  )
+  where
 
 import Prelude
 
@@ -15,6 +28,8 @@ import Type.Row (type (+))
 newtype Reader e a = Reader (e -> a)
 
 derive newtype instance functorReader :: Functor (Reader e)
+-- instance functorReader :: Functor (Reader e) where
+--   map f (Reader a) = debugger \_ -> Reader (\x -> f (a x))
 
 type READER e r = (reader :: Reader e | r)
 
@@ -31,7 +46,7 @@ liftReaderAt ::
   => proxy symbol
   -> Reader e a
   -> Run row a
-liftReaderAt p r = trace({m: "Reader: liftReaderAt", proxy: p, reader: r}) \_ -> Run.lift p r
+liftReaderAt p r = Run.lift p r
 -- proxyとReaderを渡す
 -- Run.liftは proxy p とfunctor r を受け取るが、Readerは↑のderiveでFunctorになっているので渡すことができる
 -- ここではpの値としてrが設定されたRunが返ってくる。こんな感じ Run (Free (VariantF (symbolの名前 :: 型))), symbolに紐づく値はr
@@ -60,7 +75,7 @@ askAt ::
   => proxy s
   -> Run r e
 -- askAt sym = trace({m: "Reader: askAt", sym: sym}) \_ -> asksAt sym identity
-askAt sym = trace({m: "Reader: askAt", sym: sym}) \_ -> asksAt sym (\x -> trace({m: "Reader: askAt identity", x: x}) \_ -> x)
+askAt sym = asksAt sym identity
 
 asks :: forall e r a. (e -> a) -> Run (READER e + r) a
 asks = asksAt _reader
@@ -72,14 +87,14 @@ asksAt ::
   => proxy s
   -> (e -> a) -- この関数の引数の型は↑のReaderの型eと一致、更に返す型は↓のRunの型aと一致している
   -> Run r a -- 返すのはRun
-asksAt sym f = trace({m: "Reader: asksAt", sym: sym, f: f}) \_ -> liftReaderAt sym (Reader f) -- Readerは関数を持つのでfを渡せる
+asksAt sym f = liftReaderAt sym (Reader f) -- Readerは関数を持つのでfを渡せる
 
 runReader ::
   forall e a r. 
   e -- 環境
   -> Run (READER e + r) a -- Run
   -> Run r a -- 新たなRun
-runReader e r = trace({m: "Reader: runReader", e: e}) \_ -> runReaderAt _reader e r -- e と Run が渡される
+runReader e r = runReaderAt _reader e r -- e と Run が渡される
 
 runReaderAt ::
   forall proxy t e a r s
@@ -89,7 +104,7 @@ runReaderAt ::
   -> e       -- 環境 e
   -> Run r a -- Run r a
   -> Run t a
-runReaderAt sym env run = debugger \_ -> loop env run
+runReaderAt sym env run = loop env run
   where
   -- symがあったらLeft、なかったらRightになる
   handle = on sym Left Right
@@ -100,14 +115,14 @@ runReaderAt sym env run = debugger \_ -> loop env run
     Left a -> case handle a of
       -- symがあったら
       Left (Reader k) ->
-        trace ("Left Left") \_ ->
-        loop e (k e) -- kをeに適用した結果で再帰
+        -- 環境eをkに渡した結果で再帰
+        -- askを使っていた場合、この環境eが入ったFreeが返ってくる
+        -- askを使ったときに値が取得できる理由がこれ。そしてBindで次のFreeに計算後の結果が渡っていく
+        loop e (k e)
       -- symがなかったら(これはRunの中身が合成されてる場合？readr + wirterみたいな)
       Right a' ->
-        trace ("Left Right") \_ ->
         Run.send a' >>= runReaderAt sym e
     -- RightってことはFreeViewがReturnだったってこと
     -- このときの r は Free (Return CatList) みたいな形
     Right a ->
-      trace (r) \_ ->
       pure a

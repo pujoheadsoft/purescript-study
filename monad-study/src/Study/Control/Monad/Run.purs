@@ -6,6 +6,7 @@ module Study.Control.Monad.Run
   , resume
   , run
   , send
+  , runCont
   )
   where
 
@@ -55,7 +56,7 @@ lift
   => proxy symbol -- proxy ここまでの定義で、↓のRunのrowはこのsymbolを持っていないといけない
   -> f a          -- functor 型aは↓のRunの型aと一致
   -> Run row a    -- Run
-lift p f = trace({m: "Run: lift", proxy: p, f: f}) \_ -> (Run <<< liftF <<< inj p) f
+lift p f = (Run <<< liftF <<< inj p) f
 {-
   [liftの説明]
   inj p は タグを指定してバリアントに値を取り込む関数。即ち VariantF(symbolの名前 :: 型) となる。値はf。
@@ -84,7 +85,7 @@ peel
   :: forall a r
   . Run r a
   -> Either (VariantF r (Run r a)) a
-peel r = trace({m: "Run: peel"}) \_ -> resume Left Right r -- Runも渡している
+peel r = resume Left Right r -- Runも渡している
 
 {-
 [peelの説明]
@@ -119,18 +120,16 @@ resume
   -> (a -> b)
   -> Run r a
   -> b
-resume k1 k2 = trace({m: "Run: resume"}) \_ -> resume' (\x f -> k1 (Run <<< f <$> x)) k2 <<< unwrap
--- resume k1 k2 z = ((resume' (\x f -> k1 (Run <<< f <$> x)) k2) <<< unwrap) z この2つと同じ意味
--- resume k1 k2 z = resume' (\x f -> k1 (Run <<< f <$> x)) k2 (unwrap z)
+resume k1 k2 = resume' (\x f -> k1 (Run <<< f <$> x)) k2 <<< unwrap
 {-
   この関数は b を返すようになっている。
   そして引数で受け取っている2つの関数がどちらも b を返す。
 　更に1つ目の引数の (RUn r a) と3つ目の引数は一致している。
+  Freeの方のresumeじゃなくてこっちでも定義しているのは、Runで包みたいからだと思われる
 
 内容の説明(↓のresume'の定義を参照しつつ)
   (\x f -> k1 (Run <<< f <$> x)) : 定義をもとに展開すると (\(f b) (b -> Free f a) -> k1 (Run <<< f <$> x)) となる。
-                                   つまり (f b) の b に (b -> Free f a) をfmapし (f (Free f a)) としたものを Run に食わせて更にk1を適用する。
-                                   ↑のpeelだとk1はLeft
+                                   ↑のpeelだとk1はLeft, Readerの例だとxはReader自体(Functor)
 
   k2 これは k2 をそのまま渡している
   unwrap これはRunの中身を取り出している。すなわち (Free (VariantF r) a)。
@@ -153,5 +152,15 @@ send :: forall a r. VariantF r a -> Run r a
 send v = (Run <<< liftF) v
 
 extract :: forall a. Run () a -> a
-extract r = trace("Run: extract") \_ -> 
-  (unwrap >>> runFree \_ -> unsafeCrashWith "Run: the impossible happend") r
+extract r = (unwrap >>> runFree \_ -> unsafeCrashWith "Run: the impossible happend") r
+
+runCont
+  :: forall m a b r
+   . (VariantF r (m b) -> m b)
+  -> (a -> m b)
+  -> Run r a
+  -> m b
+runCont k1 k2 = loop
+  where
+  loop :: Run r a -> m b
+  loop = resume (\b -> k1 (loop <$> b)) k2

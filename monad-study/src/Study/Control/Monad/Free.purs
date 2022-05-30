@@ -78,8 +78,9 @@ instance freeFunctor :: Functor (Free f) where
 
 instance freeBind :: Bind (Free f) where
   bind (Free v s) k = 
-    -- viewは同じで、CatListにbindの関数kを結合した新しいFreeを返す
-    -- 一連の処理で最初にくるFreeは↓pureで作られたFree(jsをdebugするとわかる)
+    -- 普通のbindは関数だが、FreeのbindはFree自体を返す
+    -- このFreeは、引数のview(Bind or Return)と同じviewを持ち、CatListにbindの関数kを結合した新しいFreeとなる
+    -- ちなみに一連の処理で最初にくるFreeは↓pureで作られたFree(jsをdebugするとわかる)
     Free v (snoc s (ExpF (unsafeCoerceBind k)))
     where
     unsafeCoerceBind :: forall a b. (a -> Free f b) -> Val -> Free f Val
@@ -141,13 +142,13 @@ liftF f
   -- pureはfromView <<< Returnで、ReturnはFreeViewなので
   -- fromViewの定義: forall f a. FreeView f a Val -> Free f a から Bindの(b -> Free f a)に合致する
   -- つまり(pure <<< unsafeCoerceVal)はほとんど何の手も加えない
-  = trace({m: "Free: liftF", f: f}) \_ -> fromView (Bind (unsafeCoerceF f) (pure <<< unsafeCoerceVal))
+  = fromView (Bind (unsafeCoerceF f) (pure <<< unsafeCoerceVal))
   where
   unsafeCoerceF :: forall a. f a -> f Val -- Functor a を Functor Valに変換
-  unsafeCoerceF a = trace({m: "Free: liftF unsafeCoerceF", a: a}) \_ -> unsafeCoerce a
+  unsafeCoerceF a = unsafeCoerce a
 
   unsafeCoerceVal :: forall a. Val -> a -- 型Valを任意の値に変換
-  unsafeCoerceVal a = trace({m: "Free: liftF unsafeCoerceVal", a: a}) \_ -> unsafeCoerce a
+  unsafeCoerceVal a = unsafeCoerce a
 
 {-
   レイヤーを追加
@@ -227,10 +228,8 @@ resume'
   -> r
 resume' k j f = case toView f of -- Free f を toViewに渡して FreeView に変換
   Bind g i ->
-    trace ({m: "Free: resume' Bind", free: f, "k: g iに適用する関数(forall b. f b -> (b -> Free f a) -> r)": k, "g: (f b)": g, "i: (b -> Free f a)": i}) \_ ->
     k g i -- Bindだったらkを適用
   Return a ->
-    trace ({m: "Free: resume' Return", free: f, a: a}) \_ ->
     j a -- Returnだったらjを適用
 
 {-
@@ -252,14 +251,12 @@ fromView f = Free (unsafeCoerceFreeView f) empty -- FreeViewと空のCatListでF
 -}
 toView :: forall f a. Free f a -> FreeView f a Val
 toView (Free v s) =
-  trace({m: "Free: toView", v: v, s: s}) \_ -> -- debugger \_ ->
   case v of
     -- FreeViewがReturnだった場合
     Return a ->
       case uncons s of -- uncons は Catenableリストを最初の要素と残りの要素からなる `Tuple` に分解する。
         -- CatListがない場合は、単にaを型変換してReturnに包んで返す。ReturnはFreeView。aはFree f Valになっているということか。
         Nothing ->
-          trace({m: "Free: toView(Return Nothing CatList)", a: a}) \_ ->
           Return (unsafeCoerceVal a)
         -- ある場合はheadとtailのTupleに分解される。tailはCatList。CatListの型はExpF f。
         Just (Tuple h t) ->
@@ -269,7 +266,6 @@ toView (Free v s) =
           -- 3. ConcatF (Free h a) t を実行して (Free h a) と t を結合したCatListを持つFreeすなわち(Free h (a <> t))にする
           -- 4. unsafeCoerceFreeして型変換しつつ再帰呼び出し
           --    これをunsafeで呼び出してOKということはライブラリ的に、hは絶対FreeViewになっているということか。
-          trace({m: "Free: toView(Return a)", head: h, tail: t, a: a}) \_ ->
           toView (unsafeCoerceFree (concatF ((runExpF h) a) t)) -- runExpFで{m: 'readWithPlus10: ask (before)'}
     -- FreeViewがBindだったら新たなBindを返す
     Bind f k ->
@@ -278,7 +274,6 @@ toView (Free v s) =
       --   新たな関数の説明:
       --   渡された値xに元の関数kを適用させる。kは(b -> Free f a)という定義なので、Free f aが返る。
       --   そのFree f aと大元のFree v sが持っていたCatList sを結合したFree f (a <> s)とする。
-      trace({m: "Free: toView(Bind f k)", f: f, k: k}) \_ ->
       Bind f (\x -> unsafeCoerceFree (concatF (k x) s))
   where
   -- 内部で持つCatList l と r を結合して返す(<>はCatListの<>。CatListはSemigroupの実装でもある)
