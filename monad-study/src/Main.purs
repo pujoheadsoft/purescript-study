@@ -2,11 +2,14 @@ module Main where
 
 import Data.Maybe
 import Prelude
+
 import Data.Show (show)
 import Debug (debugger, trace, traceM)
 import Effect (Effect)
 import Effect.Console (log)
 import Effect.Console as Console
+import Example.Free.Teletype as T
+import Example.Free.Teletype2 as T2
 import Study.Control.Monad.Run (Run, extract, runCont)
 import Study.Control.Monad.Run as Run
 import Study.Control.Monad.Run.Reader (runReader, ask, READER)
@@ -42,4 +45,6 @@ readWithPlus = do
     
 main :: Effect Unit
 main = do
- trace(extract (runReader 100 readWithPlus)) \_ -> log("")
+  T.main
+  T2.main
+  trace(extract (runReader 100 readWithPlus)) \_ -> log("")

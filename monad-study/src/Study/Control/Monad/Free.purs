@@ -31,7 +31,9 @@ import Unsafe.Coerce (unsafeCoerce)
     (CatList (ExpF (Val -> Free f Val)))
   FreeView と CatList を持っているが、CatListはExpFの中にFreeを持っており再帰的な定義になっている。
 
-  f a のaはどこにいってしまうのか？
+  Freeの種は Free :: (Type → Type) → Type → Type なので
+  f は種が (Type -> Type) となるものでないといけない。わかりやすい例で言えばMaybeとか。
+  この制約は、FreeViewの定義の(f b)の部分によって発生している
 -}
 data Free f a = Free (FreeView f Val Val) (CatList (ExpF f))
 
@@ -214,12 +216,18 @@ runFree k free = go free
                                   -- この結果を関数 k に食わす。それをgoに渡して再帰している。
                                   -- Returnになるまで再帰され、最終的に a が返る
 
+{- 
+  Functor f のレイヤーを一つだけunwrapし、Eitherに包んで返す。
+-}
 resume
   :: forall f a
   . Functor f => Free f a
   -> Either (f (Free f a)) a
 resume = resume' (\g i -> Left (i <$> g)) Right
 
+{- 
+  Functor f のレイヤーを一つだけunwrapし、その続きの処理を提供する。
+-}
 resume' 
   :: forall f a r -- Freeの定義からfはFreeViewで、aはCatListなはず。
   . (forall b. f b -> (b -> Free f a) -> r) -- FreeViewである f b と、b を Freeに変換する関数を受け取って、rに変換する関数
