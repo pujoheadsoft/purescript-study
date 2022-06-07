@@ -40,12 +40,12 @@ readWithPlus2 = do
   value <- ask2
   pure (value <> " Added2!")
 
-runReader2 :: forall e. (Free (Reader2 String) String) -> String -> String
+runReader2 :: forall e. (Free (Reader2 e) e) -> e -> e
 runReader2 f e = case resume f of
   Left (Reader2 r) -> runReader2 (r e) e
   Right a -> a
 
 main :: Effect Unit
 main = do
-  trace(runReader2 readWithPlus2 "hoge1") \_ -> log ""
-  trace(runReader readWithPlus "hoge2") \_ -> log ""
+  log $ runReader readWithPlus "hoge1"
+  log $ runReader2 readWithPlus2 "hoge2"
