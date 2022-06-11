@@ -21,6 +21,7 @@ to generate this file without the comments in this block.
   , "exists"
   , "foldable-traversable"
   , "free"
+  , "identity"
   , "maybe"
   , "monad-control"
   , "newtype"
