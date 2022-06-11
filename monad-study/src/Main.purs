@@ -6,7 +6,7 @@ import Debug (trace)
 import Effect (Effect)
 import Effect.Console (log)
 import Example.Free.Teletype as T
-import Study.Control.Monad.Free.FreeReader (FreeReader, askFree, runReaderFree)
+import Study.Control.Monad.Free.FreeReader as FR
 import Study.Control.Monad.Reader as R
 import Study.Control.Monad.Run (Run, extract)
 import Study.Control.Monad.Run.Reader (runReader, ask, READER)
@@ -17,9 +17,9 @@ readWithPlus = do
   value <- R.ask
   pure (value <> " Added!")
 
-readWithPlusFree :: FreeReader String String
+readWithPlusFree :: FR.FreeReader String String
 readWithPlusFree = do
-  value <- askFree
+  value <- FR.ask
   pure (value <> " Added2!")
 
 -- これはRunを返している
@@ -35,5 +35,5 @@ main :: Effect Unit
 main = do
   T.main
   log $ R.runReader readWithPlus "hoge1"
-  log $ runReaderFree readWithPlusFree "hoge1"
+  log $ FR.runReader readWithPlusFree "hoge1"
   trace(extract (runReader 100 readWithPlusRun)) \_ -> log("")
