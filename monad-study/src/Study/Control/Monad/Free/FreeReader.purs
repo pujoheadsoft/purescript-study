@@ -12,6 +12,9 @@ type FreeReader r a = Free (ReaderF r) a
 ask :: forall e. FreeReader e e
 ask = liftF (ReaderF identity)
 
+asks :: forall e a. (e -> a) -> FreeReader e a
+asks f = f <$> ask
+
 runReader :: forall e. (Free (ReaderF e) e) -> e -> e
 runReader f e = case resume f of
   Left (ReaderF r) -> runReader (r e) e
