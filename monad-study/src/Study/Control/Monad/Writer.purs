@@ -13,5 +13,8 @@ instance functorWriter :: Functor (Writer w) where
   map :: forall w a b. (a -> b) -> Writer w a -> Writer w b
   map f (Writer (Tuple a w)) = Writer (Tuple (f a) w)
 
+tell :: forall a. a -> Writer a Unit
+tell a = Writer (Tuple unit a)
+
 runWriter :: forall w a. Writer w a -> (Tuple a w)
 runWriter (Writer w) = w
