@@ -3,7 +3,7 @@ module Test.Study.Control.Monad.WriterSpec where
 import Prelude
 
 import Data.Tuple (Tuple(..))
-import Study.Control.Monad.Writer (Writer(..), runWriter, tell)
+import Study.Control.Monad.Writer (Writer(..), runWriter, tell, listen, pass)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 
@@ -42,3 +42,10 @@ spec = do
             pure 2022
         actual `shouldEqual` (Tuple 2022 "HelloWorld")
 
+    describe "listen" do
+      it "引数で与えた式のログの書き込み結果を取得することができる" do
+        runWriter (listen (tell "hello")) `shouldEqual` (Tuple (Tuple unit "hello") "hello")
+
+    describe "pass" do
+      it "" do
+        runWriter $ pass $ pure $ Tuple (unit Tuple ("semi-" (<>))) `shouldEqual` Tuple (unit "semi-")
