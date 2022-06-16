@@ -50,5 +50,15 @@ instance monadWriter :: Monoid w => MonadWriter w (Writer w) where
   listen :: forall a w. Writer w a -> Writer w (Tuple a w)
   listen (Writer (Tuple a w)) = Writer (Tuple (Tuple a w) w)
 
-  --pass :: forall a w. Monoid w => Writer (Tuple a (w -> w)) w -> Writer w a
+  pass :: forall a w. Writer w (Tuple a (w -> w)) -> Writer w a
   pass (Writer (Tuple (Tuple a f) w)) = Writer (Tuple a (f w))
+
+listens :: forall w w' a. MonadWriter w (Writer w) => (w -> w') -> Writer w a -> Writer w (Tuple a w')
+listens f m = do
+  Tuple a w <- listen m
+  pure $ Tuple a (f w)
+
+censor :: forall w a. MonadWriter w (Writer w) => (w -> w) -> Writer w a -> Writer w a
+censor f m = pass do
+  a <- m
+  pure $ Tuple a f
