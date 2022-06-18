@@ -33,4 +33,9 @@ spec = do
       it "関数を持つStateを使って関数を適用することができる" do
         let multiPly = \x -> (Tuple (*) x)
         runState ((State multiPly) <*> (State fn) <*> (State fn)) "Value" `shouldEqual` (Tuple 10000 "Value")
+    
+    describe "Applicative" do
+      it "値を持つStateを作ることができる" do
+        runState (pure 10) "Value" `shouldEqual` (Tuple 10 "Value")
+
 

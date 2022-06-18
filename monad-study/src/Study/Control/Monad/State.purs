@@ -37,3 +37,7 @@ instance applyState :: Apply (State s) where
     (Tuple fn s') = runState s1 s
     (Tuple a ss) = runState s2 s'
     in (Tuple (fn a) ss)
+
+instance applicativeState :: Applicative (State s) where
+  pure :: forall s a. a -> State s a
+  pure a = State $ \s -> (Tuple a s)
