@@ -1,4 +1,4 @@
-module Study.Control.Monad.Run
+module Study.Control.Monad.Run.Run
   ( Run(..)
   , extract
   , lift
@@ -19,7 +19,7 @@ import Data.Symbol (class IsSymbol)
 import Debug (debugger, spy, spyWith, trace, traceM)
 import Partial.Unsafe (unsafeCrashWith)
 import Prim.Row as Row
-import Study.Control.Monad.Free (Free, resume', liftF, runFree)
+import Study.Control.Monad.Free.Free (Free, resume', liftF, runFree)
 
 -- data VariantF :: Row (Type -> Type) -> Type -> Type
 -- data VariantF f a

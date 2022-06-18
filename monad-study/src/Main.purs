@@ -8,7 +8,7 @@ import Effect.Console (log)
 import Example.Free.Teletype as T
 import Study.Control.Monad.Free.FreeReader as FR
 import Study.Control.Monad.Simple.Reader as R
-import Study.Control.Monad.Run (Run, extract)
+import Study.Control.Monad.Run.Run (Run, extract)
 import Study.Control.Monad.Run.Reader (runReader, ask, READER)
 import Type.Row (type (+))
 

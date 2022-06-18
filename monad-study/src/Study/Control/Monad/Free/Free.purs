@@ -1,4 +1,4 @@
-module Study.Control.Monad.Free where
+module Study.Control.Monad.Free.Free where
 
 import Prelude
 

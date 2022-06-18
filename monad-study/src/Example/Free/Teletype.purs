@@ -11,7 +11,7 @@ import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Effect.Console (log)
-import Study.Control.Monad.Free (Free, foldFree, liftF, resume)
+import Study.Control.Monad.Free.Free (Free, foldFree, liftF, resume)
 
 data TeletypeF a = PutStrLn String a | GetLine (String -> a)
 

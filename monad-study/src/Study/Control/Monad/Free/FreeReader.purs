@@ -3,7 +3,7 @@ module Study.Control.Monad.Free.FreeReader where
 import Prelude
 
 import Data.Either (Either(..))
-import Study.Control.Monad.Free (Free, liftF, resume)
+import Study.Control.Monad.Free.Free (Free, liftF, resume)
 
 newtype ReaderF r e = ReaderF (r -> e)
 derive newtype instance functorReaderF :: Functor (ReaderF r)

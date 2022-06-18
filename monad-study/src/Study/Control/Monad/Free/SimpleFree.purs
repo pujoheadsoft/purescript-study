@@ -1,4 +1,4 @@
-module Study.Control.Monad.SimpleFree where
+module Study.Control.Monad.Free.SimpleFree where
 
 -- 現行の purescript-free はかなり複雑なことになってるので単純だった頃の実装を写経してみる
 -- reference https://github.com/purescript/purescript-free/blob/0.0.6/src/Control/Monad/Free.purs

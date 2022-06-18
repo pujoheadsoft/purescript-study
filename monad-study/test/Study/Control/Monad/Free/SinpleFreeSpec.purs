@@ -1,9 +1,9 @@
-module Study.Control.Monad.SimpleFreeSpec where
+module Study.Control.Monad.Free.SimpleFreeSpec where
 
 import Prelude
 import Test.Spec
 
-import Study.Control.Monad.SimpleFree (Free(..))
+import Study.Control.Monad.Free.SimpleFree (Free(..))
 import Test.Spec.Assertions (shouldEqual)
 
 type FreeValueString = Free Value String

@@ -6,7 +6,7 @@ module Study.Control.Monad.Run.ReaderSpec
 import Prelude
 
 import Debug (debugger, traceM)
-import Study.Control.Monad.Run (Run, extract)
+import Study.Control.Monad.Run.Run (Run, extract)
 import Study.Control.Monad.Run.Reader (runReader, ask, READER)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)

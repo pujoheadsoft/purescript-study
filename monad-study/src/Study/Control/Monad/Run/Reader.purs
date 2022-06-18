@@ -20,8 +20,8 @@ import Data.Functor.Variant (on)
 import Data.Symbol (class IsSymbol)
 import Debug (debugger, trace)
 import Prim.Row as Row
-import Study.Control.Monad.Run (Run)
-import Study.Control.Monad.Run as Run
+import Study.Control.Monad.Run.Run (Run)
+import Study.Control.Monad.Run.Run as Run
 import Type.Proxy (Proxy(..))
 import Type.Row (type (+))
 
