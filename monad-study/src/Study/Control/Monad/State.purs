@@ -31,13 +31,15 @@ instance functorState :: Functor (State s) where
     (Tuple a s') = runState m s
     in (Tuple (f a) s')
 
+-- monadにさえなっていれば、monadのapを使って apply = ap と書くだけで済むが自前で書く
+-- (ApplicativeかつBindであればMonadになれる)
 instance applyState :: Apply (State s) where
   apply :: forall s a b. State s (a -> b) -> State s a -> State s b
   apply s1 s2 = State $ \s -> let
     (Tuple fn s') = runState s1 s
     (Tuple a ss) = runState s2 s'
     in (Tuple (fn a) ss)
-
+  
 instance applicativeState :: Applicative (State s) where
   pure :: forall s a. a -> State s a
   pure a = State $ \s -> (Tuple a s)
@@ -47,3 +49,5 @@ instance bindState :: Bind (State s) where
   bind m f = State $ \s -> let
     (Tuple a s') = runState m s
     in runState (f a) s'
+
+instance monadState :: Monad (State s)
