@@ -30,3 +30,10 @@ instance functorState :: Functor (State s) where
   map f m = State $ \s -> let 
     (Tuple a s') = runState m s
     in (Tuple (f a) s')
+
+instance applyState :: Apply (State s) where
+  apply :: forall s a b. State s (a -> b) -> State s a -> State s b
+  apply s1 s2 = State $ \s -> let
+    (Tuple fn s') = runState s1 s
+    (Tuple a ss) = runState s2 s'
+    in (Tuple (fn a) ss)

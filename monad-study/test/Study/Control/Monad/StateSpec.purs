@@ -28,4 +28,9 @@ spec = do
     describe "Functor" do
       it "関数を適用することができる" do
         runState ((_ * 10) <$> (State fn)) "Value" `shouldEqual` (Tuple 1000 "Value")
+    
+    describe "Apply" do
+      it "関数を持つStateを使って関数を適用することができる" do
+        let multiPly = \x -> (Tuple (*) x)
+        runState ((State multiPly) <*> (State fn) <*> (State fn)) "Value" `shouldEqual` (Tuple 10000 "Value")
 
