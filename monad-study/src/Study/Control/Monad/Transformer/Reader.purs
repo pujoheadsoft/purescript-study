@@ -66,11 +66,14 @@ instance applicativeReaderT :: Applicative m => Applicative (ReaderT r m) where
   pure = ReaderT <<< const <<< pure
 
 instance bindReaderT :: Bind m => Bind (ReaderT r m) where
+  -- bind (ReaderT m) k = ReaderT \r -> do
+  --   a <- (m r)         -- 関数mを適用するとMonadに包まれて返ってくる
+  --   case (k a) of      -- 関数kを適用するとReaderTが返ってくる
+  --     ReaderT f -> f r -- ReaderTの関数を引数rに適用して返す
   bind :: forall a b r m. Bind m => (ReaderT r m a) -> (a ->  (ReaderT r m b)) -> (ReaderT r m b)
-  bind (ReaderT m) k = ReaderT \r -> do
-    a <- (m r)         -- 関数mを適用するとMonadに包まれて返ってくる
-    case (k a) of      -- 関数kを適用するとReaderTが返ってくる
-      ReaderT f -> f r -- ReaderTの関数を引数rに適用して返す
+  bind m k = ReaderT \r -> do
+    a <- runReaderT m r -- モナドm(ReaderT)を渡して取り出した関数にrを渡し、<-で取り出す。
+    runReaderT (k a) r  -- k aの戻り値はReaderTなのでrunReaderTで中身の関数を取り出してrを引数に実行
 
 instance monadReaderTInstance :: Monad m => Monad (ReaderT r m)
 
