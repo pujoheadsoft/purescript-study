@@ -50,4 +50,15 @@ instance bindState :: Bind (State s) where
     (Tuple a s') = runState m s
     in runState (f a) s'
 
-instance monadState :: Monad (State s)
+instance monadStateInstance :: Monad (State s)
+
+class Monad m <= MonadState s m | m -> s where
+  get :: m s
+  put :: s -> m Unit
+
+instance monadState :: MonadState s (State s) where
+  get :: (State s s)
+  get = State $ \s -> (Tuple s s)
+
+  put :: forall s. s -> (State s Unit)
+  put s = State $ \_ -> (Tuple unit s)

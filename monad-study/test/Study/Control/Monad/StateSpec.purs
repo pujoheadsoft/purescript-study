@@ -3,7 +3,7 @@ module Test.Study.Control.Monad.StateSpec where
 import Prelude
 
 import Data.Tuple (Tuple(..))
-import Study.Control.Monad.State (State(..), runState, evalState, execState)
+import Study.Control.Monad.State (State(..), runState, evalState, execState, get, put)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 
@@ -42,4 +42,12 @@ spec = do
       it "第1引数の結果に第2引数の関数を適用することができる" do
         runState (bind (pure 10) (\a -> pure (a + 10))) "Value" `shouldEqual` (Tuple 20 "Value")
 
+    describe "get" do
+      it "状態を新しい値として取得できる" do
+        -- Tupleの一つ目が取得できた値(用途として値がほしいだけならevalStateを使えばよい)
+        runState (get) "Value" `shouldEqual` (Tuple "Value" "Value")
+
+    describe "put" do
+      it "状態を書き換えられる" do
+        runState (put "Update") "Value" `shouldEqual` (Tuple unit "Update")
 
