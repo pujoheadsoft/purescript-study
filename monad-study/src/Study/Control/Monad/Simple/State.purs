@@ -1,4 +1,4 @@
-module Study.Control.Monad.State where
+module Study.Control.Monad.Simple.State where
 
 import Prelude
 

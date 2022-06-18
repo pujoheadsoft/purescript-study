@@ -1,8 +1,8 @@
-module Test.Study.Control.Monad.ReaderSpec where
+module Test.Study.Control.Monad.Simple.ReaderSpec where
 
 import Prelude
 
-import Study.Control.Monad.Reader (Reader, ask, asks, local, runReader, withReader)
+import Study.Control.Monad.Simple.Reader (Reader, ask, asks, local, runReader, withReader)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 

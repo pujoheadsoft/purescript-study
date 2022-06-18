@@ -1,4 +1,4 @@
-module Study.Control.Monad.Reader
+module Study.Control.Monad.Simple.Reader
   where
 
 import Prelude

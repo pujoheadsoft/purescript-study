@@ -1,9 +1,9 @@
-module Test.Study.Control.Monad.WriterSpec where
+module Test.Study.Control.Monad.Simple.WriterSpec where
 
 import Prelude
 
 import Data.Tuple (Tuple(..))
-import Study.Control.Monad.Writer (Writer(..), listen, listens, pass, runWriter, tell, censor)
+import Study.Control.Monad.Simple.Writer (Writer(..), listen, listens, pass, runWriter, tell, censor)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 

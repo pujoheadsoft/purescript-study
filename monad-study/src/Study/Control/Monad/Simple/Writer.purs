@@ -1,4 +1,4 @@
-module Study.Control.Monad.Writer where
+module Study.Control.Monad.Simple.Writer where
 
 import Prelude
 

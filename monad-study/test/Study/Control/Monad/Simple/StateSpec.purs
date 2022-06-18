@@ -1,9 +1,9 @@
-module Test.Study.Control.Monad.StateSpec where
+module Test.Study.Control.Monad.Simple.StateSpec where
 
 import Prelude
 
 import Data.Tuple (Tuple(..))
-import Study.Control.Monad.State (State(..), runState, evalState, execState, get, put, gets, modify)
+import Study.Control.Monad.Simple.State (State(..), runState, evalState, execState, get, put, gets, modify)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 
