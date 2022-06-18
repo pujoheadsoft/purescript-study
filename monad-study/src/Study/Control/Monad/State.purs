@@ -41,3 +41,9 @@ instance applyState :: Apply (State s) where
 instance applicativeState :: Applicative (State s) where
   pure :: forall s a. a -> State s a
   pure a = State $ \s -> (Tuple a s)
+
+instance bindState :: Bind (State s) where
+  bind :: forall s a b. State s a -> (a -> State s b) -> State s b
+  bind m f = State $ \s -> let
+    (Tuple a s') = runState m s
+    in runState (f a) s'

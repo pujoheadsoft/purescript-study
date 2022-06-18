@@ -38,4 +38,8 @@ spec = do
       it "値を持つStateを作ることができる" do
         runState (pure 10) "Value" `shouldEqual` (Tuple 10 "Value")
 
+    describe "Bind" do
+      it "第1引数の結果に第2引数の関数を適用することができる" do
+        runState (bind (pure 10) (\a -> pure (a + 10))) "Value" `shouldEqual` (Tuple 20 "Value")
+
 
