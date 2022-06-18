@@ -11,7 +11,7 @@ type Config = { debug :: Boolean }
 
 spec :: Spec Unit
 spec = do
-  describe "Readerのテスト" do
+  describe "Readerのテスト(Transformer版)" do
     describe "ask" do
       it "環境を取得できる" do
         runReader ask "value" `shouldEqual` "value"
