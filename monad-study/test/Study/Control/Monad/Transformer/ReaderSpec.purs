@@ -42,8 +42,9 @@ spec = do
     describe "ReaderT" do
       it "モナドを合成できる" do
         let
-          m :: ReaderT Int Maybe Int
+          -- ReaderとMaybeを合成(環境の型はInt、結果の型はMaybe Stringとする)
+          m :: ReaderT Int Maybe String
           m = do
-            value <- ask
-            pure (value + 10)
-        (runReaderT m 10) `shouldEqual` (Just 20)
+            value <- ask             -- 環境を読み込む(Int)
+            pure $ show $ value + 10 -- 結果を返す(文字列に変えて)
+        (runReaderT m 10) `shouldEqual` (Just "20")
