@@ -3,7 +3,7 @@ module Test.Study.Control.Monad.StateSpec where
 import Prelude
 
 import Data.Tuple (Tuple(..))
-import Study.Control.Monad.State (State(..), runState, evalState, execState, get, put)
+import Study.Control.Monad.State (State(..), runState, evalState, execState, get, put, gets, modify)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 
@@ -51,3 +51,10 @@ spec = do
       it "状態を書き換えられる" do
         runState (put "Update") "Value" `shouldEqual` (Tuple unit "Update")
 
+    describe "gets" do
+      it "渡した関数を適用した値を取得できる" do
+        runState (gets (_ + 1)) 1 `shouldEqual` (Tuple 2 1)
+    
+    describe "modify" do
+      it "渡した関数を使って状態を変更することができる" do
+        runState (modify (_ + 1)) 1 `shouldEqual` (Tuple unit 2)

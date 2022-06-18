@@ -62,3 +62,13 @@ instance monadState :: MonadState s (State s) where
 
   put :: forall s. s -> (State s Unit)
   put s = State $ \_ -> (Tuple unit s)
+
+gets :: forall s m a. (MonadState s m) => (s -> a) -> m a
+gets f = do 
+  s <- get
+  pure (f s)
+
+modify :: forall s m. (MonadState s m) => (s -> s) -> m Unit
+modify f = do
+  s <- get
+  put (f s)
