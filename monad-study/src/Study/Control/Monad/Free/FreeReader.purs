@@ -14,13 +14,18 @@ ask :: forall e. FreeReader e e
 ask = liftF (ReaderF identity)
 
 local :: forall r a. (r -> r) -> FreeReader r a -> FreeReader r a
-local = \f r -> map f ask >>= flip runLocal r
-  where
-  runLocal e r = case resume r of
-    Left (ReaderF k) ->
-      runLocal e (k e)
-    Right a ->
-      pure a
+local f r = map f ask >>= pure <<< runReader r
+-- askで取得した値をfでmapしたものを、bindで渡す
+-- 渡されるのは環境の型で、かつeta変換でrunReader関数の第二引数に渡る
+-- runReaderの結果は型aの値なのでpureでFreeReader型にしてやって返す
+
+{-
+↑はこう書くのと同じ
+local :: forall r a. (r -> r) -> FreeReader r a -> FreeReader r a
+local f r = do 
+  v <- map f ask 
+  pure $ runReader r v
+-}
 
 asks :: forall e a. (e -> a) -> FreeReader e a
 asks f = f <$> ask
