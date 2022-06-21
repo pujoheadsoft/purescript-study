@@ -26,22 +26,22 @@ spec = do
       it "runStateで評価した結果の「状態」だけを返す" do
         execState (state fn) "value" `shouldEqual` "value"
 
-    -- describe "Functor" do
-    --   it "関数を適用することができる" do
-    --     runState ((_ * 10) <$> (state fn)) "Value" `shouldEqual` (Tuple 1000 "Value")
+    describe "Functor" do
+      it "関数を適用することができる" do
+        runState ((_ * 10) <$> (state fn)) "Value" `shouldEqual` (Tuple 1000 "Value")
     
-    -- describe "Apply" do
-    --   it "関数を持つStateを使って関数を適用することができる" do
-    --     let multiPly = \x -> (Tuple (*) x)
-    --     runState ((state multiPly) <*> (state fn) <*> (state fn)) "Value" `shouldEqual` (Tuple 10000 "Value")
+    describe "Apply" do
+      it "関数を持つStateを使って関数を適用することができる" do
+        let multiPly = \_ -> (*)
+        runState ((state multiPly) <*> (state fn) <*> (state fn)) "Value" `shouldEqual` (Tuple 10000 "Value")
     
-    -- describe "Applicative" do
-    --   it "値を持つStateを作ることができる" do
-    --     runState (pure 10) "Value" `shouldEqual` (Tuple 10 "Value")
+    describe "Applicative" do
+      it "値を持つStateを作ることができる" do
+        runState (pure 10) "Value" `shouldEqual` (Tuple 10 "Value")
 
-    -- describe "Bind" do
-    --   it "第1引数の結果に第2引数の関数を適用することができる" do
-    --     runState (bind (pure 10) (\a -> pure (a + 10))) "Value" `shouldEqual` (Tuple 20 "Value")
+    describe "Bind" do
+      it "第1引数の結果に第2引数の関数を適用することができる" do
+        runState (bind (pure 10) (\a -> pure (a + 10))) "Value" `shouldEqual` (Tuple 20 "Value")
 
     -- describe "get" do
     --   it "状態を新しい値として取得できる" do
@@ -59,15 +59,3 @@ spec = do
     -- describe "modify" do
     --   it "渡した関数を使って状態を変更することができる" do
     --     runState (modify (_ + 1)) 1 `shouldEqual` (Tuple 2 2)
-
-    -- describe "StateT" do
-    --   it "モナドを合成できる" do
-    --     let
-    --       -- StateとMaybeを合成
-    --       m :: StateT Int Maybe String
-    --       m = do
-    --         a <- get
-    --         b <- modify (_ * 3) -- 状態を変更
-    --         pure $ show (a + b) -- getしたもの + 乗算したもの を文字列にする
-    --     -- 結果はMaybeに包まれて返ってくる
-    --     runStateT m 100 `shouldEqual` Just (Tuple "400" 300)
