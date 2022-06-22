@@ -36,4 +36,4 @@ main = do
   T.main
   log $ R.runReader readWithPlus "hoge1"
   log $ FR.runReader readWithPlusFree "hoge1"
-  trace(extract (runReader 100 readWithPlusRun)) \_ -> log("")
+  trace(extract (runReader readWithPlusRun 100)) \_ -> log("")

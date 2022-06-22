@@ -5,7 +5,7 @@ module Study.Control.Monad.Run.ReaderSpec
 
 import Prelude
 
-import Debug (debugger, traceM)
+import Debug (traceM)
 import Study.Control.Monad.Run.Run (Run, extract)
 import Study.Control.Monad.Run.Reader (runReader, ask, READER)
 import Test.Spec (Spec, describe, it)
@@ -30,4 +30,4 @@ spec = do
     describe "askのテスト" do
       it "渡した環境の値を読み込んで使うことができる" do
           -- runReaderの中で、readWithPlus10に100が渡されて実行される
-        extract (runReader 100 readWithPlus10) `shouldEqual` 110
+        extract (runReader readWithPlus10 100) `shouldEqual` 110

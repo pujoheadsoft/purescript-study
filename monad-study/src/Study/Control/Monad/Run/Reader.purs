@@ -18,7 +18,6 @@ import Prelude
 import Data.Either (Either(..))
 import Data.Functor.Variant (on)
 import Data.Symbol (class IsSymbol)
-import Debug (debugger, trace)
 import Prim.Row as Row
 import Study.Control.Monad.Run.Run (Run)
 import Study.Control.Monad.Run.Run as Run
@@ -91,25 +90,25 @@ asksAt sym f = liftReaderAt sym (Reader f) -- Readerは関数を持つのでfを
 
 runReader ::
   forall e a r. 
-  e -- 環境
-  -> Run (READER e + r) a -- Run
+  Run (READER e + r) a -- Run
+  -> e
   -> Run r a -- 新たなRun
-runReader e r = runReaderAt _reader e r -- e と Run が渡される
+runReader r e = runReaderAt _reader r e -- e と Run が渡される
 
 runReaderAt ::
   forall proxy t e a r s
   . IsSymbol s -- Symbolである
   => Row.Cons s (Reader e) t r -- r は Symbol s の値として (Reader e) を持っていないといけない
   => proxy s -- Symbol s
-  -> e       -- 環境 e
   -> Run r a -- Run r a
+  -> e       -- 環境 e
   -> Run t a
-runReaderAt sym env run = loop env run
+runReaderAt sym run env = loop run env
   where
   -- symがあったらLeft、なかったらRightになる
   handle = on sym Left Right
   -- eは環境(例えばint値や文字列など)、rはRunの中身なのでFree
-  loop e r = case Run.peel r of
+  loop r e = case Run.peel r of
     -- LeftってことはFreeViewがBindだったってこと
     -- このときの r は Free (Bind CatList) みたいな形
     Left a -> case handle a of
@@ -118,10 +117,10 @@ runReaderAt sym env run = loop env run
         -- 環境eをkに渡した結果で再帰
         -- askを使っていた場合、この環境eが入ったFreeが返ってくる
         -- askを使ったときに値が取得できる理由がこれ。そしてBindで次のFreeに計算後の結果が渡っていく
-        loop e (k e)
+        loop (k e) e
       -- symがなかったら(これはRunの中身が合成されてる場合？readr + wirterみたいな)
       Right a' ->
-        Run.send a' >>= runReaderAt sym e
+        Run.send a' >>= \r' -> runReaderAt sym r' e
     -- RightってことはFreeViewがReturnだったってこと
     -- このときの r は Free (Return CatList) みたいな形
     Right a ->
