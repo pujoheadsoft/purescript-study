@@ -4,7 +4,7 @@ import Prelude
 
 import Data.Either (Either(..))
 import Data.Tuple (Tuple(..), fst, snd)
-import Study.Control.Monad.Free.Free (Free(..), liftF, resume)
+import Study.Control.Monad.Free.Free (Free, liftF, resume)
 
 data State s a = State (s -> s) (s -> a)
 

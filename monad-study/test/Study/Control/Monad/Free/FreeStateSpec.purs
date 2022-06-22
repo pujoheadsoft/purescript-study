@@ -2,9 +2,8 @@ module Test.Study.Control.Monad.Free.FreeStateSpec where
 
 import Prelude
 
-import Data.Maybe (Maybe(..))
 import Data.Tuple (Tuple(..))
-import Study.Control.Monad.Free.FreeState (FreeState, evalState, execState, runState, state, get, put, modify, gets)
+import Study.Control.Monad.Free.FreeState (evalState, execState, get, gets, modify, put, runState, state)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 
