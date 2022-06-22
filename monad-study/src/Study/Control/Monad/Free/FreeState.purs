@@ -18,7 +18,7 @@ state f = liftF (State identity f)
 runState :: forall s a. FreeState s a -> (s -> (Tuple a s))
 runState f = \s -> (loop s f)
   where
-  loop s f = case resume f of
+  loop s f' = case resume f' of
     Left (State t k) ->
       let
         s' = t s
