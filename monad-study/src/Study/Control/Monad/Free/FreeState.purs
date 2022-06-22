@@ -32,3 +32,7 @@ evalState s i = fst (runState s i)
 
 execState :: forall s a. FreeState s a -> s -> s
 execState s i = snd (runState s i)
+
+
+get :: forall s. FreeState s s
+get = state identity
