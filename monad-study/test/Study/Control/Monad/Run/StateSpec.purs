@@ -2,7 +2,6 @@ module Test.Study.Control.Monad.Run.StateSpec where
 
 import Prelude
 
-import Data.Maybe (Maybe(..))
 import Data.Tuple (Tuple(..))
 import Study.Control.Monad.Run.Run (extract)
 import Study.Control.Monad.Run.State (evalState, execState, get, gets, modify, put, runState, state)
