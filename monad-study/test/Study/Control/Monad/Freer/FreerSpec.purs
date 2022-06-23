@@ -1,10 +1,10 @@
 module Study.Control.Monad.FreerSpec where
 
 import Prelude
-import Test.Spec
+import Test.Spec (Spec, describe, it)
 
 import Data.Exists (runExists)
-import Study.Control.Monad.Freer (Freer(..), FreerBindF(..))
+import Study.Control.Monad.Freer.Freer (Freer(..), FreerBindF(..))
 import Test.Spec.Assertions (shouldEqual)
 
 data Value a = Value a

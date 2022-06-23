@@ -1,8 +1,12 @@
-module Study.Control.Monad.Freer where
+module Study.Control.Monad.Freer.FreerDerivation where
 
-import Prelude
+import Data.Exists (Exists)
 
-import Data.Exists (Exists, mkExists, runExists)
+---------------------------------
+--
+-- Freer モナドを導出するステップ
+--
+---------------------------------
 
 -- Freeの定義
 data Free f a = 
@@ -57,35 +61,8 @@ data Freer2 f a =
   ついでに構築子の名前もわかりやすくBindにしてみる
 -}
 
+-- これが完成形
 data FreerBindF3 f a b = FreerBindF3 (f b) (b -> (Freer3 f a)) 
 data Freer3 f a =
   Pure3 a
   | Bind3 (Exists (FreerBindF3 f a))
-
-
-data FreerBindF f a b = FreerBindF (f b) (b -> (Freer f a)) 
-data Freer f a =
-  Pure a
-  | Bind (Exists (FreerBindF f a))
-
-instance functorFreer :: Functor (Freer f) where
-  map f (Pure a) = Pure $ f a
-  map f (Bind e) = runExists (\(FreerBindF fa k) -> createBind fa (k >=> Pure <<< f) ) e
-
-instance applyFreer :: Apply (Freer f) where
-  apply (Pure fn) a = fn <$> a
-  apply (Bind e) a = runExists (\(FreerBindF fa k) -> createBind fa (k >=> (_ <$> a)) ) e
-
-instance applicativeFreer :: Applicative (Freer f) where
-  pure a = Pure a
-
-instance bindFreer :: Bind (Freer f) where
-  bind (Pure a) f = f a
-  bind (Bind e) f = runExists (\(FreerBindF fa k) -> createBind fa (k >=> f) ) e
-
-
-createBind :: forall f a b. (f b) -> (b -> (Freer f a)) -> Freer f a
-createBind m fn = Bind $ mkExists $ FreerBindF m fn
-
-send :: forall f a. f a -> Freer f a
-send t = createBind t (\a -> Pure a)
