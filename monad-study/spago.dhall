@@ -33,6 +33,7 @@ to generate this file without the comments in this block.
   , "tailrec"
   , "transformers"
   , "tuples"
+  , "type-equality"
   , "typelevel-prelude"
   , "unsafe-coerce"
   , "variant"

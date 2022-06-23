@@ -39,10 +39,10 @@ liftReader :: forall e a r. Reader e a -> Run (READER e + r) a
 liftReader = liftReaderAt _reader
 
 liftReaderAt ::
-  forall proxy symbol tail row e a
+  forall symbol tail row e a
    . IsSymbol symbol
   => Row.Cons symbol (Reader e) tail row
-  => proxy symbol
+  => Proxy symbol
   -> Reader e a
   -> Run row a
 liftReaderAt p r = Run.lift p r
@@ -68,10 +68,10 @@ ask = askAt _reader -- proxyを渡してRunを返す
   Run (Free (VariantF (symの名前 :: 型))), symbolに紐づく値は(Reader identity)
 -}
 askAt ::
-  forall proxy t e r s
+  forall t e r s
   . IsSymbol s
   => Row.Cons s (Reader e) t r
-  => proxy s
+  => Proxy s
   -> Run r e
 -- askAt sym = trace({m: "Reader: askAt", sym: sym}) \_ -> asksAt sym identity
 askAt sym = asksAt sym identity
@@ -80,10 +80,10 @@ asks :: forall e r a. (e -> a) -> Run (READER e + r) a
 asks = asksAt _reader
 
 asksAt ::
-  forall proxy t e r s a
+  forall t e r s a
   . IsSymbol s
   => Row.Cons s (Reader e) t r
-  => proxy s
+  => Proxy s
   -> (e -> a) -- この関数の引数の型は↑のReaderの型eと一致、更に返す型は↓のRunの型aと一致している
   -> Run r a -- 返すのはRun
 asksAt sym f = liftReaderAt sym (Reader f) -- Readerは関数を持つのでfを渡せる
@@ -96,10 +96,10 @@ runReader ::
 runReader r e = runReaderAt _reader r e -- e と Run が渡される
 
 runReaderAt ::
-  forall proxy t e a r s
+  forall t e a r s
   . IsSymbol s -- Symbolである
   => Row.Cons s (Reader e) t r -- r は Symbol s の値として (Reader e) を持っていないといけない
-  => proxy s -- Symbol s
+  => Proxy s -- Symbol s
   -> Run r a -- Run r a
   -> e       -- 環境 e
   -> Run t a

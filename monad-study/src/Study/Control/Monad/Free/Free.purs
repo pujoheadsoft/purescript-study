@@ -216,6 +216,20 @@ runFree k free = go free
                                   -- この結果を関数 k に食わす。それをgoに渡して再帰している。
                                   -- Returnになるまで再帰され、最終的に a が返る
 
+runFreeM
+  :: forall f m a
+   . Functor f
+  => MonadRec m
+  => (f (Free f a) -> m (Free f a))
+  -> Free f a
+  -> m a
+runFreeM k = tailRecM go
+  where
+  go :: Free f a -> m (Step (Free f a) a)
+  go f = case toView f of
+    Bind g i -> Loop <$> k (i <$> g)
+    Return a -> Done <$> pure a
+
 {- 
   Functor f のレイヤーを一つだけunwrapし、Eitherに包んで返す。
 -}

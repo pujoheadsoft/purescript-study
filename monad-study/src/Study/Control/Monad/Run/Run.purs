@@ -1,25 +1,23 @@
-module Study.Control.Monad.Run.Run
-  ( Run(..)
-  , extract
-  , lift
-  , peel
-  , resume
-  , run
-  , send
-  , runCont
-  )
-  where
+module Study.Control.Monad.Run.Run where
 
 import Prelude
 
+import Control.Monad.Rec.Class (class MonadRec)
 import Data.Either (Either(..))
-import Data.Functor.Variant (VariantF, inj)
+import Data.Functor.Variant (VariantF, inj, match)
 import Data.Newtype (class Newtype, unwrap)
 import Data.Symbol (class IsSymbol)
-import Debug (debugger, spy, spyWith, trace, traceM)
+import Effect (Effect)
+import Effect.Aff (Aff)
+import Effect.Aff.Class (class MonadAff)
+import Effect.Class (class MonadEffect)
 import Partial.Unsafe (unsafeCrashWith)
 import Prim.Row as Row
-import Study.Control.Monad.Free.Free (Free, resume', liftF, runFree)
+import Study.Control.Monad.Free.Free (Free, resume', liftF, runFree, runFreeM)
+import Type.Equality (class TypeEquals)
+import Type.Proxy (Proxy(..))
+import Type.Row (type (+))
+import Unsafe.Coerce (unsafeCoerce)
 
 -- data VariantF :: Row (Type -> Type) -> Type -> Type
 -- data VariantF f a
@@ -33,27 +31,16 @@ derive newtype instance bindRun :: Bind (Run r)
 derive newtype instance monadRun :: Monad (Run r)
 
 
-run
-  :: forall m a r
-   . Monad m
-  => (VariantF r (Run r a) -> m (Run r a))
-  -> Run r a
-  -> m a
-run k = loop
-  where
-  loop :: Run r a -> m a
-  loop = resume (\a -> loop =<< k a) pure
-
 {-
   proxyとfunctorを受け取って、Runを返す
   functorをRunに持ち上げる(lift)？という意味合いか
 -}
 lift
-  :: forall proxy symbol tail row f a
+  :: forall symbol tail row f a
   . Row.Cons symbol f tail row
   => IsSymbol symbol
   => Functor f
-  => proxy symbol -- proxy ここまでの定義で、↓のRunのrowはこのsymbolを持っていないといけない
+  => Proxy symbol -- proxy ここまでの定義で、↓のRunのrowはこのsymbolを持っていないといけない
   -> f a          -- functor 型aは↓のRunの型aと一致
   -> Run row a    -- Run
 lift p f = (Run <<< liftF <<< inj p) f
@@ -154,6 +141,40 @@ send v = (Run <<< liftF) v
 extract :: forall a. Run () a -> a
 extract r = (unwrap >>> runFree \_ -> unsafeCrashWith "Run: the impossible happend") r
 
+
+-- | プログラムの残りの部分を intercept できる
+-- | interpret と同じだが、より制限の少ないシグニチャになっている
+run
+  :: forall m a r
+   . Monad m
+  => (VariantF r (Run r a) -> m (Run r a))
+  -> Run r a
+  -> m a
+run k = loop
+  where
+  loop :: Run r a -> m a
+  loop = resume (\a -> loop =<< k a) pure
+
+-- | モナド m を経由してプログラムから値を取り出す
+interpret :: forall m a r. Monad m => (VariantF r ~> m) -> Run r a -> m a
+interpret = run
+
+runRec
+  :: forall m a r
+   . MonadRec m 
+  => (VariantF r (Run r a) -> m (Run r a))
+  -> Run r a
+  -> m a
+runRec k = runFreeM (coerceM k) <<< unwrap
+  where
+  coerceM 
+    :: (VariantF r (Run r a) -> m (Run r a)) 
+    -> VariantF r (Free (VariantF r) a) 
+    -> m (Free (VariantF r) a)
+  coerceM = unsafeCoerce
+
+  
+-- | m を経由したプログラムから、継続渡しを使って値を取り出す
 runCont
   :: forall m a b r
    . (VariantF r (m b) -> m b)
@@ -164,3 +185,33 @@ runCont k1 k2 = loop
   where
   loop :: Run r a -> m b
   loop = resume (\b -> k1 (loop <$> b)) k2
+
+-- Effect と Aff
+type EFFECT r = (effect :: Effect | r)
+
+liftEffect :: forall r. Effect ~> Run (EFFECT + r)
+liftEffect = lift (Proxy :: Proxy "effect")
+
+runBaseEffect :: Run (EFFECT + ()) ~> Effect
+runBaseEffect = runRec $ match { effect: \a -> a }
+
+type AFF r = (aff :: Aff | r)
+
+liftAff :: forall r. Aff ~> Run (AFF + r)
+liftAff = lift (Proxy :: Proxy "aff")
+
+runBaseAff :: Run (AFF + ()) ~> Aff
+runBaseAff = run $ match { aff: \a ->a }
+
+instance runMonadEffect :: (TypeEquals (Proxy r1) (Proxy (EFFECT r2))) => MonadEffect (Run r1) where
+  liftEffect = fromRows <<< liftEffect
+
+instance runMonadAff :: (TypeEquals (Proxy r1) (Proxy (AFF + EFFECT + r2))) => MonadAff (Run r1) where
+  liftAff = fromRows <<< liftAff
+
+fromRows
+  :: forall f r1 r2 a
+   . TypeEquals (Proxy r1) (Proxy r2)
+  => f r2 a
+  -> f r1 a
+fromRows = unsafeCoerce
