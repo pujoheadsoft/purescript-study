@@ -6,10 +6,11 @@ import Debug (trace)
 import Effect (Effect)
 import Effect.Console (log)
 import Example.Free.Teletype as T
+import Example.Run.RunExample as RunExample
 import Study.Control.Monad.Free.FreeReader as FR
-import Study.Control.Monad.Simple.Reader as R
-import Study.Control.Monad.Run.Run (Run, extract)
 import Study.Control.Monad.Run.Reader (runReader, ask, READER)
+import Study.Control.Monad.Run.Run (Run, extract)
+import Study.Control.Monad.Simple.Reader as R
 import Type.Row (type (+))
 
 readWithPlus :: R.Reader String String
@@ -36,4 +37,5 @@ main = do
   T.main
   log $ R.runReader readWithPlus "hoge1"
   log $ FR.runReader readWithPlusFree "hoge1"
+  RunExample.main
   trace(extract (runReader readWithPlusRun 100)) \_ -> log("")
