@@ -2,9 +2,11 @@ module Main where
 
 import Prelude
 
+import CleanArchitecture.Main as CA
 import Debug (trace)
 import Effect (Effect)
 import Effect.Console (log)
+import Example.Free.FreeExample as FreeExample
 import Example.Free.Teletype as T
 import Example.Run.RunExample as RunExample
 import Study.Control.Monad.Free.FreeReader as FR
@@ -34,8 +36,10 @@ readWithPlusRun = do
 
 main :: Effect Unit
 main = do
-  T.main
-  log $ R.runReader readWithPlus "hoge1"
-  log $ FR.runReader readWithPlusFree "hoge1"
-  RunExample.main
-  trace(extract (runReader readWithPlusRun 100)) \_ -> log("")
+  -- T.main
+  -- log $ R.runReader readWithPlus "hoge1"
+  -- log $ FR.runReader readWithPlusFree "hoge1"
+  -- RunExample.main
+  -- trace(extract (runReader readWithPlusRun 100)) \_ -> log("")
+  FreeExample.main
+  CA.main

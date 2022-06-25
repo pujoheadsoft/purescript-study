@@ -177,10 +177,10 @@ suspendF f = wrap (pure f)
 hoistFree :: forall f g. (f ~> g) -> Free f ~> Free g
 hoistFree k = substFree (liftF <<< k)
 
-{-
-  型コンストラクタ `f` から末尾再帰的なモナド `m` への自然な変換で、自由なモナドを実行します。
-  詳細は `MonadRec` 型クラスを参照してください。
--}
+-- |
+-- | 型コンストラクタ `f` から末尾再帰的なモナド `m` への自然な変換で、自由なモナドを実行します。
+-- | 詳細は `MonadRec` 型クラスを参照してください。
+-- |
 foldFree :: forall f m. MonadRec m => (f ~> m) -> Free f ~> m
 foldFree k = tailRecM go
   where
