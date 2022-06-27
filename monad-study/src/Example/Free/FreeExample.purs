@@ -30,9 +30,9 @@ go (P v u) = do
   log $ "<p>" <> v <> "</p>"
   pure u
 
-run :: forall a. Free HTMLElement a -> Effect a
-run = foldFree go
+run :: forall a. (HTMLElement ~> Effect) -> Free HTMLElement a -> Effect a
+run f x = (foldFree f) x -- foldFreeは自然変換の関数を受け取るので↑みたいに宣言しなければならない
 
 main :: Effect Unit
 main = do
-  run content
+  run go content -- goを差し替えれば動きを変えられる。mockに変えられそう。
