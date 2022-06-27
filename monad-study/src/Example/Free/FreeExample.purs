@@ -22,11 +22,11 @@ content = do
   p "Content"
   div "End"
 
-go :: forall a. HTMLElement a -> Effect a
-go (Div v u) = do 
+handle :: forall a. HTMLElement a -> Effect a
+handle (Div v u) = do 
   log $ "<div>" <> v <> "</div>"
   pure u
-go (P v u) = do
+handle (P v u) = do
   log $ "<p>" <> v <> "</p>"
   pure u
 
@@ -35,4 +35,4 @@ run f x = (foldFree f) x -- foldFreeは自然変換の関数を受け取るの�
 
 main :: Effect Unit
 main = do
-  run go content -- goを差し替えれば動きを変えられる。mockに変えられそう。
+  run handle content -- handleを差し替えれば動きを変えられる。mockに変えられそう。
