@@ -10,34 +10,35 @@ import Type.Row (type (+))
 
 newtype User = User {id :: String, name :: String}
 
+data UserPort :: forall k. k -> Type
 data UserPort a
-  = FindUserById String a
-  | FindUserByName String a
+  = FindUserById String
+  | FindUserByName String
 
 derive instance functorUserPort :: Functor UserPort
 
+type USER_PORT :: forall k. Row (k -> Type) -> Row (k -> Type)
 type USER_PORT r = (userPort :: UserPort | r)
 
 _userPort = Proxy :: Proxy "userPort"
 
-findUserById :: forall r. String -> Run (USER_PORT + r) Unit
-findUserById id = lift _userPort (FindUserById id unit)
+findUserById :: forall a r. String -> Run (USER_PORT + r) a
+findUserById id = lift _userPort (FindUserById id)
 
-findUserByName :: forall r. String -> Run (USER_PORT + r) Unit
-findUserByName name = lift _userPort (FindUserByName name unit)
+findUserByName :: forall a r. String -> Run (USER_PORT + r) a
+findUserByName name = lift _userPort (FindUserByName name)
 
 handleUserPort :: forall a. UserPort a -> User
-handleUserPort (FindUserById id _) = User {id: id, name: "dummy"}
-handleUserPort (FindUserByName name _) = User {id: "dummy" , name: name}
+handleUserPort (FindUserById id) = User {id: id, name: "dummy"}
+handleUserPort (FindUserByName name) = User {id: "dummy" , name: name}
 
--- runUserPort :: forall r a. Run (USER_PORT + r) a -> Run r User
--- runUserPort :: forall r a b. (UserPort a -> b) -> Run (USER_PORT + r ) b -> Run r b
--- runUserPort f r = case peel r of
---   Left a -> case on _userPort Left Right a of
---     Left a' -> pure (f a')
---     Right a' -> send a' >>= \r' -> runUserPort r'
---   Right a ->
---     pure a
+runUserPort :: forall r a. Run (USER_PORT + r) User -> Run a User
+runUserPort r = case peel r of
+  Left a -> case on _userPort Left Right a of
+    Left a' -> pure (handleUserPort a')
+    Right a' -> send a' >>= \r' -> runUserPort r'
+  Right a ->
+    pure a
 
--- main = do
---   runUserPort (findUserById "xxx")
+main = do
+   runUserPort (findUserById "xxx")
