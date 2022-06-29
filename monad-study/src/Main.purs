@@ -9,6 +9,7 @@ import Effect.Console (log)
 import Example.Free.FreeExample as FreeExample
 import Example.Free.Teletype as T
 import Example.Run.RunExample as RunExample
+import Example.Run.RunExample2 as RunExample2
 import Study.Control.Monad.Free.FreeReader as FR
 import Study.Control.Monad.Run.Reader (runReader, ask, READER)
 import Study.Control.Monad.Run.Run (Run, extract)
@@ -40,6 +41,7 @@ main = do
   -- log $ R.runReader readWithPlus "hoge1"
   -- log $ FR.runReader readWithPlusFree "hoge1"
   -- RunExample.main
+  RunExample2.main
   -- trace(extract (runReader readWithPlusRun 100)) \_ -> log("")
   FreeExample.main
   CA.main

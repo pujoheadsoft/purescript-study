@@ -4,7 +4,10 @@ import Prelude
 
 import Data.Either (Either(..))
 import Data.Functor.Variant (match, on)
-import Study.Control.Monad.Run.Run (Run, lift, peel, run, send)
+import Debug (trace, traceM)
+import Effect (Effect)
+import Effect.Console (log)
+import Study.Control.Monad.Run.Run (Run, extract, lift, peel, run, send)
 import Type.Proxy (Proxy(..))
 import Type.Row (type (+))
 
@@ -40,5 +43,7 @@ runUserPort r = case peel r of
   Right a ->
     pure a
 
+main :: Effect Unit
 main = do
-   runUserPort (findUserById "xxx")
+   traceM(extract (runUserPort (findUserById "userId")))
+   traceM(extract (runUserPort (findUserByName "userName")))
