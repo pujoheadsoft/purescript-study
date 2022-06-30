@@ -43,7 +43,12 @@ runUserPort r = case peel r of
   Right a ->
     pure a
 
+program :: forall a r. String -> Run (USER_PORT + r) a
+program name = do
+  user <- findUserByName name
+  findUserById user.id
+
 main :: Effect Unit
 main = do
-   traceM(extract (runUserPort (findUserById "userId")))
-   traceM(extract (runUserPort (findUserByName "userName")))
+   traceM(extract (runUserPort (program "userName")))
+   
