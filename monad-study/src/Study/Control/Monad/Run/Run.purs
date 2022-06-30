@@ -7,6 +7,7 @@ import Data.Either (Either(..))
 import Data.Functor.Variant (VariantF, inj, match)
 import Data.Newtype (class Newtype, unwrap)
 import Data.Symbol (class IsSymbol)
+import Data.Tuple (Tuple(..), curry, uncurry)
 import Effect (Effect)
 import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff)
@@ -149,7 +150,7 @@ send v = (Run <<< liftF) v
 extract :: forall a. Run () a -> a
 extract r = (unwrap >>> runFree \_ -> unsafeCrashWith "Run: the impossible happend") r
 
-
+-- run系の関数 ------------------------------------------------------------------------
 -- | プログラムの残りの部分を intercept できる
 -- | interpret と同じだが、より制限の少ないシグニチャになっている
 run
@@ -180,7 +181,6 @@ runRec k = runFreeM (coerceM k) <<< unwrap
     -> VariantF r (Free (VariantF r) a) 
     -> m (Free (VariantF r) a)
   coerceM = unsafeCoerce
-
   
 -- | m を経由したプログラムから、継続渡しを使って値を取り出す
 runCont
@@ -194,7 +194,85 @@ runCont k1 k2 = loop
   loop :: Run r a -> m b
   loop = resume (\b -> k1 (loop <$> b)) k2
 
--- Effect と Aff
+-- | Accumulatorを持つあるモナド `m` を介して、値を抽出する。
+-- | これは再帰の下でのスタックセーフを仮定している。
+runAccum
+  :: forall m r s a
+   . Monad m
+  => (s -> VariantF r (Run r a) -> m (Tuple s (Run r a)))
+  -> s
+  -> Run r a
+  -> m a
+runAccum k = loop
+  where
+  loop :: s -> Run r a -> m a
+  loop s = resume (\b -> uncurry loop =<< k s b) pure
+
+-- | runAccumのMonadRec版
+runAccumRec
+  :: forall m r s a
+   . MonadRec m
+  => (s -> VariantF r (Run r a) -> m (Tuple s (Run r a)))
+  -> s
+  -> Run r a
+  -> m a
+runAccumRec k = curry (tailRecM (uncurry loop))
+  where
+  loop :: s -> Run r a -> m (Step (Tuple s (Run r a)) a)
+  loop s = resume (\b -> Loop <$> k s b) (pure <<< Done)
+
+-- | Accumulatorを用いた継続渡しにより、ある `m` を経由して値を抽出する。
+runAccumCont
+  :: forall m r s a b
+   . (s -> VariantF r (s -> m b) -> m b)
+  -> (s -> a -> m b)
+  -> s
+  -> Run r a
+  -> m b
+runAccumCont k1 k2 = loop
+  where
+  loop :: s -> Run r a -> m b
+  loop s = resume (\b -> k1 s (flip loop <$> b)) (k2 s)
+
+-- | 純粋にエフェクトを除去します。
+-- | Control.Monad.Rec.Class` の `Step` を使用して、末尾再帰のスタックセーフを維持する。
+runPure
+  :: forall r1 r2 a
+   . (VariantF r1 (Run r1 a) -> Step (Run r1 a) (VariantF r2 (Run r1 a)))
+  -> Run r1 a
+  -> Run r2 a
+runPure k = loop
+  where
+  loop :: Run r1 a -> Run r2 a
+  loop r = case peel r of
+    Left a -> case k a of
+      Loop r' -> loop r'
+      Done a' -> send a' >>= runPure k
+    Right a ->
+      pure a
+
+-- | Accumulatorで純粋にエフェクトを除去する。
+-- | Control.Monad.Rec.Class` の `Step` を使用して、末尾再帰のスタックセーフを維持する。
+runAccumPure
+  :: forall r1 r2 a b s
+   . (s -> VariantF r1 (Run r1 a) -> Step (Tuple s (Run r1 a)) (VariantF r2 (Run r1 a)))
+  -> (s -> a -> b)
+  -> s
+  -> Run r1 a
+  -> Run r2 b
+runAccumPure k1 k2 = loop
+  where
+  loop :: s -> Run r1 a -> Run r2 b
+  loop s r = case peel r of
+    Left a -> case k1 s a of
+      Loop (Tuple s' r') -> loop s' r'
+      Done a' -> send a' >>= runAccumPure k1 k2 s
+    Right a ->
+      pure (k2 s a)
+
+--------------------------------------------------------------------------
+
+-- Effect と Aff ---------------------------------------------------------
 type EFFECT r = (effect :: Effect | r)
 
 liftEffect :: forall r. Effect ~> Run (EFFECT + r)
