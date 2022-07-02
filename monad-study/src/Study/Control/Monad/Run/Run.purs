@@ -165,6 +165,7 @@ run k = loop
   loop = resume (\a -> loop =<< k a) pure
 
 -- | モナド m を経由してプログラムから値を取り出す
+-- | 自然変換関数を渡す必要がある
 interpret :: forall m a r. Monad m => (VariantF r ~> m) -> Run r a -> m a
 interpret = run
 

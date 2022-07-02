@@ -5,11 +5,13 @@ import Prelude
 import CleanArchitecture.Main as CA
 import Debug (trace)
 import Effect (Effect)
+import Effect.Class.Console (logShow)
 import Effect.Console (log)
 import Example.Free.FreeExample as FreeExample
 import Example.Free.Teletype as T
-import Example.Run.ExampleOnPursuit as ExampleOnPursuit
 import Example.Run.Example as RunExample
+import Example.Run.ExampleOnGithub as ExampleOnGithub
+import Example.Run.ExampleOnPursuit as ExampleOnPursuit
 import Study.Control.Monad.Free.FreeReader as FR
 import Study.Control.Monad.Run.Reader (runReader, ask, READER)
 import Study.Control.Monad.Run.Run (Run, extract)
@@ -42,6 +44,7 @@ main = do
   -- log $ FR.runReader readWithPlusFree "hoge1"
   -- RunExample.main
   RunExample.main
+  -- ExampleOnGithub.main >>= logShow
   -- trace(extract (runReader readWithPlusRun 100)) \_ -> log("")
   FreeExample.main
   CA.main
