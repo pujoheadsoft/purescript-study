@@ -1,4 +1,4 @@
-module Example.Run.RunExample2 where
+module Example.Run.Example where
 
 import Prelude
 
@@ -13,6 +13,11 @@ import Prim.Row as Row
 import Study.Control.Monad.Run.Run (Run, extract, lift, peel, runPure, send)
 import Type.Proxy (Proxy(..))
 import Type.Row (type (+))
+
+{-
+  自前で作ってみた例
+  run関数にhandlerを渡せるようにしたり、runを色々書いてみたり
+-}
 
 type User = {id :: String, name :: String}
 

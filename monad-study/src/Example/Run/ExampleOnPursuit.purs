@@ -1,4 +1,4 @@
-module Example.Run.RunExample where
+module Example.Run.ExampleOnPursuit where
 
 import Prelude
 
@@ -9,6 +9,11 @@ import Study.Control.Monad.Run.Except (EXCEPT, catch, throw)
 import Study.Control.Monad.Run.Run (EFFECT, Run, liftEffect, runBaseEffect)
 import Study.Control.Monad.Run.State (STATE, gets, modify, runState)
 import Type.Row (type (+))
+
+{-
+  purescript-runのPursuitに載ってる例
+  https://pursuit.purescript.org/packages/purescript-run/0.4.0/docs/Run
+-}
 
 type MyEffects = ( STATE Int + EXCEPT String + EFFECT + () )
 
