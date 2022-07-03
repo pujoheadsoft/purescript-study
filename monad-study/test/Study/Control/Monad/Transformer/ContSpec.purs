@@ -3,7 +3,7 @@ module Test.Study.Control.Monad.Transformer.ContSpec where
 import Prelude
 
 import Data.Maybe (Maybe(..))
-import Study.Control.Monad.Transformer.Cont (Cont, ContT(..), callCC, cont, runCont, runContT)
+import Study.Control.Monad.Transformer.Cont (Cont, ContT, callCC, cont, runCont, runContT)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 

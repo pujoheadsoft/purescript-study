@@ -7,6 +7,9 @@ import Data.Newtype (unwrap, class Newtype)
 
 {-
   継続モナド変換子
+  CPS(Continuation Passing Style) 継続渡しスタイルによる開発をサポートする
+  継続 (次に行う処理) を関数で表して、それを引数に渡して実行することを「継続渡しスタイル」という
+  (Schemeは継続を取り出すことができるようだ)
 -}
 
 -- Cont ----------------------------
