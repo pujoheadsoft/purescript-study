@@ -4,7 +4,9 @@ import Prelude
 
 import Control.Monad.Rec.Class (Step(..))
 import Data.Functor.Variant (on)
-import Study.Control.Monad.Run.Run (Run(..), lift, runPure)
+import Effect (Effect)
+import Effect.Class.Console (logShow)
+import Study.Control.Monad.Run.Run (Run, extract, lift, runPure)
 import Type.Proxy (Proxy(..))
 import Type.Row (type (+))
 
@@ -12,9 +14,10 @@ import Type.Row (type (+))
   DIできるようにしたい
   gatewayが使うdriverをDIするなど
 -}
-type UserDomain = {}
+type UserDomain = {user :: User, userOption :: UserOption}
+--derive instance showUserDomain :: Show UserDomain
 
-class Monad m <= UserGateway m where
+class UserGateway m where
   findById :: String -> m UserDomain
 
 -- find user ---------------------------------------------
@@ -59,3 +62,20 @@ runFindUserOption ::
   -> Run r a
 runFindUserOption f r = runPure (\v -> on _findUserOption (Loop <<< f) Done v) r
 -------------------------------------------------------
+
+newtype X a = X (Run (FIND_USER + FIND_USER_OPTION + ()) a)
+instance gatewayImpl :: UserGateway X where
+  findById :: String -> X UserDomain
+  findById id = X do 
+    user <- findUserById id
+    userOption <- findUserOptionById id
+    pure {user: user, userOption: userOption}
+
+runFindUserDomain :: String -> Run (FIND_USER + FIND_USER_OPTION + ()) UserDomain
+runFindUserDomain id = case findById id of (X r) -> r
+
+main :: Effect Unit
+main = logShow <<< extract
+  $ runFindUserDomain "userId"
+  # runFindUser handleFindUser
+  # runFindUserOption handleFindUserOption
