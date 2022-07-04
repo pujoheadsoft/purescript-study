@@ -17,7 +17,7 @@ import Type.Row (type (+))
 type UserDomain = {user :: User, userOption :: UserOption}
 --derive instance showUserDomain :: Show UserDomain
 
-class UserGateway m where
+class UserPort m where
   findById :: String -> m UserDomain
 
 -- find user ---------------------------------------------
@@ -63,8 +63,9 @@ runFindUserOption ::
 runFindUserOption f r = runPure (\v -> on _findUserOption (Loop <<< f) Done v) r
 -------------------------------------------------------
 
+-- Gateway --------------------------------------------
 newtype X a = X (Run (FIND_USER + FIND_USER_OPTION + ()) a)
-instance gatewayImpl :: UserGateway X where
+instance userGateway :: UserPort X where
   findById :: String -> X UserDomain
   findById id = X do 
     user <- findUserById id
