@@ -2,7 +2,6 @@ module Test.CleanArchitecture.Usecase.UserUsecase where
 
 import Prelude
 
-import CleanArchitecture.Domain.User (UserId)
 import Effect (Effect)
 import Effect.Console (log)
 import Test.Spec (Spec, describe, it)

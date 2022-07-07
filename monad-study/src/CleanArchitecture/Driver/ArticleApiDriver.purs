@@ -2,7 +2,20 @@ module CleanArchitecture.Driver.ArticleApiDriver where
 
 import Prelude
 
-import Study.Control.Monad.Run.Run (Run, lift)
+import Affjax.ResponseFormat (ResponseFormat)
+import Affjax.ResponseFormat as ResponseFormat
+import Affjax.Web (printError)
+import Affjax.Web as AX
+import Data.Either (Either(..))
+import Data.Functor.Variant (on)
+import Data.Maybe (Maybe(..))
+import Effect (Effect)
+import Effect.Aff (Aff, launchAff_)
+import Effect.Class.Console (log)
+import Example.Run.Example (program)
+import Foreign (MultipleErrors)
+import Simple.JSON (readJSON)
+import Study.Control.Monad.Run.Run (AFF, Run, interpret, lift, liftAff, runBaseAff, send)
 import Type.Proxy (Proxy(..))
 import Type.Row (type (+))
 
@@ -17,21 +30,80 @@ type ArticleJson = {title :: String, body :: String, author :: String}
 
 data ArticleDriver a = 
    FindArticlesByTitle String (Array ArticleIndexJson -> a)
- | FindArticleById String (ArticleJson -> a)
+ | FindArticleById String (Maybe ArticleJson -> a)
 
 derive instance functorArticleDriver :: Functor ArticleDriver
 _articleDriver = Proxy :: Proxy ("articleDriver")
 type ARTICLE_DRIVER r = (articleDriver :: ArticleDriver | r)
 
+-- このあたりで接続情報がほしい
+-- どうするか
+
 findArticlesByTitle :: forall r. String -> Run (ARTICLE_DRIVER + r) (Array ArticleIndexJson)
 findArticlesByTitle title = lift _articleDriver $ FindArticlesByTitle title identity
 
-findArticleById :: forall r. String -> Run (ARTICLE_DRIVER + r) ArticleJson
+findArticleById :: forall r. String -> Run (ARTICLE_DRIVER + r) (Maybe ArticleJson)
 findArticleById id = lift _articleDriver $ FindArticleById id identity
 
--- ここで接続情報がほしい
--- どうするか
 handleArticleDriver :: forall a. ArticleDriver a -> a
 handleArticleDriver = case _ of
   (FindArticlesByTitle title next) -> next [{id: ""}]
-  (FindArticleById id next) -> next {title: "", body: "", author: ""}
+  (FindArticleById id next) -> next $ Just {title: "", body: "", author: ""}
+
+-- こいつらをどうくっつけたものか
+
+xxx :: String -> Aff (Array ArticleIndexJson)
+xxx title = do
+  res <- AX.get ResponseFormat.string $ "http://article-api/articles?title" <> title
+  case res of
+    Left err -> do
+      --pure $ Left $ "GET /api response failed to decode: " <> printError err
+      pure []
+    Right response -> do
+      case readJSON response.body of
+        Left e -> pure [] -- pure $ Left $ show e -- do log $ "Can't parse JSON. " <> show e
+        Right (r :: Array ArticleIndexJson) -> pure r -- pure $ Right r -- do log $ "article id is: " <> show r.id
+
+yyy :: String -> Aff (Maybe ArticleJson)
+yyy id = do
+  res <- AX.get ResponseFormat.string $ "http://article-api/articles/" <> id
+  case res of
+    Left err -> pure Nothing
+    Right response -> do
+      case readJSON response.body of
+        Left e -> pure Nothing
+        Right (r :: ArticleJson) -> pure $ Just r
+
+handleDriver :: forall r. ArticleDriver ~> Run (AFF + r)
+handleDriver = case _ of
+  FindArticlesByTitle title next -> do
+    articles <- liftAff $ xxx title
+    pure $ next articles
+  FindArticleById id next -> do
+    article <- liftAff $ yyy id
+    pure $ next article
+
+runDriver :: forall r. Run (AFF + ARTICLE_DRIVER + r) ~> Run (AFF + r)
+runDriver = interpret (on _articleDriver handleDriver send)
+
+-- ここいらはgatewayから呼ぶやつかなあ
+program1 :: forall r. String -> Run (AFF + r) (Array ArticleIndexJson)
+program1 title = findArticlesByTitle title # runDriver
+
+program2 :: forall r. String -> Run (AFF + r) (Maybe ArticleJson)
+program2 id = findArticleById id # runDriver
+
+main :: Aff (Array ArticleIndexJson)
+main = runBaseAff $ program1 "title"
+
+
+-- program2 :: Effect Unit
+-- program2 = program # runCont go done
+--   where
+--   go = match
+--     { log: \(Log str cb) -> Console.log str *> cb
+--     , sleep: \(Sleep ms cb) -> void $ setTimeout ms cb
+--     }
+
+--   done _ = do
+--     Console.log "Done!"
