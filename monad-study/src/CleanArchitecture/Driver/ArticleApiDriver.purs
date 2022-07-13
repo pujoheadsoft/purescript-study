@@ -2,18 +2,14 @@ module CleanArchitecture.Driver.ArticleApiDriver where
 
 import Prelude
 
-import Affjax.ResponseFormat (ResponseFormat)
 import Affjax.ResponseFormat as ResponseFormat
-import Affjax.Web (printError)
 import Affjax.Web as AX
+import Control.Parallel (parTraverse)
+import Data.Array (catMaybes)
 import Data.Either (Either(..))
 import Data.Functor.Variant (on)
 import Data.Maybe (Maybe(..))
-import Effect (Effect)
-import Effect.Aff (Aff, launchAff_)
-import Effect.Class.Console (log)
-import Example.Run.Example (program)
-import Foreign (MultipleErrors)
+import Effect.Aff (Aff)
 import Simple.JSON (readJSON)
 import Study.Control.Monad.Run.Run (AFF, Run, interpret, lift, liftAff, runBaseAff, send)
 import Type.Proxy (Proxy(..))
@@ -30,7 +26,7 @@ type ArticleJson = {title :: String, body :: String, author :: String}
 
 data ArticleDriver a = 
    FindArticlesByTitle String (Array ArticleIndexJson -> a)
- | FindArticleById String (Maybe ArticleJson -> a)
+ | FindArticlesByIds (Array String) (Array ArticleJson -> a)
 
 derive instance functorArticleDriver :: Functor ArticleDriver
 _articleDriver = Proxy :: Proxy ("articleDriver")
@@ -42,13 +38,13 @@ type ARTICLE_DRIVER r = (articleDriver :: ArticleDriver | r)
 findArticlesByTitle :: forall r. String -> Run (ARTICLE_DRIVER + r) (Array ArticleIndexJson)
 findArticlesByTitle title = lift _articleDriver $ FindArticlesByTitle title identity
 
-findArticleById :: forall r. String -> Run (ARTICLE_DRIVER + r) (Maybe ArticleJson)
-findArticleById id = lift _articleDriver $ FindArticleById id identity
+findArticlesByIds :: forall r. Array String -> Run (ARTICLE_DRIVER + r) (Array ArticleJson)
+findArticlesByIds ids = lift _articleDriver $ FindArticlesByIds ids identity
 
 handleArticleDriver :: forall a. ArticleDriver a -> a
 handleArticleDriver = case _ of
   (FindArticlesByTitle title next) -> next [{id: ""}]
-  (FindArticleById id next) -> next $ Just {title: "", body: "", author: ""}
+  (FindArticlesByIds ids next) -> next $ [{title: "", body: "", author: ""}]
 
 -- こいつらをどうくっつけたものか
 
@@ -64,8 +60,15 @@ xxx title = do
         Left e -> pure [] -- pure $ Left $ show e -- do log $ "Can't parse JSON. " <> show e
         Right (r :: Array ArticleIndexJson) -> pure r -- pure $ Right r -- do log $ "article id is: " <> show r.id
 
-yyy :: String -> Aff (Maybe ArticleJson)
-yyy id = do
+yyy ∷ Array String → Aff (Array ArticleJson)
+yyy ids = do
+  let
+    urls = (\id -> "http://article-api/articles/" <> id) <$> ids
+  responses <- parTraverse zzz urls
+  pure (catMaybes responses)
+
+zzz :: String -> Aff (Maybe ArticleJson)
+zzz id = do
   res <- AX.get ResponseFormat.string $ "http://article-api/articles/" <> id
   case res of
     Left err -> pure Nothing
@@ -79,9 +82,16 @@ handleDriver = case _ of
   FindArticlesByTitle title next -> do
     articles <- liftAff $ xxx title
     pure $ next articles
-  FindArticleById id next -> do
-    article <- liftAff $ yyy id
+  FindArticlesByIds ids next -> do
+    article <- liftAff $ yyy ids
     pure $ next article
+
+-- 固定値を返すmock
+-- handlerをこいつで上書きできればテストで差し替えられる
+handleDriverMock :: forall r. ArticleDriver ~> Run (AFF + r)
+handleDriverMock = case _ of
+  FindArticlesByTitle _ next -> pure $ next [{id: ""}]
+  FindArticlesByIds _ next -> pure $ next $ [{title: "", body: "", author: ""}]
 
 runDriver :: forall r. Run (AFF + ARTICLE_DRIVER + r) ~> Run (AFF + r)
 runDriver = interpret (on _articleDriver handleDriver send)
@@ -90,8 +100,15 @@ runDriver = interpret (on _articleDriver handleDriver send)
 program1 :: forall r. String -> Run (AFF + r) (Array ArticleIndexJson)
 program1 title = findArticlesByTitle title # runDriver
 
-program2 :: forall r. String -> Run (AFF + r) (Maybe ArticleJson)
-program2 id = findArticleById id # runDriver
+program2 :: forall r. Array String -> Run (AFF + r) (Array ArticleJson)
+program2 ids = findArticlesByIds ids # runDriver
+       
+program3 :: forall r. String -> Run (ARTICLE_DRIVER + r) (Array ArticleJson)
+program3 title = do
+  indexes <- findArticlesByTitle title
+  articles <- findArticlesByIds $ (\index -> index.id) <$> indexes
+  pure articles
+
 
 main :: Aff (Array ArticleIndexJson)
 main = runBaseAff $ program1 "title"
