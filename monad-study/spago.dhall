@@ -29,6 +29,7 @@ to generate this file without the comments in this block.
   , "maybe"
   , "monad-control"
   , "newtype"
+  , "parallel"
   , "partial"
   , "prelude"
   , "psci-support"

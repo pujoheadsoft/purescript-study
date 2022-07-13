@@ -1,12 +1,13 @@
 module Main where
 
+import Data.Number.Format (toString)
 import Prelude
 
+import Data.Number (sqrt)
 import Effect (Effect)
 import Effect.Console (log)
-import Math (sqrt)
-import Data.Number.Format
 
+diagonal :: Number -> Number -> Number
 diagonal w h = sqrt(w * w + h * h)
 
 main :: Effect Unit
