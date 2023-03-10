@@ -4,14 +4,20 @@ import Prelude
 
 import Affjax.ResponseFormat as ResponseFormat
 import Affjax.Web as AX
+import Control.Monad.Rec.Class (Step(..))
 import Control.Parallel (parTraverse)
-import Data.Array (catMaybes)
+import Data.Array (catMaybes, intercalate, length)
 import Data.Either (Either(..))
 import Data.Functor.Variant (on)
+import Data.Generic.Rep (class Generic)
 import Data.Maybe (Maybe(..))
-import Effect.Aff (Aff)
+import Data.Show.Generic (genericShow)
+import Effect (Effect)
+import Effect.Aff (Aff, launchAff_)
+import Effect.Class (liftEffect)
+import Effect.Console (log)
 import Simple.JSON (readJSON)
-import Study.Control.Monad.Run.Run (AFF, Run, extract, interpret, lift, liftAff, runBaseAff, send)
+import Study.Control.Monad.Run.Run (AFF, Run, extract, interpret, lift, liftAff, runAccumPure, runBaseAff, send)
 import Type.Proxy (Proxy(..))
 import Type.Row (type (+))
 
@@ -99,12 +105,15 @@ handleDriver = case _ of
 -- handlerをこいつで上書きできればテストで差し替えられる
 handleDriverMock :: forall r. ArticleDriver ~> Run (AFF + r)
 handleDriverMock = case _ of
-  FindArticlesByTitle _ next -> pure $ next [{id: ""}]
-  FindArticlesByIds _ next -> pure $ next $ [{title: "", body: "", author: ""}]
+  FindArticlesByTitle title next -> pure $ next [{id: "idBy" <> title}]
+  FindArticlesByIds ids next -> pure $ next $ [{title: "title", body: intercalate "," ids, author: "author"}]
   FindArticleById _ next -> pure $ next $ Just {title: "", body: "", author: ""}
 
 runDriver :: forall r. Run (AFF + ARTICLE_DRIVER + r) ~> Run (AFF + r)
 runDriver = interpret (on _articleDriver handleDriver send)
+
+runDriverWithMock :: forall r. Run (AFF + ARTICLE_DRIVER + r) ~> Run (AFF + r)
+runDriverWithMock = interpret (on _articleDriver handleDriverMock send)
 
 -- ここいらはgatewayから呼ぶやつかなあ
 runFindArticlesByTitle :: forall r. String -> Run (AFF + r) (Array ArticleIndexJson)
@@ -116,23 +125,17 @@ runFindArticlesByIds ids = findArticlesByIds ids # runDriver
 runFindArticleById :: forall r. String -> Run (AFF + r) (Maybe ArticleJson)
 runFindArticleById id = findArticleById id # runDriver
        
-program1 :: forall r. String -> Run (ARTICLE_DRIVER + r) (Array ArticleJson)
+program1 :: forall r. String -> Run (AFF + ARTICLE_DRIVER + r) (Array ArticleJson)
 program1 title = do
   indexes <- findArticlesByTitle title
   articles <- findArticlesByIds $ (\index -> index.id) <$> indexes
   pure articles
 
+program2 :: forall r. Run (AFF + r) (Array ArticleJson)
+program2 = program1 "test title" # runDriver
 
-main :: Aff (Array ArticleIndexJson)
-main = runBaseAff $ runFindArticlesByTitle "title"
-
--- runFindArticlesByIds :: Effect Unit
--- runFindArticlesByIds = program # runCont go done
---   where
---   go = match
---     { log: \(Log str cb) -> Console.log str *> cb
---     , sleep: \(Sleep ms cb) -> void $ setTimeout ms cb
---     }
-
---   done _ = do
---     Console.log "Done!"
+main :: Effect Unit
+main = launchAff_ do
+  response <- runBaseAff program2
+  liftEffect $ log $ show $ length response
+  liftEffect $ log $ intercalate ", " $ (\a -> "title=" <> a.title <> ", body=" <> a.body) <$> response

@@ -3,6 +3,7 @@ module Main where
 import Prelude
 
 import CleanArchitecture.Main as CA
+import CleanArchitecture.Driver.ArticleApiDriver as ArticleApiDriver
 import Debug (trace)
 import Effect (Effect)
 import Effect.Class.Console (logShow)
@@ -50,3 +51,4 @@ main = do
   -- trace(extract (runReader readWithPlusRun 100)) \_ -> log("")
   FreeExample.main
   CA.main
+  ArticleApiDriver.main
