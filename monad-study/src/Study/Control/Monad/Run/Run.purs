@@ -151,6 +151,8 @@ extract :: forall a. Run () a -> a
 extract r = (unwrap >>> runFree \_ -> unsafeCrashWith "Run: the impossible happend") r
 
 -- run系の関数 ------------------------------------------------------------------------
+
+
 -- | プログラムの残りの部分を intercept できる
 -- | interpret と同じだが、より制限の少ないシグニチャになっている
 run
@@ -164,10 +166,16 @@ run k = loop
   loop :: Run r a -> m a
   loop = resume (\a -> loop =<< k a) pure
 
--- | モナド m を経由してプログラムから値を取り出す
--- | 自然変換関数を渡す必要がある
-interpret :: forall m a r. Monad m => (VariantF r ~> m) -> Run r a -> m a
-interpret = run
+-- | 自然変換関数(VariantF r ~> m)とRun r aを渡すと、
+-- | r が自然変換関数で変換されたモナド m を経由してプログラムから値を取り出して返す
+-- | runと似たシグニチャを持つが、こちらは渡す関数が自然変換関数という違いがある。
+interpret 
+  :: forall m a r
+   . Monad m 
+  => (VariantF r ~> m)
+  -> Run r a
+  -> m a
+interpret f r  = run f r
 
 runRec
   :: forall m a r
@@ -236,7 +244,9 @@ runAccumCont k1 k2 = loop
   loop s = resume (\b -> k1 s (flip loop <$> b)) (k2 s)
 
 -- | 純粋にエフェクトを除去します。
+-- | runとは異なり、返る型はRun型となる。
 -- | Control.Monad.Rec.Class` の `Step` を使用して、末尾再帰のスタックセーフを維持する。
+-- | 処理に値を渡したい場合 runAccumPure を使う。
 runPure
   :: forall r1 r2 a
    . (VariantF r1 (Run r1 a) -> Step (Run r1 a) (VariantF r2 (Run r1 a)))
@@ -252,8 +262,10 @@ runPure k = loop
     Right a ->
       pure a
 
--- | Accumulatorで純粋にエフェクトを除去する。
+-- | Accumulatorで純粋にエフェクトを除去する
+-- | runAccumと異なり返る型はRun型となる。
 -- | Control.Monad.Rec.Class` の `Step` を使用して、末尾再帰のスタックセーフを維持する。
+-- | accumulatorで引き継がれていく何らかの値 s を渡すことができる。値 s は引数1, 2の関数に渡される。
 runAccumPure
   :: forall r1 r2 a b s
    . (s -> VariantF r1 (Run r1 a) -> Step (Tuple s (Run r1 a)) (VariantF r2 (Run r1 a)))
@@ -265,11 +277,13 @@ runAccumPure k1 k2 = loop
   where
   loop :: s -> Run r1 a -> Run r2 b
   loop s r = case peel r of
+    -- 継続の処理がまだあるなら引数1の関数 k1 を実行(結果はStep型)
     Left a -> case k1 s a of
-      Loop (Tuple s' r') -> loop s' r'
-      Done a' -> send a' >>= runAccumPure k1 k2 s
+      Loop (Tuple s' r') -> loop s' r'            -- k1の結果がLoopなら処理結果の値 s' r' を使って loop を再帰。
+      Done a' -> send a' >>= runAccumPure k1 k2 s -- Doneなら終了の値 a' を send で Run にして、その Run を使って runAccumPure 自体を再帰
+    -- 終了
     Right a ->
-      pure (k2 s a)
+      pure (k2 s a) -- 終了の値を引数2の関数 k2 に渡してRunにして返す
 
 --------------------------------------------------------------------------
 

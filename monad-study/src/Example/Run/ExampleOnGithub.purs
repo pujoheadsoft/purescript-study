@@ -30,13 +30,24 @@ type TALK r = (talk :: Talk | r)
 
 _talk = Proxy :: Proxy "talk"
 
+{-
+  speakもlistenもRunを返す
+  具体的なロジックが書かれてるわけではなく、Talk型を作ってそれをもとにRun (TALK) を作っているだけ。
+  処理は↓のhandleTalkに書かれている。
+-}
 speak :: forall r. String -> Run (TALK + r) Unit
 speak str = lift _talk (Speak str unit)
 
 listen :: forall r. Run (TALK + r) String
 listen = lift _talk (Listen identity)
 
--- このhandlerはRunへの自然変換関数
+{-
+  渡されたTalk型によって処理をハンドリングする関数
+  Run型を返す。
+  こいつはTalkからRunへの自然変換関数となっている。
+  Talkを受け取って、具体的な処理を行う。
+  返すRunはspeakやlistenと異なりTALKではなくEFFECT。
+-}
 handleTalk :: forall r. Talk ~> Run (EFFECT + r)
 handleTalk = case _ of
   Speak str next -> do
@@ -45,9 +56,18 @@ handleTalk = case _ of
   Listen reply -> do
     pure (reply "I am Groot")
 
+{-
+  TALKのRunを実行する新しいRunを返す
+  EFFECTとTALKのRunをEFFECTのRunに変換している
+  自然変換関数を使う場合は、interpretを使える(runでもよい)。
+  interpret は自然変換関数(VariantF r ~> m)とRun r a を受け取る。
+  on p f g r は、 r に p が存在したらfの処理を行い、存在しなかったらgの処理を行う関数。
+  on の r は VariantF r2 a という定義で、runTalkの(on _talk handleTalk send)は引数を部分適用(p f gだけ渡している)している状態なので、
+  これはVariantF r2 aを受け取って f や g が返す型 b を返すという関数になる。
+  なのでinterpretに渡すことができる。
+-}
 runTalk :: forall r. Run (EFFECT + TALK + r) ~> Run (EFFECT + r)
-runTalk = interpret (on _talk handleTalk send)
--- 自然変換関数を使う場合は、interpretを使える。
+runTalk run = interpret (on _talk handleTalk send) run
 
 ------------------------------------------------------------------------------
 
@@ -67,6 +87,10 @@ type DINNER r = (dinner :: Dinner | r)
 
 _dinner = Proxy :: Proxy "dinner"
 
+{-
+  eatとcheckPleaseはRunを返す。
+  DINNER型を持つRunを返すだけ。
+-}
 eat :: forall r. Food -> Run (DINNER + r) IsThereMore
 eat food = lift _dinner (Eat food identity)
 
@@ -75,6 +99,14 @@ checkPlease = lift _dinner (CheckPlease identity)
 
 type Tally = { stock :: Int, bill :: Bill }
 
+{-
+  渡されたDinner型によって処理をハンドリングする関数
+  ↑の方のhandleTalkはRun型を返していたが、こいつはRun型ではなくTupleを返す。
+  ただhandleTalkもこいつも、こいつらを使っている関数が返しているのはRun型であるという共通点がある。
+  handleTalkは (runTalk :: forall r. Run (EFFECT + TALK + r) ~> Run (EFFECT + r)) で使われていて、
+  こいつは↓の   (runDinnerPure :: forall r a. Tally -> Run (DINNER + r) a -> Run r (Tuple Bill a) で使われている。
+
+-}
 handleDinner :: forall a. Tally -> Dinner a -> Tuple Tally a
 handleDinner tally = case _ of
   Eat _ reply
@@ -86,29 +118,48 @@ handleDinner tally = case _ of
   CheckPlease reply ->
     Tuple tally (reply tally.bill)
 
+{-
+  Tally と DINNERのRun を TupleのRunにして返す
+  runTalkと同様にRun型を返すが、runTalkのRunは Run (EFFECT + r)なのに対してこいつは Run r (Tuple Bill a)という違いがある。
+  またrunTalkはinterpretを使っているが、こっちはrunAccumPureを使っている。
+  runAccumPureを使っているのは、渡したTallyに対して処理を行いたいから。
+-} 
 runDinnerPure :: forall r a. Tally -> Run (DINNER + r) a -> Run r (Tuple Bill a)
-runDinnerPure = runAccumPure
-  (\tally -> on _dinner (Loop <<< handleDinner tally) Done)
+runDinnerPure t run = runAccumPure
+  -- この on は vf に _dinner が存在するならばhandleDinnerを呼ぶLoopを返し、存在しないならばDoneを返す
+  (\tally vf -> on _dinner (Loop <<< handleDinner tally) Done vf)
   (\tally a -> Tuple tally.bill a)
+  t
+  run
 ------------------------------------------------------------------------------
 
 -- TalkとDinnerを合成 ---------------------------------------------------------
 type LovelyEvening r = (TALK + DINNER + r)
 
+-- TALKとDINNER両方の関数が呼べる
 dinnerTime :: forall r. Run (LovelyEvening r) Unit
 dinnerTime = do
-  speak "I'm famished!"
-  isThereMore <- eat Pizza
-  if isThereMore then dinnerTime -- 再帰
+  speak "I'm famished!"                  -- speakはTALKのもの
+  isThereMore <- eat Pizza               -- eatはDINNERのもの
+  if isThereMore then dinnerTime         -- 再帰
   else do
-    bill <- checkPlease
-    speak $ "Outrageous! " <> show bill
+    bill <- checkPlease                  -- checkPleaseはDINNERのもの
+    speak $ "Outrageous! " <> show bill  -- speakはTALKのもの
 
+{-
+  runTalkはTalkの処理しかハンドリングできないが定義が + r となっているので、Run (TALK + DINNER + r ) を渡すことができる。
+  渡すことはできるが、ただしこいつが返してくるRunはDinnerは処理しない。
+-}
 program :: forall r. Run (EFFECT + DINNER + r) Unit
-program = dinnerTime # runTalk
+--program = dinnerTime # runTalk
+program = runTalk dinnerTime
 
+{-
+  runDinnerPureは、Dinnerしか処理しないが、渡しているprogramはrunTalkでTalkを処理できるので、こいつはDinnerもTalkも処理できる
+-}
 program2 :: forall r. Run (EFFECT + r) (Tuple Bill Unit)
-program2 = program # runDinnerPure { stock: 10, bill: 0 }
+--program2 = program # runDinnerPure { stock: 10, bill: 0 }
+program2 = runDinnerPure { stock: 10, bill: 0 } program
 
 main :: Effect (Tuple Bill Unit)
 main = runBaseEffect program2

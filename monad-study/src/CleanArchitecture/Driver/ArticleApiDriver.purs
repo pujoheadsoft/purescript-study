@@ -31,7 +31,7 @@ type ArticleIndexJson = {id :: String}
 type ArticleJson = {title :: String, body :: String, author :: String}
 
 data ArticleDriver a = 
-   FindArticlesByTitle String (Array ArticleIndexJson -> a)
+   FindArticleIndicesByTitle String (Array ArticleIndexJson -> a)
  | FindArticlesByIds (Array String) (Array ArticleJson -> a)
  | FindArticleById String (Maybe ArticleJson -> a)
 
@@ -42,8 +42,8 @@ type ARTICLE_DRIVER r = (articleDriver :: ArticleDriver | r)
 -- このあたりで接続情報がほしい
 -- どうするか
 
-findArticlesByTitle :: forall r. String -> Run (ARTICLE_DRIVER + r) (Array ArticleIndexJson)
-findArticlesByTitle title = lift _articleDriver $ FindArticlesByTitle title identity
+findArticleIndicesByTitle :: forall r. String -> Run (ARTICLE_DRIVER + r) (Array ArticleIndexJson)
+findArticleIndicesByTitle title = lift _articleDriver $ FindArticleIndicesByTitle title identity
 
 findArticlesByIds :: forall r. Array String -> Run (ARTICLE_DRIVER + r) (Array ArticleJson)
 findArticlesByIds ids = lift _articleDriver $ FindArticlesByIds ids identity
@@ -51,9 +51,15 @@ findArticlesByIds ids = lift _articleDriver $ FindArticlesByIds ids identity
 findArticleById :: forall r. String -> Run (ARTICLE_DRIVER + r) (Maybe ArticleJson)
 findArticleById id = lift _articleDriver $ FindArticleById id identity
 
+findArticlesByTitle :: forall r. String -> Run (ARTICLE_DRIVER + r) (Array ArticleJson)
+findArticlesByTitle title = do
+  indexes <- findArticleIndicesByTitle title
+  articles <- findArticlesByIds $ (\index -> index.id) <$> indexes
+  pure articles
+
 handleArticleDriver :: forall a. ArticleDriver a -> a
 handleArticleDriver = case _ of
-  (FindArticlesByTitle title next) -> next [{id: ""}]
+  (FindArticleIndicesByTitle title next) -> next [{id: ""}]
   (FindArticlesByIds ids next) -> next $ [{title: "", body: "", author: ""}]
   (FindArticleById id next) -> next $ Just {title: "", body: "", author: ""}
 
@@ -91,7 +97,7 @@ _findArticleById id = do
 -- 実値を返すhandler
 handleDriver :: forall r. ArticleDriver ~> Run (AFF + r)
 handleDriver = case _ of
-  FindArticlesByTitle title next -> do
+  FindArticleIndicesByTitle title next -> do
     articles <- liftAff $ _findArticlesByTitle title
     pure $ next articles
   FindArticlesByIds ids next -> do
@@ -105,37 +111,45 @@ handleDriver = case _ of
 -- handlerをこいつで上書きできればテストで差し替えられる
 handleDriverMock :: forall r. ArticleDriver ~> Run (AFF + r)
 handleDriverMock = case _ of
-  FindArticlesByTitle title next -> pure $ next [{id: "idBy" <> title}]
+  FindArticleIndicesByTitle title next -> pure $ next [{id: "idBy" <> title}]
   FindArticlesByIds ids next -> pure $ next $ [{title: "title", body: intercalate "," ids, author: "author"}]
   FindArticleById _ next -> pure $ next $ Just {title: "", body: "", author: ""}
 
+-------------------------------------------------------------------------------------------
+{-
+  Driverのエフェクトを除去したRunを返す
+  (Driverの処理を実行でき、かつ型としてARTICLE_DRIVERが取り除かれた AFF + rのRunを返す)
+-}
 runDriver :: forall r. Run (AFF + ARTICLE_DRIVER + r) ~> Run (AFF + r)
 runDriver = interpret (on _articleDriver handleDriver send)
 
+-- mock用
 runDriverWithMock :: forall r. Run (AFF + ARTICLE_DRIVER + r) ~> Run (AFF + r)
 runDriverWithMock = interpret (on _articleDriver handleDriverMock send)
 
--- ここいらはgatewayから呼ぶやつかなあ
-runFindArticlesByTitle :: forall r. String -> Run (AFF + r) (Array ArticleIndexJson)
-runFindArticlesByTitle title = findArticlesByTitle title # runDriver
+-------------------------------------------------------------------------------------------
+{-
+  色々な処理を実行するRunを返すやつら
+  基本的に runDriver に処理対象の Run を渡しているだけ。
+-}
+runFindArticleIndicesByTitle :: forall r. String -> Run (AFF + r) (Array ArticleIndexJson)
+-- runFindArticleIndicesByTitle title = findArticlesByTitle title # runDriver
+runFindArticleIndicesByTitle title = runDriver $ findArticleIndicesByTitle title
 
 runFindArticlesByIds :: forall r. Array String -> Run (AFF + r) (Array ArticleJson)
-runFindArticlesByIds ids = findArticlesByIds ids # runDriver
+-- runFindArticlesByIds ids = findArticlesByIds ids # runDriver
+runFindArticlesByIds ids = runDriver $ findArticlesByIds ids
 
 runFindArticleById :: forall r. String -> Run (AFF + r) (Maybe ArticleJson)
-runFindArticleById id = findArticleById id # runDriver
-       
-program1 :: forall r. String -> Run (AFF + ARTICLE_DRIVER + r) (Array ArticleJson)
-program1 title = do
-  indexes <- findArticlesByTitle title
-  articles <- findArticlesByIds $ (\index -> index.id) <$> indexes
-  pure articles
+--runFindArticleById id = findArticleById id # runDriver
+runFindArticleById id = runDriver $ findArticleById id
 
-program2 :: forall r. Run (AFF + r) (Array ArticleJson)
-program2 = program1 "test title" # runDriver
+runFindArtilesByTitle :: forall r. String -> Run (AFF + r) (Array ArticleJson)
+runFindArtilesByTitle title = runDriverWithMock $ findArticlesByTitle title
+--------------------------------------------------------------------------------------------
 
 main :: Effect Unit
 main = launchAff_ do
-  response <- runBaseAff program2
+  response <- runBaseAff $ runFindArtilesByTitle "TestTitle"
   liftEffect $ log $ show $ length response
   liftEffect $ log $ intercalate ", " $ (\a -> "title=" <> a.title <> ", body=" <> a.body) <$> response
