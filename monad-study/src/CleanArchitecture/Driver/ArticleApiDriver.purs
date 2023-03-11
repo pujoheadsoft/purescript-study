@@ -4,20 +4,17 @@ import Prelude
 
 import Affjax.ResponseFormat as ResponseFormat
 import Affjax.Web as AX
-import Control.Monad.Rec.Class (Step(..))
 import Control.Parallel (parTraverse)
 import Data.Array (catMaybes, intercalate, length)
 import Data.Either (Either(..))
 import Data.Functor.Variant (on)
-import Data.Generic.Rep (class Generic)
 import Data.Maybe (Maybe(..))
-import Data.Show.Generic (genericShow)
 import Effect (Effect)
 import Effect.Aff (Aff, launchAff_)
 import Effect.Class (liftEffect)
 import Effect.Console (log)
 import Simple.JSON (readJSON)
-import Study.Control.Monad.Run.Run (AFF, Run, extract, interpret, lift, liftAff, runAccumPure, runBaseAff, send)
+import Study.Control.Monad.Run.Run (AFF, Run, interpret, lift, liftAff, runBaseAff, send)
 import Type.Proxy (Proxy(..))
 import Type.Row (type (+))
 
@@ -42,6 +39,10 @@ type ARTICLE_DRIVER r = (articleDriver :: ArticleDriver | r)
 -- このあたりで接続情報がほしい
 -- どうするか
 
+-----------------------------------------------------------------------------------------------------
+{-
+  Runを返すだけのやつら
+-}
 findArticleIndicesByTitle :: forall r. String -> Run (ARTICLE_DRIVER + r) (Array ArticleIndexJson)
 findArticleIndicesByTitle title = lift _articleDriver $ FindArticleIndicesByTitle title identity
 
@@ -57,14 +58,10 @@ findArticlesByTitle title = do
   articles <- findArticlesByIds $ (\index -> index.id) <$> indexes
   pure articles
 
-handleArticleDriver :: forall a. ArticleDriver a -> a
-handleArticleDriver = case _ of
-  (FindArticleIndicesByTitle title next) -> next [{id: ""}]
-  (FindArticlesByIds ids next) -> next $ [{title: "", body: "", author: ""}]
-  (FindArticleById id next) -> next $ Just {title: "", body: "", author: ""}
-
--- こいつらをどうくっつけたものか
-
+-----------------------------------------------------------------------------------------------
+{-
+  実際の処理
+-}
 _findArticleIndicesByTitle :: String -> Aff (Array ArticleIndexJson)
 _findArticleIndicesByTitle title = do
   res <- AX.get ResponseFormat.string $ "http://article-api/articles?title" <> title
