@@ -65,6 +65,8 @@ handleTalk = case _ of
   on の r は VariantF r2 a という定義で、runTalkの(on _talk handleTalk send)は引数を部分適用(p f gだけ渡している)している状態なので、
   これはVariantF r2 aを受け取って f や g が返す型 b を返すという関数になる。
   なのでinterpretに渡すことができる。
+  
+  渡されたRunがTalkにマッチする場合の処理はhandleTalkによって行われ、マッチしなかった場合はsendが呼び出される。
 -}
 runTalk :: forall r. Run (EFFECT + TALK + r) ~> Run (EFFECT + r)
 runTalk run = interpret (on _talk handleTalk send) run
