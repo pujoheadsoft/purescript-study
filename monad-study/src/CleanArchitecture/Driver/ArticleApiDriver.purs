@@ -14,9 +14,14 @@ import Effect.Aff (Aff, launchAff_)
 import Effect.Class (liftEffect)
 import Effect.Console (log)
 import Simple.JSON (readJSON)
+import Study.Control.Monad.Run.Reader (READER, ask, runReader)
 import Study.Control.Monad.Run.Run (AFF, Run, interpret, lift, liftAff, runBaseAff, send)
 import Type.Proxy (Proxy(..))
 import Type.Row (type (+))
+
+type Environment = {
+  host :: String
+}
 
 {-
   接続情報が必要。何らかの手段で取得できる必要がある。
@@ -62,9 +67,9 @@ findArticlesByTitle title = do
 {-
   実際の処理
 -}
-_findArticleIndicesByTitle :: String -> Aff (Array ArticleIndexJson)
-_findArticleIndicesByTitle title = do
-  res <- AX.get ResponseFormat.string $ "http://article-api/articles?title" <> title
+_findArticleIndicesByTitle :: String -> String -> Aff (Array ArticleIndexJson)
+_findArticleIndicesByTitle host title = do
+  res <- AX.get ResponseFormat.string $ host <> "/articles?title" <> title
   case res of
     Left err -> do
       --pure $ Left $ "GET /api response failed to decode: " <> printError err
@@ -74,16 +79,14 @@ _findArticleIndicesByTitle title = do
         Left e -> pure [] -- pure $ Left $ show e -- do log $ "Can't parse JSON. " <> show e
         Right (r :: Array ArticleIndexJson) -> pure r -- pure $ Right r -- do log $ "article id is: " <> show r.id
 
-_findArticlesByIds ∷ Array String → Aff (Array ArticleJson)
-_findArticlesByIds ids = do
-  let
-    urls = (\id -> "http://article-api/articles/" <> id) <$> ids
-  responses <- parTraverse _findArticleById urls
+_findArticlesByIds ∷ String -> Array String -> Aff (Array ArticleJson)
+_findArticlesByIds host ids = do
+  responses <- parTraverse (_findArticleById host) ids
   pure (catMaybes responses)
 
-_findArticleById :: String -> Aff (Maybe ArticleJson)
-_findArticleById id = do
-  res <- AX.get ResponseFormat.string $ "http://article-api/articles/" <> id
+_findArticleById :: String -> String -> Aff (Maybe ArticleJson)
+_findArticleById host id = do
+  res <- AX.get ResponseFormat.string $ host <> "/articles/" <> id
   case res of
     Left err -> pure Nothing
     Right response -> do
@@ -96,24 +99,24 @@ _findArticleById id = do
   handler関数
 -}
 -- 実値を返すhandler
-handleDriver :: forall r. ArticleDriver ~> Run (AFF + r)
-handleDriver = case _ of
+handleDriver :: forall r. String -> ArticleDriver ~> Run (AFF + r)
+handleDriver h d = case d of
   FindArticleIndicesByTitle title next -> do
-    indices <- liftAff $ _findArticleIndicesByTitle title
+    indices <- liftAff $ _findArticleIndicesByTitle h title
     pure $ next indices
   FindArticlesByIds ids next -> do
-    article <- liftAff $ _findArticlesByIds ids
+    article <- liftAff $ _findArticlesByIds h ids
     pure $ next article
   FindArticleById id next -> do
-    article <- liftAff $ _findArticleById id
+    article <- liftAff $ _findArticleById h id
     pure $ next article
 
 -- 固定値を返すhandler(mock)
 -- handlerをこいつで上書きできればテストで差し替えられる
-handleDriverMock :: forall r. ArticleDriver ~> Run (AFF + r)
-handleDriverMock = case _ of
-  FindArticleIndicesByTitle title next -> pure $ next [{id: "idBy" <> title}]
-  FindArticlesByIds ids next -> pure $ next $ [{title: "title", body: intercalate "," ids, author: "author"}]
+handleDriverMock :: forall r. String -> ArticleDriver ~> Run (AFF + r)
+handleDriverMock h d = case d of
+  FindArticleIndicesByTitle title next -> pure $ next [{id: "一致した条件 title:" <> title <> ", host:" <> h}]
+  FindArticlesByIds ids next -> pure $ next $ [{title: intercalate "," ids, body: "body", author: "author"}]
   FindArticleById _ next -> pure $ next $ Just {title: "", body: "", author: ""}
 
 -------------------------------------------------------------------------------------------
@@ -121,36 +124,43 @@ handleDriverMock = case _ of
   Driverのエフェクトを除去したRunを返す
   (Driverの処理を実行でき、かつ型としてARTICLE_DRIVERが取り除かれた AFF + rのRunを返す)
 -}
-runDriver :: forall r. Run (AFF + ARTICLE_DRIVER + r) ~> Run (AFF + r)
-runDriver = interpret (on _articleDriver handleDriver send)
+runDriver :: forall r. String -> Run (AFF + ARTICLE_DRIVER + r) ~> Run (AFF + r)
+runDriver h r = interpret (on _articleDriver (handleDriver h) send) r
 
 -- mock用
-runDriverWithMock :: forall r. Run (AFF + ARTICLE_DRIVER + r) ~> Run (AFF + r)
-runDriverWithMock = interpret (on _articleDriver handleDriverMock send)
+runDriverWithMock :: forall r. String -> Run (AFF + ARTICLE_DRIVER + r) ~> Run (AFF + r)
+runDriverWithMock h r = interpret (on _articleDriver (handleDriverMock h) send) r
 
 -------------------------------------------------------------------------------------------
 {-
   色々な処理を実行するRunを返すやつら
   基本的に runDriver に処理対象の Run を渡しているだけ。
 -}
-runFindArticleIndicesByTitle :: forall r. String -> Run (AFF + r) (Array ArticleIndexJson)
--- runFindArticleIndicesByTitle title = findArticlesByTitle title # runDriver
-runFindArticleIndicesByTitle title = runDriver $ findArticleIndicesByTitle title
+runFindArticleIndicesByTitle :: forall r. String -> Run (AFF + READER Environment + r) (Array ArticleIndexJson)
+runFindArticleIndicesByTitle title = do
+  env <- ask
+  runDriver env.host $ findArticleIndicesByTitle title
 
-runFindArticlesByIds :: forall r. Array String -> Run (AFF + r) (Array ArticleJson)
--- runFindArticlesByIds ids = findArticlesByIds ids # runDriver
-runFindArticlesByIds ids = runDriver $ findArticlesByIds ids
+runFindArticlesByIds :: forall r. Array String -> Run (AFF + READER Environment + r) (Array ArticleJson)
+runFindArticlesByIds ids = do
+  env <- ask
+  runDriver env.host $ findArticlesByIds ids
 
-runFindArticleById :: forall r. String -> Run (AFF + r) (Maybe ArticleJson)
---runFindArticleById id = findArticleById id # runDriver
-runFindArticleById id = runDriver $ findArticleById id
+runFindArticleById :: forall r. String -> Run (AFF + READER Environment + r) (Maybe ArticleJson)
+runFindArticleById id = do
+  env <- ask
+  runDriver env.host $ findArticleById id
 
-runFindArtilesByTitle :: forall r. String -> Run (AFF + r) (Array ArticleJson)
-runFindArtilesByTitle title = runDriverWithMock $ findArticlesByTitle title
+runFindArtilesByTitle :: forall r. String -> Run (AFF + READER Environment + r) (Array ArticleJson)
+runFindArtilesByTitle title = do 
+  env <- ask
+  runDriverWithMock env.host $ findArticlesByTitle title
 --------------------------------------------------------------------------------------------
 
 main :: Effect Unit
 main = launchAff_ do
-  response <- runBaseAff $ runFindArtilesByTitle "TestTitle"
+  response <- runFindArtilesByTitle "TestTitle"             -- AFF + READERのRunが返る
+              # flip runReader {host: "http://article-api"} -- READERのエフェクトを除去 flipしているのはrunReaderの第一引数がrunだが渡ってくるのは第二引数だから
+              # runBaseAff                                  -- AFFを除去
   liftEffect $ log $ show $ length response
   liftEffect $ log $ intercalate ", " $ (\a -> "title=" <> a.title <> ", body=" <> a.body) <$> response
