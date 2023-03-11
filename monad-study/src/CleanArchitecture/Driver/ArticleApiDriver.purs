@@ -65,8 +65,8 @@ handleArticleDriver = case _ of
 
 -- こいつらをどうくっつけたものか
 
-_findArticlesByTitle :: String -> Aff (Array ArticleIndexJson)
-_findArticlesByTitle title = do
+_findArticleIndicesByTitle :: String -> Aff (Array ArticleIndexJson)
+_findArticleIndicesByTitle title = do
   res <- AX.get ResponseFormat.string $ "http://article-api/articles?title" <> title
   case res of
     Left err -> do
@@ -94,12 +94,16 @@ _findArticleById id = do
         Left e -> pure Nothing
         Right (r :: ArticleJson) -> pure $ Just r
 
+-------------------------------------------------------------------------------------------
+{-
+  handler関数
+-}
 -- 実値を返すhandler
 handleDriver :: forall r. ArticleDriver ~> Run (AFF + r)
 handleDriver = case _ of
   FindArticleIndicesByTitle title next -> do
-    articles <- liftAff $ _findArticlesByTitle title
-    pure $ next articles
+    indices <- liftAff $ _findArticleIndicesByTitle title
+    pure $ next indices
   FindArticlesByIds ids next -> do
     article <- liftAff $ _findArticlesByIds ids
     pure $ next article
@@ -107,7 +111,7 @@ handleDriver = case _ of
     article <- liftAff $ _findArticleById id
     pure $ next article
 
--- 固定値を返すmock
+-- 固定値を返すhandler(mock)
 -- handlerをこいつで上書きできればテストで差し替えられる
 handleDriverMock :: forall r. ArticleDriver ~> Run (AFF + r)
 handleDriverMock = case _ of
