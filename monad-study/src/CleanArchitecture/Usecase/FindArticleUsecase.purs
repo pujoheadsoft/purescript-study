@@ -3,7 +3,8 @@ module CleanArchitecture.Usecase.FindArticleUsecase where
 import Prelude
 
 import CleanArchitecture.Domain.Article (Article, ArticleTitle)
-import CleanArchitecture.Driver.ArticleApiDriver (Environment, makeArticleDriverMock)
+import CleanArchitecture.Driver.ArticleApiDriver (makeArticleDriverMock)
+import CleanArchitecture.Driver.Environment (Environment)
 import CleanArchitecture.Gateway.ArticleGateway (ArticleGatewayType, makeArticleGateway)
 import Data.Array (catMaybes)
 import Data.Foldable (oneOfMap)

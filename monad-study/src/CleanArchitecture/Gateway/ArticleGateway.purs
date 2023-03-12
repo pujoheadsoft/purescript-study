@@ -3,7 +3,8 @@ module CleanArchitecture.Gateway.ArticleGateway where
 import Prelude
 
 import CleanArchitecture.Domain.Article (Article, ArticleId, ArticleIds, ArticleTitle)
-import CleanArchitecture.Driver.ArticleApiDriver (ArticleDriverType, Environment)
+import CleanArchitecture.Driver.ArticleApiDriver (ArticleDriverType)
+import CleanArchitecture.Driver.Environment (Environment)
 import Data.Maybe (Maybe)
 import Study.Control.Monad.Run.Reader (READER)
 import Study.Control.Monad.Run.Run (Run, AFF)

@@ -4,6 +4,8 @@ import Prelude
 
 import Affjax.ResponseFormat as ResponseFormat
 import Affjax.Web as AX
+import CleanArchitecture.Driver.ArticleJson (ArticleIndexJson, ArticleJson)
+import CleanArchitecture.Driver.Environment (Environment)
 import Control.Parallel (parTraverse)
 import Data.Array (catMaybes, intercalate, length)
 import Data.Either (Either(..))
@@ -19,18 +21,12 @@ import Study.Control.Monad.Run.Run (AFF, Run, interpret, lift, liftAff, runBaseA
 import Type.Proxy (Proxy(..))
 import Type.Row (type (+))
 
-type Environment = {
-  host :: String
-}
 
 {-
   接続情報が必要。何らかの手段で取得できる必要がある。
   driverを作る？ときに既に設定もinjectできてしまって(つまり関数の状態で、その場では実行されないようにしておいて)おくのがよいか？
   ということはRunになってるのが都合がよさそうだ。
 -}
-
-type ArticleIndexJson = {id :: String}
-type ArticleJson = {title :: String, body :: String, author :: String}
 
 data ArticleDriver a = 
    FindArticleIndicesByTitle String (Array ArticleIndexJson -> a)
