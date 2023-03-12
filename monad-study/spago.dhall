@@ -18,6 +18,7 @@ to generate this file without the comments in this block.
   , "arrays"
   , "catenable-lists"
   , "console"
+  , "control"
   , "debug"
   , "effect"
   , "either"

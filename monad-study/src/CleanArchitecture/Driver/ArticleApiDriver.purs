@@ -115,7 +115,10 @@ handleDriver h d = case d of
 -- handlerをこいつで上書きできればテストで差し替えられる
 handleDriverMock :: forall r. String -> ArticleDriver ~> Run (AFF + r)
 handleDriverMock h d = case d of
-  FindArticleIndicesByTitle title next -> pure $ next [{id: "一致した条件 title:" <> title <> ", host:" <> h}]
+  FindArticleIndicesByTitle title next -> pure $ next [
+      {id: "[ID1] 一致した条件 title:" <> title <> ", host:" <> h},
+      {id: "[ID2] 一致した条件 title:" <> title <> ", host:" <> h}
+  ]
   FindArticlesByIds ids next -> pure $ next $ [{title: intercalate "," ids, body: "body", author: "author"}]
   FindArticleById _ next -> pure $ next $ Just {title: "", body: "", author: ""}
 
@@ -156,6 +159,27 @@ runFindArtilesByTitle title = do
   env <- ask
   runDriverWithMock env.host $ findArticlesByTitle title
 --------------------------------------------------------------------------------------------
+
+type ArticleDriverType = {
+  findArticleIdsByTitle :: forall r. String -> Run (AFF + READER Environment + r) (Array ArticleIndexJson),
+  findArticleById :: forall r. String -> Run (AFF + READER Environment + r) (Maybe ArticleJson)
+}
+
+makeArticleDriver :: ArticleDriverType
+makeArticleDriver = {
+  findArticleIdsByTitle: \title -> runFindArticleIndicesByTitle title,
+  findArticleById: \id -> runFindArticleById id
+}
+
+makeArticleDriverMock :: ArticleDriverType
+makeArticleDriverMock = {
+  findArticleIdsByTitle: \title -> do
+    env <- ask
+    runDriverWithMock env.host $ findArticleIndicesByTitle title,
+  findArticleById: \id -> do
+    env <- ask
+    runDriverWithMock env.host $ findArticleById id
+}
 
 main :: Effect Unit
 main = launchAff_ do

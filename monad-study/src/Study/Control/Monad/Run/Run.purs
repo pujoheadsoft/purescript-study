@@ -1,8 +1,35 @@
-module Study.Control.Monad.Run.Run where
+module Study.Control.Monad.Run.Run
+  ( Run(..)
+  , lift
+  , send
+  , extract
+  , interpret
+  , run
+  , runRec
+  , runCont
+  , runPure
+  , runAccum
+  , runAccumRec
+  , runAccumCont
+  , runAccumPure
+  , peel
+  , resume
+  , EFFECT
+  , AFF
+  , liftEffect
+  , liftAff
+  , runBaseEffect
+  , runBaseAff
+  , runBaseAff'
+  , module Data.Functor.Variant
+  ) where
 
 import Prelude
 
+import Control.Alt (class Alt)
+import Control.Alternative (class Alternative)
 import Control.Monad.Rec.Class (class MonadRec, Step(..), tailRecM)
+import Control.Plus (class Plus)
 import Data.Either (Either(..))
 import Data.Functor.Variant (VariantF, inj, match)
 import Data.Newtype (class Newtype, unwrap)
@@ -12,9 +39,11 @@ import Effect (Effect)
 import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff)
 import Effect.Class (class MonadEffect)
+import Effect.Class as Effect
 import Partial.Unsafe (unsafeCrashWith)
 import Prim.Row as Row
 import Study.Control.Monad.Free.Free (Free, resume', liftF, runFree, runFreeM)
+import Study.Control.Monad.Run.Internal (CHOOSE, Choose(..), _choose, fromRows, toRows)
 import Type.Equality (class TypeEquals)
 import Type.Proxy (Proxy(..))
 import Type.Row (type (+))
@@ -304,15 +333,22 @@ liftAff = lift (Proxy :: Proxy "aff")
 runBaseAff :: Run (AFF + ()) ~> Aff
 runBaseAff = run $ match { aff: \a ->a }
 
+runBaseAff' :: Run (AFF + EFFECT + ()) ~> Aff
+runBaseAff' = run $ match { aff: \a -> a, effect: \a -> Effect.liftEffect a }
+
 instance runMonadEffect :: (TypeEquals (Proxy r1) (Proxy (EFFECT r2))) => MonadEffect (Run r1) where
   liftEffect = fromRows <<< liftEffect
 
 instance runMonadAff :: (TypeEquals (Proxy r1) (Proxy (AFF + EFFECT + r2))) => MonadAff (Run r1) where
   liftAff = fromRows <<< liftAff
 
-fromRows
-  :: forall f r1 r2 a
-   . TypeEquals (Proxy r1) (Proxy r2)
-  => f r2 a
-  -> f r1 a
-fromRows = unsafeCoerce
+liftChoose :: forall r a. Choose a -> Run (CHOOSE + r) a
+liftChoose = lift _choose
+
+instance runAlt :: (TypeEquals (Proxy r1) (Proxy (CHOOSE + r2))) => Alt (Run r1) where
+  alt a b = fromRows $ liftChoose (Alt identity) >>= if _ then toRows a else toRows b
+
+instance runPlus :: (TypeEquals (Proxy r1) (Proxy (CHOOSE + r2))) => Plus (Run r1) where
+  empty = fromRows $ liftChoose Empty
+
+instance runAlternative :: (TypeEquals (Proxy r1) (Proxy (CHOOSE + r2))) => Alternative (Run r1)
