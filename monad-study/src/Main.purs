@@ -5,6 +5,7 @@ import Prelude
 import CleanArchitecture.Driver.ArticleApiDriver as ArticleApiDriver
 import CleanArchitecture.Usecase.FindArticleUsecase as FindArticleUsecase
 import CleanArchitecture.Usecase.FindArticleUsecase2 as FindArticleUsecase2
+import CleanArchitecture.TaglessFinal as TaglessFinal
 import CleanArchitecture.Main as CA
 import Effect (Effect)
 import Example.Free.FreeExample as FreeExample
@@ -52,4 +53,5 @@ main = do
   ArticleApiDriver.main
   FindArticleUsecase.main
   FindArticleUsecase2.main
+  TaglessFinal.main
   
