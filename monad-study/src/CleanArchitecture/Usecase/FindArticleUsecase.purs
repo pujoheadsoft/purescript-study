@@ -36,7 +36,7 @@ findArticlesByTitle title gateway = do
 
 main :: Effect Unit
 main = launchAff_ do
-  liftEffect $ log "Usecase Start"
+  liftEffect $ log "Usecase Start ------------------"
   let
     driver = makeArticleDriverMock -- mock
     gateway = makeArticleGateway driver
@@ -46,5 +46,5 @@ main = launchAff_ do
     # flip runReader {host: "http://article-api"} -- READERのエフェクトを除去 flipしているのはrunReaderの第一引数がrunだが渡ってくるのは第二引数だから
     # runBaseAff
   liftEffect $ logShow $ catMaybes (articles :: Array (Maybe Article)) -- Chooseを使う場合この型注釈は必要
-  liftEffect $ log "Usecase End"
+  liftEffect $ log "Usecase End --------------------"
   

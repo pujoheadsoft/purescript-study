@@ -20,8 +20,8 @@ import Type.Row (type (+))
   あと環境変数をReaderから読まないようにした
 -}
 
-_findArticleIndicesByTitle :: forall r. String -> Environment -> Run (AFF + EXCEPT String + r) (Array ArticleIndexJson)
-_findArticleIndicesByTitle title env = liftAff go
+findArticleIndicesByTitle2 :: forall r. String -> Environment -> Run (AFF + EXCEPT String + r) (Array ArticleIndexJson)
+findArticleIndicesByTitle2 title env = liftAff go
   where 
   go = do
     res <- AX.get ResponseFormat.string $ env.host <> "/articles?title" <> title
@@ -34,8 +34,8 @@ _findArticleIndicesByTitle title env = liftAff go
           Left e -> pure [] -- pure $ Left $ show e -- do log $ "Can't parse JSON. " <> show e
           Right (r :: Array ArticleIndexJson) -> pure r -- pure $ Right r -- do log $ "article id is: " <> show r.id
 
-_findArticleById :: forall r. String -> Environment -> Run (AFF + EXCEPT String + r) (Maybe ArticleJson)
-_findArticleById id env = liftAff go
+findArticleById2 :: forall r. String -> Environment -> Run (AFF + EXCEPT String + r) (Maybe ArticleJson)
+findArticleById2 id env = liftAff go
   where 
   go = do
     res <- AX.get ResponseFormat.string $ env.host <> "/articles/" <> id
@@ -46,19 +46,19 @@ _findArticleById id env = liftAff go
           Left e -> pure Nothing
           Right (r :: ArticleJson) -> pure $ Just r
 
-type ArticleDriverType = {
+type ArticleDriver = {
   findArticleIdsByTitle :: forall r. String -> Run (AFF + EXCEPT String r) (Array ArticleIndexJson),
   findArticleById :: forall r. String -> Run (AFF + EXCEPT String + r) (Maybe ArticleJson)
 }
 
-makeArticleDriver2 :: Environment -> ArticleDriverType
-makeArticleDriver2 env = {
-  findArticleIdsByTitle: \title -> _findArticleIndicesByTitle title env,
-  findArticleById: \id -> _findArticleById id env
+createArticleDriver :: Environment -> ArticleDriver
+createArticleDriver env = {
+  findArticleIdsByTitle: \title -> findArticleIndicesByTitle2 title env,
+  findArticleById: \id -> findArticleById2 id env
 }
 
-makeArticleDriverMock2 :: Environment -> ArticleDriverType
-makeArticleDriverMock2 env = {
+createArticleDriverMock :: Environment -> ArticleDriver
+createArticleDriverMock env = {
   findArticleIdsByTitle: \title -> do
     pure [
       {id: "[ID1] 一致した条件 title:" <> title <> ", host:" <> env.host},
