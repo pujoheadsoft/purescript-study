@@ -3,10 +3,11 @@ module CleanArchitecture.TaglessFinal where
 import Prelude
 
 import Data.Maybe (Maybe(..))
+import Data.Newtype (unwrap)
 import Effect (Effect)
 import Effect.Class.Console (logShow)
 import Effect.Console (log)
-import Study.Control.Monad.Run.Reader (READER, ask)
+import Study.Control.Monad.Run.Reader (READER, ask, runReader)
 import Study.Control.Monad.Run.Run (EFFECT, Run, runBaseEffect, send)
 import Type.Row (type (+))
 
@@ -17,25 +18,34 @@ type Price = Int
 
 class Monad m <= DataStoreSYM m where
   create :: Key -> Value -> m Unit
-  read   :: Key -> Value -> m (Maybe Value)
+  read   :: Key          -> m (Maybe Value)
   update :: Key -> Value -> m Unit
 
 class Monad m <= BitCoinSYM m where
   getPrice :: m Price
 
-instance DataStoreSYM (Run (EFFECT + READER String + ())) where
-  create k v = do 
-    env <- ask
-    logShow "create " <> k <> v <> env
-  read   k   = do
-    env <- ask
-    pure "read by " <> k 
-  update k v = do
-    env <- ask
-    logShow "update " k <> v <> env
+newtype X e a = X {hoge :: String | a}
 
-instance BitCoinSYM (Run (EFFECT + READER Int + r)) where
-  getPrice = do
+newtype EffectWithReader e r a = EffectWithReader (Run (EFFECT + READER e + r) a)
+derive newtype instance functorX :: Functor (EffectWithReader e r)
+derive newtype instance applyX :: Apply (EffectWithReader e r)
+derive newtype instance applicativeX :: Applicative (EffectWithReader e r)
+derive newtype instance bindX :: Bind (EffectWithReader e r)
+derive newtype instance monadX :: Monad (EffectWithReader e r)
+
+instance DataStoreSYM (EffectWithReader String r) where
+  create k v = EffectWithReader do 
+    env <- ask
+    logShow $ "create " <> k <> v <> env
+  read   k   = EffectWithReader do
+    env <- ask
+    pure $ Just $ "read by " <> k <> env
+  update k v = EffectWithReader do
+    env <- ask
+    logShow $ "update " <> k <> v <> env
+
+instance BitCoinSYM (EffectWithReader Int r) where
+  getPrice = EffectWithReader do
     v <- ask
     logShow "getPrice"
     pure (v + 100)
@@ -52,9 +62,24 @@ saveBTCPrice = do
   price <- getPrice
   createOrUpdate "BTC Price: " $ show price
 
+run :: forall e r a. EffectWithReader e r a → Run ( EFFECT + READER e + r ) a
+run (EffectWithReader r) = r
+
 main :: Effect Unit
 main = do
-  log "Usecase Start ------------------"
-  saveBTCPrice
+  log "----- Tagless Final Start ------------------"
+  run (createOrUpdate "Key" "Value")
+    # flip runReader ""
     # runBaseEffect
+
+  run getPrice
+    # flip runReader 100
+    # runBaseEffect
+    >>= logShow -- 戻り値の型はEffect Intなので、そのままlogShowには突っ込めない value <- で受けて出すか、こうやってbindさせてやって表示する
+  
+  -- run saveBTCPrice
+  --   # flip runReader ""
+  --   # flip runReader 1000
+  --   # runBaseEffect
+  log "----- Tagless Final End --------------------"
   

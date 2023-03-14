@@ -36,7 +36,7 @@ findArticlesByTitle2 title gateway = do
 
 main :: Effect Unit
 main = launchAff_ do
-  liftEffect $ log "Usecase2 Start ------------------"
+  liftEffect $ log "----- Usecase2 Start ------------------"
   let
     driver = createArticleDriverMock {host: "http://article-api"}
     gateway = createArticleGateway driver
@@ -50,5 +50,5 @@ main = launchAff_ do
       liftEffect $ log error
     Right articles -> do
       liftEffect $ logShow $ catMaybes (articles :: Array (Maybe Article)) -- Chooseを使う場合この型注釈は必要
-      liftEffect $ log "Usecase2 End --------------------"
+      liftEffect $ log "----- Usecase2 End --------------------"
   
