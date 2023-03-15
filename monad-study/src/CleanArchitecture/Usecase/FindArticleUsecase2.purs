@@ -15,6 +15,7 @@ import Effect.Class (liftEffect)
 import Effect.Console (log, logShow)
 import Study.Control.Monad.Run.Choose (CHOOSE, runChoose)
 import Study.Control.Monad.Run.Except (EXCEPT, runExcept)
+import Study.Control.Monad.Run.Reader (READER, runReader)
 import Study.Control.Monad.Run.Run (AFF, Run, runBaseAff)
 import Type.Row (type (+))
 
@@ -51,4 +52,27 @@ main = launchAff_ do
     Right articles -> do
       liftEffect $ logShow $ catMaybes (articles :: Array (Maybe Article)) -- Chooseを使う場合この型注釈は必要
       liftEffect $ log "----- Usecase2 End --------------------"
-  
+
+
+------------------------------------------------------------------------------
+{-
+  同じ副作用を合成しようとするとうまくいかない (READER String + READER Int)
+  合成しようとしているところで副作用をはがせば同時に使えるがどうなんだろう
+  拡張可能作用を拡張可能レコードで実現してるのがよくないんだろうな
+-}
+type IndexSearchPort = {
+  findByKeyword ::  forall r. String -> Run (AFF + READER String + r) String
+}
+
+type News = {title :: String}
+type NewsPort = {
+  findByIndex :: forall r. String -> Run (AFF + READER Int + r) News
+}
+
+search :: forall r. IndexSearchPort -> NewsPort -> Run (AFF + r) News
+search indexSearchPort newsPort = do
+  index <- indexSearchPort.findByKeyword "" 
+          # flip runReader "" -- はがす
+  news <- newsPort.findByIndex index
+          # flip runReader 10 -- はがす
+  pure news

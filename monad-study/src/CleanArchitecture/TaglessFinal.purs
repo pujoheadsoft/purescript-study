@@ -2,13 +2,17 @@ module CleanArchitecture.TaglessFinal where
 
 import Prelude
 
+import Control.Monad.Except (runExcept)
 import Data.Maybe (Maybe(..))
 import Data.Newtype (unwrap)
+import Data.String.Regex (search)
 import Effect (Effect)
+import Effect.Aff.Class (liftAff)
 import Effect.Class.Console (logShow)
 import Effect.Console (log)
+import Study.Control.Monad.Run.Except (EXCEPT, catch)
 import Study.Control.Monad.Run.Reader (READER, ask, runReader)
-import Study.Control.Monad.Run.Run (EFFECT, Run, runBaseEffect, send)
+import Study.Control.Monad.Run.Run (EFFECT, Run, AFF, runBaseEffect, send)
 import Type.Row (type (+))
 
 type Key = String
@@ -64,6 +68,7 @@ saveBTCPrice = do
 
 run :: forall e r a. EffectWithReader e r a → Run ( EFFECT + READER e + r ) a
 run (EffectWithReader r) = r
+
 
 main :: Effect Unit
 main = do

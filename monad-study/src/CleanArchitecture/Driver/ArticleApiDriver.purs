@@ -21,13 +21,6 @@ import Study.Control.Monad.Run.Run (AFF, Run, interpret, lift, liftAff, runBaseA
 import Type.Proxy (Proxy(..))
 import Type.Row (type (+))
 
-
-{-
-  接続情報が必要。何らかの手段で取得できる必要がある。
-  driverを作る？ときに既に設定もinjectできてしまって(つまり関数の状態で、その場では実行されないようにしておいて)おくのがよいか？
-  ということはRunになってるのが都合がよさそうだ。
--}
-
 data ArticleDriver a = 
    FindArticleIndicesByTitle String (Array ArticleIndexJson -> a)
  | FindArticlesByIds (Array String) (Array ArticleJson -> a)
@@ -36,9 +29,6 @@ data ArticleDriver a =
 derive instance functorArticleDriver :: Functor ArticleDriver
 _articleDriver = Proxy :: Proxy ("articleDriver")
 type ARTICLE_DRIVER r = (articleDriver :: ArticleDriver | r)
-
--- このあたりで接続情報がほしい
--- どうするか
 
 -----------------------------------------------------------------------------------------------------
 {-
