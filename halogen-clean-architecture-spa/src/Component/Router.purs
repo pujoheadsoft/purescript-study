@@ -2,52 +2,51 @@ module Component.Router where
 
 import Prelude
 
-import Capability.Navigate (class Navigate, navigate)
 import Component.Utils (OpaqueSlot)
-import Data.Maybe (Maybe(..), fromMaybe)
-import Data.Route (Route(..))
-import Effect.Aff.Class (class MonadAff)
-import Effect.Console (logShow)
-import Halogen (liftEffect)
+import Data.Maybe (Maybe(..))
 import Halogen as H
 import Halogen.HTML as HH
+import Halogen.HTML.Events as HE
 
-data Query a
-  = Navigate Route a
+type Article = {
+  title :: String
+}
 
 type State
-  = { route :: Maybe Route }
+  = { article :: Article }
 
 data Action
   = Initialize
+  | Search
 
 type ChildSlots
   = ( home :: OpaqueSlot Unit )
 
--- component
---   :: forall m q.
---      Navigate m
---   => H.Component q Unit Void m
+
+component :: forall q i m. H.Component q i Void m
 component =
   H.mkComponent
-    { initialState: \_ -> { route: Nothing }
+    { initialState: \_ -> { article: {title: ""} }
     , render
     , eval:
         H.mkEval
           $ H.defaultEval
-              { initialize = Just Initialize
+              { initialize = Just Initialize,
+              handleAction = _handleAction
               }
     }
   where
-  -- handleAction :: Action -> H.HalogenM State Action ChildSlots Void m Unit
-  -- handleAction = case _ of
-  --   Initialize -> do
-  --     navigate Home
-      
-  -- render :: State -> H.ComponentHTML Action () m
-  render { route } = case route of
-    Just r -> case r of
-      Home -> HH.div_ [ HH.text "home" ]
-      EditArticle -> HH.div_ [ HH.text "home" ]
-      ViewArticle -> HH.div_ [ HH.text "home" ]
-    Nothing -> HH.div_ [ HH.text "That page wasn't found." ]
+  render :: forall cs. State -> H.ComponentHTML Action cs m
+  render { article } = 
+    HH.div_
+      [
+        HH.button
+          [ HE.onClick \_ -> Search ]
+          [ HH.text "Search" ]
+       ,HH.text article.title
+      ]
+
+  _handleAction :: Action -> H.HalogenM State Action ChildSlots Void m Unit
+  _handleAction = case _ of
+    Initialize -> H.modify_ \state -> state { article = { title: "ニュース" } }
+    Search -> H.modify_ \state -> state { article = { title: "検索されたニュース" } }
