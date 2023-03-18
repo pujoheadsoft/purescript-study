@@ -2,29 +2,28 @@ module Component.Router where
 
 import Prelude
 
-import AppM (AppM(..))
+import Component.State (State)
 import Component.Utils (OpaqueSlot)
 import Control.Monad.State.Class (class MonadState)
 import Data.Maybe (Maybe(..))
-import Data.Tuple (Tuple, snd)
-import HState (STATE, modify2, modify3, runState)
+import Domain.Article (Article)
+import Driver.ArticleDriver (createArticleDriverType)
+import Driver.ArticleESDriver (createArticleESDriverType)
+import Gateway.ArticleGateway (createPort)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
-import Run (Run(..), extract)
+import Port.ArticlePort (createArticleRunPort)
+import Presenter.ArticlePresenter (createArticlePresenterType, createArticleRunPresenter)
+import Run (Run, extract)
 import Run.Reader (READER, ask, runReader)
 import Type.Row (type (+))
-
-type Article = {
-  title :: String
-}
-
-type State
-  = { article :: Article }
+import Usecase.FindArticle (findArticleByRun, findArticleByType)
 
 data Action
   = Initialize
   | Update
+  | Update2
 
 type ChildSlots
   = ( home :: OpaqueSlot Unit )
@@ -47,51 +46,23 @@ component =
       [
         HH.button
           [ HE.onClick \_ -> Update ]
-          [ HH.text "更新" ]
+          [ HH.text "更新" ],
+        HH.button
+          [ HE.onClick \_ -> Update2 ]
+          [ HH.text "更新2" ]
        ,HH.text article.title
       ]
   
   _handleAction :: Action -> H.HalogenM State Action ChildSlots Void m Unit
   _handleAction = case _ of
     Initialize -> H.modify_ \state -> state { article = { title: "ニュース" } }
-    --Update -> H.modify_ \state -> state { article = { title: "ニュース" } }
-    Update -> xxxx
-    
-xxxx :: forall m. MonadState State m => m Unit
-xxxx = do
-  _update "新しいニュース"
-    # runState { article: { title: "ニュース" } }
-    # extract
-    # snd
+    -- Runを利用するパターン
+    Update -> findArticleByRun createArticleRunPort createArticleRunPresenter
+              # runReader "新しいニュース" 
+              # extract
+    -- Runは利用しないパターン
+    Update2 -> do
+                let
+                  port = createPort createArticleESDriverType createArticleDriverType
+                findArticleByType port createArticlePresenterType
 
-type ArticlePort = {
-  find :: forall r. Run (READER String + r) Article
-}
-
-type ArticlePresenter = {
-  update :: forall r m. MonadState State m => String -> Run ( STATE State + r ) (m Unit)
-}
-
-createPort :: ArticlePort
-createPort = {
-  find: _find
-}
-
-createPresenter :: ArticlePresenter
-createPresenter = {
-  update: _update
-}
-
-_find :: forall r. Run (READER String + r) Article
-_find = do
-  value <- ask
-  pure {title: value}
-
-_update :: forall r m. MonadState State m => String -> Run ( STATE State + r ) (m Unit)
-_update title = do
-  modify3 \state -> state { article = { title: title } }
-
-usecase :: forall m r. MonadState State m => ArticlePort -> ArticlePresenter -> Run (READER String + STATE State + r) (m Unit)
-usecase port presenter = do
-  article <- port.find
-  presenter.update article.title

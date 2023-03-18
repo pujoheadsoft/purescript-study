@@ -1,0 +1,46 @@
+module Gateway.ArticleGateway where
+
+import Prelude
+
+import Control.Monad.Reader (runReader)
+import Data.Maybe (Maybe)
+import Domain.Article (Article)
+import Driver.ArticleDriver (class ArticleDriver, ArticleDriverType, findJsonById)
+import Driver.ArticleESDriver (class ArticleESDriver, ArticleESDriverType, findIndexByTitle)
+import Port.ArticlePort (class ArticlePort, ArticlePortTypeBadDependency, ArticlePortType, findByTitle)
+
+{-
+  Tagless Final にした Driver を利用するアプローチ (コンパイルエラーになるのでコメントアウト)
+  Port のインスタンスを Port とは異なる module に実装しようとすると
+  Orphan instance とみなされエラーになってしまうのでこのアプローチは使えない。
+  Port が宣言されている module 内でインスタンスも宣言すればうまく動くが、それだと Port と Gateway を分ける意味がない。
+-}
+-- instance articleGateway :: (ArticleESDriver m, ArticleDriver m) => ArticlePort m where
+--   findByTitle :: String -> m Article
+--   findByTitle title = do
+--     index <- findIndexByTitle title
+--     json <- findJsonById index.id
+--     pure {title: json.title}
+
+{-
+  typeを使うパターン
+  ここだけを見るとうまくいってるように見えるが、Portの方の定義を見るとDriverが漏れてるので良くない
+-}
+createBadDependencyPort :: ArticlePortTypeBadDependency
+createBadDependencyPort = {
+  findByTitle: \title -> do
+    index <- findIndexByTitle title
+    json <- findJsonById index.id
+    pure {title: json.title}
+}
+
+{-
+  依存するDriverの存在をPortに漏らさないパターン
+-}
+createPort :: ArticleESDriverType -> ArticleDriverType -> ArticlePortType
+createPort esDriver driver = {
+  findByTitle: \title -> do
+    index <- esDriver.findIndexByTitle title
+    json <- driver.findById index.id
+    pure {title: json.title}
+}
