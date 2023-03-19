@@ -17,10 +17,10 @@ spec = do
     it "タイトルに紐づくArticleを取得してStateを更新できる" do
       let
         esDriver = {
-          findIndexByTitle: \title -> pure {id: title}
+          findIndexByTitle: \title -> pure if title == "タイトル" then {id: "ID"} else {id: "BadID"}
         } :: ArticleESDriverType
         driver = {
-          findById: \id -> pure {id: id, title: id}
+          findById: \id -> pure if id == "ID" then {id: id, title: "期待値のタイトル"} else {id: "", title: "誤ったタイトル"}
         } :: ArticleDriverType
-      result <- findByTitle "新しいタイトル" esDriver driver
-      result `shouldEqual` {title: "新しいタイトル"}
+      result <- findByTitle "タイトル" esDriver driver
+      result `shouldEqual` {title: "期待値のタイトル"}
