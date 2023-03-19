@@ -64,5 +64,5 @@ component =
     Update2 -> do
                 let
                   port = createPort createArticleESDriverType createArticleDriverType
-                findArticleByType port createArticlePresenterType
+                findArticleByType "新しいタイトル" port createArticlePresenterType
 
