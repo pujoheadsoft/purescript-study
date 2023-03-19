@@ -2,12 +2,10 @@ module Gateway.ArticleGateway where
 
 import Prelude
 
-import Control.Monad.Reader (runReader)
-import Data.Maybe (Maybe)
 import Domain.Article (Article)
-import Driver.ArticleDriver (class ArticleDriver, ArticleDriverType, findJsonById)
-import Driver.ArticleESDriver (class ArticleESDriver, ArticleESDriverType, findIndexByTitle)
-import Port.ArticlePort (class ArticlePort, ArticlePortTypeBadDependency, ArticlePortType, findByTitle)
+import Driver.ArticleDriver (ArticleDriverType, findJsonById)
+import Driver.ArticleESDriver (ArticleESDriverType, findIndexByTitle)
+import Port.ArticlePort (ArticlePortType, ArticlePortTypeBadDependency)
 
 {-
   Tagless Final にした Driver を利用するアプローチ (コンパイルエラーになるのでコメントアウト)
@@ -39,8 +37,11 @@ createBadDependencyPort = {
 -}
 createPort :: ArticleESDriverType -> ArticleDriverType -> ArticlePortType
 createPort esDriver driver = {
-  findByTitle: \title -> do
-    index <- esDriver.findIndexByTitle title
-    json <- driver.findById index.id
-    pure {title: json.title}
+  findByTitle: \title -> findByTitle title esDriver driver
 }
+
+findByTitle :: forall m. Monad m => String -> ArticleESDriverType -> ArticleDriverType -> m Article
+findByTitle title esDriver driver =  do
+  index <- esDriver.findIndexByTitle title
+  json <- driver.findById index.id
+  pure {title: json.title}
