@@ -1,6 +1,7 @@
 { name = "halogen-project"
 , dependencies =
   [ "aff"
+  , "arrays"
   , "console"
   , "effect"
   , "either"
