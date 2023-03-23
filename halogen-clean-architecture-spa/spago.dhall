@@ -5,6 +5,7 @@
   , "console"
   , "effect"
   , "either"
+  , "exists"
   , "foldable-traversable"
   , "halogen"
   , "halogen-subscriptions"

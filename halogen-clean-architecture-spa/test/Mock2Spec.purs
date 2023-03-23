@@ -4,7 +4,6 @@ import Prelude
 
 import Data.Array (cons, foldl)
 import Data.Exists (Exists, mkExists, runExists)
-import Data.String (joinWith)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 
@@ -31,6 +30,9 @@ instance instanceHListRecursive :: (Eq a, HList r) => HList (a -> r) where
 list :: forall r. HList r => r
 list = hlist []
 
+hoge :: forall a b c. c -> b -> a -> (c -> b -> a)
+hoge c b a = (\c1 b1 -> a)
+
 -- execute :: forall r a. Semiring r => HList a (Int -> Int -> Int -> Int -> r) => r
 -- execute = foldl (+) (list 1 2 3 4) []
 
@@ -51,12 +53,13 @@ execute4 r = "hoge"
 
 spec :: Spec Unit
 spec = do
-  describe "Typeaxxxble" do
+  describe "aaaa" do
     it "can handle primitives" do
       let
+        h = hoge 1 2 3
         -- 型が同じなら単なる配列として扱える
         x = execute3 :: Array (Exists Data)
-      "" `shouldEqual` "a,a,a"
+      (h 1 2) `shouldEqual` 3
 
 -- spec :: Spec Unit
 -- spec = do
