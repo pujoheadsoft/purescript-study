@@ -30,8 +30,36 @@ instance instanceHListRecursive :: (Eq a, HList r) => HList (a -> r) where
 list :: forall r. HList r => r
 list = hlist []
 
-hoge :: forall a b c. c -> b -> a -> (c -> b -> a)
-hoge c b a = (\c1 b1 -> a)
+newtype Mock = Mock {
+
+}
+
+{-
+  もとの関数と同じ戻り値の型を指定しつつ、関数の中でfailできるようにすることはできない
+  failするためにはモナドであることが必要だから
+  だから純粋な関数をこのやり方でモックしようとするとうまくいかない
+  あとでverifyするような構造にはできるかもしれない
+
+  verify testMock ってしたら↓みたいにしたい
+  
+  Function was not called with expected arguments.
+  expected: 1, "2", 3
+  but was : 1, "1", 1
+
+  このために必要なのは
+  ・期待する引数の配列
+  ・実際呼び出された引数の配列
+  ・それぞれが一致するか比較できる型であること
+  ・それぞれが文字列として表示できる型であること
+  どっかにためておくにも戻りをモナドにしないと難しそうだ
+  jsと連携するか？
+
+  {actual :: a, expected :: a, eqResult :: Boolean }
+
+-}
+
+
+
 
 -- execute :: forall r a. Semiring r => HList a (Int -> Int -> Int -> Int -> r) => r
 -- execute = foldl (+) (list 1 2 3 4) []
@@ -51,15 +79,15 @@ execute4 r = "hoge"
 -- execute5 :: forall a. Array (Exists Data) -> Array (a -> Boolean)
 -- execute5 arr = (\e -> runExists (\(Data x) -> x.value) e) <$> arr
 
-spec :: Spec Unit
-spec = do
-  describe "aaaa" do
-    it "can handle primitives" do
-      let
-        h = hoge 1 2 3
-        -- 型が同じなら単なる配列として扱える
-        x = execute3 :: Array (Exists Data)
-      (h 1 2) `shouldEqual` 3
+-- spec :: Spec Unit
+-- spec = do
+--   describe "aaaa" do
+--     it "can handle primitives" do
+--       let
+--         h = hoge 1 2 3
+--         -- 型が同じなら単なる配列として扱える
+--         x = execute3 :: Array (Exists Data)
+--       (h 1 2) `shouldEqual` 3
 
 -- spec :: Spec Unit
 -- spec = do

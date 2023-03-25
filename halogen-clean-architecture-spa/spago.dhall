@@ -3,6 +3,7 @@
   [ "aff"
   , "arrays"
   , "console"
+  , "debug"
   , "effect"
   , "either"
   , "exists"
