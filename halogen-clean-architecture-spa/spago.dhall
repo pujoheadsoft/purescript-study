@@ -18,6 +18,7 @@
   , "safe-coerce"
   , "spec"
   , "spec-discovery"
+  , "strings"
   , "transformers"
   , "tuples"
   , "typelevel-prelude"

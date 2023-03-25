@@ -2,9 +2,14 @@ module Mock where
 
 import Prelude
 
+import Data.Array (filter, find, length)
+import Data.Maybe (Maybe(..))
+import Data.String (joinWith)
 import Debug (debugger)
 import Effect (Effect, foreachE)
 import Effect.Class.Console (logShow)
+import Prim.Boolean (True)
+import Test.Spec.Assertions (fail)
 
 newtype VerifyArg = VerifyArg { expected :: String, actual :: String, eqResult :: Boolean}
 
@@ -18,8 +23,33 @@ type Mock fn = {
   args :: Array VerifyArg
 }
 
+any :: forall a. (a -> Boolean) -> Array a -> Boolean
+any fn arr = case find fn arr of
+  Just _ -> true
+  Nothing -> false
+
+all :: forall a. (a -> Boolean) -> Array a -> Boolean
+all fn arr = (length $ filter fn arr) == (length arr)
+
+{-
+  Function was not called with expected arguments.
+  expected: 1, "2", 3
+  but was : 1, "1", 1
+-}
+message :: Array VerifyArg -> String
+message arr = 
+  let
+    expecteds = arr <#> (\(VerifyArg arg) -> arg.expected) # joinWith ", "
+    actuals = arr <#> (\(VerifyArg arg) -> arg.actual) # joinWith ", "
+  in joinWith "\n" ["Function was not called with expected arguments.",  "expected: " <> expecteds, "but was : " <> actuals]
+
 verify :: Array VerifyArg -> Effect Unit
-verify args = foreachE args (\(VerifyArg arg) -> logShow arg.eqResult)
+verify args = 
+  let
+    isAllMatch = all (\(VerifyArg arg) -> arg.eqResult) args
+  in 
+  if isAllMatch then pure unit
+  else fail $ message args
 
 foreign import store :: Unit -> Store
 
