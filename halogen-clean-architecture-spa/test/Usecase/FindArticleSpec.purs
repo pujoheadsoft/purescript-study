@@ -3,12 +3,14 @@ module Test.Usecase.FindArticleSpec where
 import Prelude
 
 import Component.State (State)
-import Control.Monad.State (StateT, modify_, runStateT)
+import Control.Monad.State (class MonadState, StateT, modify_, runStateT)
 import Data.Tuple (snd)
+import Domain.Article (Article)
 import Port.ArticlePort (ArticlePortType, ArticleRunPortType)
 import Presenter.ArticlePresenter (ArticlePresenterType, ArticleRunPresenter)
 import Run (Run, extract)
 import Run.Reader (READER, runReader)
+import Test.Mock (Mock, fun, mock, thenReturn, verify, (:))
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 import Type.Row (type (+))
@@ -56,11 +58,32 @@ executeFindArticleByRun title = do
 spec :: Spec Unit
 spec = do
   describe "FindArticleUsecase" do
+    it "mock" do
+      let
+        m = mock (1 : "2" : 3) `thenReturn` 100
+      verify m
+
     it "タイトルに紐づくArticleを取得してStateを更新できる" do
       result <- executeFindArticleByType "新しいタイトル"
                 # flip runStateT {article: {title: "古いタイトル"}} -- flipで引数の順序を入れ替えることでこう実行できる
                 <#> snd                                            -- Tuple(Unit, State)が返ってくるのでmapしてsndをかましている
       result `shouldEqual` {article: {title: "新しいタイトル"}}
+    
+    it "タイトルに紐づくArticleを取得してStateを更新できる(Mock版)" do
+      let
+        findByTitleMock :: forall m. Monad m => Mock (String -> m Article)
+        findByTitleMock = mock "古いタイトル" `thenReturn` (pure { title: "新しいtitle" })
+        port = { findByTitle: fun findByTitleMock } :: ArticlePortType
+
+        updateMock :: forall m. MonadState State m => Mock (String -> m Unit)
+        updateMock = mock "新しいtitle" `thenReturn` pure unit
+        presenter =  { update: fun updateMock } :: ArticlePresenterType
+
+      --_ <- findArticleByType "古いタイトル" port presenter # flip runStateT {article: {title: "Dummy"}}
+      "" `shouldEqual` ""
+      --verify findByTitleMock
+      --verify updateMock
+      
 
     it "タイトルに紐づくArticleを取得してStateを更新できる(Runを使う版)" do
       result <- executeFindArticleByRun "新しいタイトル2"

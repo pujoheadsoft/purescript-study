@@ -4,9 +4,10 @@ import Prelude
 
 import Component.Router as Router
 import Effect (Effect)
+import Effect.Console (log)
 import Halogen.Aff as HA
 import Halogen.VDom.Driver (runUI)
-import Mock as M
+import Test.Mock as M
 
 main :: Effect Unit
 main = M.main
