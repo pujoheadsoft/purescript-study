@@ -5,16 +5,19 @@ import Prelude
 import Component.State (State)
 import Control.Monad.State (class MonadState)
 import Halogen as H
-import Run (Run(..))
+import Run (Run)
 
 class Monad m <= ArticlePresenter m where
   upadte :: String -> m Unit
 
-type ArticlePresenterType = {
-  update :: forall m. MonadState State m => String -> m Unit
+-- パラメーター `m` を受け取れるようにしている理由は、こうすることによりこのTypeが扱うモナドを明示できるようになり、
+-- Mockを使ったテストが可能になるため。どのモナドを使うかという制約は↓の生成関数が持つ。
+-- Typeの定義自体は抽象的にしておいた方が都合がよい。
+type ArticlePresenterType m = {
+  update :: String -> m Unit
 }
 
-createArticlePresenterType :: ArticlePresenterType
+createArticlePresenterType :: forall m. MonadState State m => ArticlePresenterType m
 createArticlePresenterType = {
   update: _update
 }
@@ -24,11 +27,11 @@ _update title = do
   H.modify_ \state -> state { article = { title: title } }
 
 
-type ArticleRunPresenter = {
-  update :: forall r m. MonadState State m => String -> Run (r) (m Unit)
+type ArticleRunPresenter m = {
+  update :: forall r. String -> Run (r) (m Unit)
 }
 
-createArticleRunPresenter :: ArticleRunPresenter
+createArticleRunPresenter :: forall m. MonadState State m => ArticleRunPresenter m
 createArticleRunPresenter = {
   update: _update2
 }

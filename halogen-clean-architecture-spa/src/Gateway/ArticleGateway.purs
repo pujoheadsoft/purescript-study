@@ -35,7 +35,7 @@ createBadDependencyPort = {
 {-
   依存するDriverの存在をPortに漏らさないパターン
 -}
-createPort :: ArticleESDriverType -> ArticleDriverType -> ArticlePortType
+createPort :: forall m. Monad m => ArticleESDriverType -> ArticleDriverType -> ArticlePortType m
 createPort esDriver driver = {
   findByTitle: \title -> findByTitle title esDriver driver
 }

@@ -1,5 +1,5 @@
 module Test.Mock
-  ( main,
+  (
   Mock,
   class MockBuilder,
   thenReturn,
@@ -17,8 +17,6 @@ import Prelude
 import Control.Monad.Error.Class (class MonadThrow)
 import Data.Array (filter, foldl, length)
 import Data.String (joinWith)
-import Effect (Effect)
-import Effect.Class.Console (logShow)
 import Effect.Exception (Error)
 import Test.Spec.Assertions (fail)
 
@@ -34,18 +32,6 @@ newtype Mock a = Mock {
   fn :: a,
   results :: EqResults
 }
---derive instance mockFunctor :: Functor Mock
-
--- instance applicativeMock :: Applicative Mock where
---   pure a = Mock {fn: a, results: []}
-
--- instance applyMock :: Apply Mock where
---   apply (Mock {fn: a2b}) (Mock {fn: a, results}) = Mock {fn: a2b a, results: results}
-
--- instance bindMock :: Bind Mock where
---   bind (Mock {fn}) f = f fn
-
--- instance monadMock :: Monad Mock
 
 class MockBuilder a b r | a -> b, a -> r, b -> r where
   thenReturn :: a -> b -> Mock r
@@ -105,17 +91,3 @@ message arr =
     expecteds = arr <#> (\(EqResult arg) -> arg.expected) # joinWith ", "
     actuals = arr <#> (\(EqResult arg) -> arg.actual) # joinWith ", "
   in joinWith "\n" ["Function was not called with expected arguments.",  "expected: " <> expecteds, "but was : " <> actuals]
-
-
-main :: Effect Unit
-main = do
-  let
-    mock1 = mock 1 `thenReturn` "return"
-    mock2 = mock (1 : "2") `thenReturn` 100
-    mock3 = mock (1 : "2" : 3) `thenReturn` 10
-  logShow $ (fun mock1) 1
-  logShow $ (fun mock2) 1 "2"
-  logShow $ (fun mock3) 1 "2" 3
-  verify mock1
-  verify mock2
-  verify mock3

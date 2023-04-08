@@ -23,12 +23,12 @@ findArticle title = do
   PortとPresenterのtypeを渡すパターン
   こちらはDriverが漏れていない
 -}
-findArticleByType :: forall m. MonadState State m => String -> ArticlePortType -> ArticlePresenterType -> m Unit
+findArticleByType :: forall m. MonadState State m => String -> ArticlePortType m -> ArticlePresenterType m -> m Unit
 findArticleByType title port presenter = do
   article <- port.findByTitle title
   presenter.update article.title
 
-findArticleByRun :: forall m r. MonadState State m => ArticleRunPortType -> ArticleRunPresenter -> Run (READER String + r) (m Unit)
+findArticleByRun :: forall m r. MonadState State m => ArticleRunPortType -> ArticleRunPresenter m -> Run (READER String + r) (m Unit)
 findArticleByRun port presenter = do
   article <- port.find
   presenter.update article.title

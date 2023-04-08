@@ -12,6 +12,7 @@
   , "halogen"
   , "halogen-subscriptions"
   , "heterogeneous"
+  , "identity"
   , "maybe"
   , "prelude"
   , "psci-support"

@@ -35,10 +35,11 @@ type ArticlePortTypeBadDependency = {
 {-
   Driverが出てこないパターン
 -}
-type ArticlePortType = {
-  findByTitle :: forall m. Monad m => String -> m Article
+-- パラメーター `m` を受け取れるようにしている理由は、こうすることによりこのTypeが扱うモナドを明示できるようになり、
+-- Mockを使ったテストが可能になるため。
+type ArticlePortType m = {
+  findByTitle :: String -> m Article
 }
-
 
 type ArticleRunPortType = {
   find :: forall r. Run (READER String + r) Article
