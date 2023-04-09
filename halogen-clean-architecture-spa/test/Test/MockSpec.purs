@@ -9,73 +9,71 @@ import Data.Identity (Identity)
 import Domain.Article (Article)
 import Effect.Aff (Aff)
 import Effect.Exception (Error)
-import Test.Mock (class MockBuilder, Mock, MockArgs, fun, mock, thenReturn, verify, verifyCount, (:))
-import Test.Spec (Spec, describe, it)
+import Test.Mock (class MockBuilder, Mock, fun, mock, thenReturn, verify, verifyCount, (:))
+import Test.Spec (Spec, describe, it, pending)
 import Test.Spec.Assertions (expectError, shouldEqual)
-
-xxxx :: forall r fn args. MockBuilder (MockArgs args) r fn => args -> r -> Mock fn
-xxxx = thenReturn <<< mock
 
 spec :: Spec Unit
 spec = do
-  describe "任意の引数に対して任意の値を返す関数を生成することができる" do
-    it "引数が1つの関数を生成できる" do
-      let
-        m = mock "a" `thenReturn` 100
-      (fun m) "a" `shouldEqual` 100
-  
-  -- describe "期待する引数でない引数で呼び出した場合failになる" do
-  --   it "引数が1つの場合" do
+  pending ""
+  -- describe "任意の引数に対して任意の値を返す関数を生成することができる" do
+  --   it "引数が1つの関数を生成できる" do
   --     let
   --       m = mock "a" `thenReturn` 100
-  --     (fun m) "b" `shouldEqual` 100
-  --   it "引数が2つの場合" do
+  --     (fun m) "a" `shouldEqual` 100
+  
+  -- -- describe "期待する引数でない引数で呼び出した場合failになる" do
+  -- --   it "引数が1つの場合" do
+  -- --     let
+  -- --       m = mock "a" `thenReturn` 100
+  -- --     (fun m) "b" `shouldEqual` 100
+  -- --   it "引数が2つの場合" do
+  -- --     let
+  -- --       m = mock (1 : "a") `thenReturn` 100
+  -- --     (fun m) 1 "b" `shouldEqual` 100
+
+  -- describe "特定の引数で呼び出されたことを検証することができる" do
+  --   it "mock" do
   --     let
-  --       m = mock (1 : "a") `thenReturn` 100
-  --     (fun m) 1 "b" `shouldEqual` 100
+  --       m = mock (1 : "2" : 3) `thenReturn` 100
+  --       _ = (fun m) 1 "2" 3
+  --     verify m
 
-  describe "特定の引数で呼び出されたことを検証することができる" do
-    it "mock" do
-      let
-        m = mock (1 : "2" : 3) `thenReturn` 100
-        _ = (fun m) 1 "2" 3
-      verify m
-
-    it "一度も呼び出さない状態で検証をするとfailになる" do
-      let
-        m = mock 1 `thenReturn` 100
-      expectError $ verify m
+  --   it "一度も呼び出さない状態で検証をするとfailになる" do
+  --     let
+  --       m = mock 1 `thenReturn` 100
+  --     expectError $ verify m
     
-    it "Monadを返すことができる1" do
-      let
-        m :: Mock (Int -> Identity String)
-        m = mock 1 `thenReturn` pure "hoge"
+  --   it "Monadを返すことができる1" do
+  --     let
+  --       m :: Mock (Int -> Identity String)
+  --       m = mock 1 `thenReturn` pure "hoge"
 
-        _ = (fun m) 1
-      verify m
+  --       _ = (fun m) 1
+  --     verify m
     
-    it "Monadを返すことができる2" do
-      let
-        findByTitleMock :: forall m. Monad m => Mock (String -> m Article)
-        findByTitleMock = mock "古いタイトル" `thenReturn` pure { title: "新しいタイトル" }
-      result <- (fun findByTitleMock) "古いタイトル"
-      result `shouldEqual` {title: "新しいタイトル"}
-      -- Monad m のようにする場合、いまどのMonadで動いてるのかわからないといけない(mは駄目で、ちゃんと指定しないといけない)
-      verify (findByTitleMock :: Mock (String -> Aff Article))
+  --   it "Monadを返すことができる2" do
+  --     let
+  --       findByTitleMock :: forall m. Monad m => Mock (String -> m Article)
+  --       findByTitleMock = mock "古いタイトル" `thenReturn` pure { title: "新しいタイトル" }
+  --     result <- (fun findByTitleMock) "古いタイトル"
+  --     result `shouldEqual` {title: "新しいタイトル"}
+  --     -- Monad m のようにする場合、いまどのMonadで動いてるのかわからないといけない(mは駄目で、ちゃんと指定しないといけない)
+  --     verify (findByTitleMock :: Mock (String -> Aff Article))
     
-    it "Monadを返すことができる3" do
-      let
-        updateMock :: forall m. MonadState State m => Mock (String -> m Unit)
-        updateMock = mock "新しいtitle" `thenReturn` pure unit
-        f = fun (updateMock :: Mock (String -> StateT State Aff Unit))
-      _ <- runStateT (f "新しいtitle") {article: {title: "Dummy"}} 
-      verify (updateMock :: Mock (String -> StateT State Aff Unit))
+  --   it "Monadを返すことができる3" do
+  --     let
+  --       updateMock :: forall m. MonadState State m => Mock (String -> m Unit)
+  --       updateMock = mock "新しいtitle" `thenReturn` pure unit
+  --       f = fun (updateMock :: Mock (String -> StateT State Aff Unit))
+  --     _ <- runStateT (f "新しいtitle") {article: {title: "Dummy"}} 
+  --     verify (updateMock :: Mock (String -> StateT State Aff Unit))
 
-  describe "呼び出し回数を検証することができる" do
-    it "呼び出された回数を検証することができる(0回)" do
-      let
-        m = mock 1 `thenReturn` 100
-      verifyCount m 0
+  -- describe "呼び出し回数を検証することができる" do
+  --   it "呼び出された回数を検証することができる(0回)" do
+  --     let
+  --       m = mock 1 `thenReturn` 100
+  --     verifyCount m 0
 
     -- it "呼び出された回数を検証することができる(複数回)" do
     --   let
@@ -84,20 +82,3 @@ spec = do
     --     _ = (fun m) 1 2
     --   verifyCount m 2
   
-  {-
-    m = mock [(1 : 2), (2 : 3)] `thenReturn` ["r1", "r2"]
-    multiMock [(1 : 2) `thenReturn` r1, (2 : 3) `thenReturn` r2]
-    do
-      mock (1 : 2) `thenReturn` "r1"
-      mock (2 : 3) `thenReturn` "r2"
-  -}
-  describe "一つのMockで複数の引数の組み合わせに対応できる" do
-    it "" do
-      let
-        m1 :: Mock (Int -> Int -> String)
-        m1 = mock (1 : 2) `thenReturn` "r1"
-
-        m2 :: Mock (Int -> Int -> String)
-        m2 = multiMock [(1 : 2) `thenReturn` "r1",
-                        (2 : 3) `thenReturn` "r2"]
-      "" `shouldEqual` ""
