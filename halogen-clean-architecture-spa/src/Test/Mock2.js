@@ -1,10 +1,10 @@
 export const store = function(v) {
-  let results = [];
-  let push = function(result) {
-    results.push(result);
+  const argsList = [];
+  const push = function(args) {
+    argsList.push(args);
   }
   return {
-    results,
+    argsList,
     store: push
   }
 }
