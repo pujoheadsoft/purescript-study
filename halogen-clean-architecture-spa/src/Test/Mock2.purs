@@ -1,19 +1,17 @@
 module Test.Mock2
   (
   Cons(..),
-  (:),
-  calledWith,
-  returns,
-  returning,
   Definition,
   class MockBuilder,
   mock,
   verify,
   verifyCount,
-  calledWithReturns,
   (:>),
   Verifier,
-  showCalledArgs
+  showCalledArgs,
+  whenCalledWith,
+  thenReturn,
+  returning
   )
   where
 
@@ -58,10 +56,10 @@ instance showCons :: (Show a, Show b) => Show (Cons a b) where
 instance eqCons :: (Eq a, Eq b) => Eq (Cons a b) where
   eq (Cons a b) (Cons a2 b2) = (eq a a2) && (eq b b2)
 
-infixr 8 type Cons as :
-infixr 8 Cons as :
+infixr 8 type Cons as :>
+infixr 8 Cons as :>
 
-data Definition a r = Definition a r
+data Definition a = Definition a
 
 type Message = String
 
@@ -73,156 +71,46 @@ instance verifyFailedSemigroup :: Semigroup VerifyFailed where
 instance verifyFailedMonoid :: Monoid VerifyFailed where
   mempty = VerifyFailed ""
 
-calledWith :: forall a. a -> Definition a Unit
-calledWith a = Definition a unit
-
-returns :: forall a r. Definition a Unit -> r -> Definition a r
-returns (Definition a _) r = Definition a r
-
-returning :: forall a r. r ->  Definition a Unit -> Definition a r
-returning r (Definition a _) = Definition a r
-
-calledWithReturns :: forall a r. a -> r -> Definition a r
-calledWithReturns = calledWith >>> returns
-
-infixr 9 calledWithReturns as :>
-
 class MockBuilder a r v | a -> r, a -> v where
   mock :: a -> Mock r v
 
-instance instanceMockArrayArgs9 :: 
-     (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, Eq d, Show e, Eq e, Show f, Eq f, Show g, Eq g, Show h, Eq h, Show i, Eq i) 
-  => MockBuilder (Array (Definition (a : b : c : d : e : f : g : h : i) r)) (a -> b -> c -> d -> e -> f -> g -> h -> i -> r) (a : b : c : d : e : f : g : h : i) where
+class Finder d a r | d -> a, d -> r where
+  findMatchedReturnValue :: Array d -> a ->  r
+
+instance instanceMockArrayArgs3 :: (Show a, Eq a, Show b, Eq b) => MockBuilder (Array (a :> b :> r)) (a -> b -> r) (a :> b) where
   mock defs = do
     let s = store unit
-    { fun: (\a2 b2 c2 d2 e2 f2 g2 h2 i2 -> storeCalledArgs s (a2 : b2 : c2 : d2 : e2 : f2 : g2 : h2 : i2) # findMatchedReturnValue defs),
-      verifier: verifier s.argsList (\list (a2 : b2 : c2 : d2 : e2 : f2 : g2 : h2 : i2) -> _verify list (a2 : b2 : c2 : d2 : e2 : f2 : g2 : h2 : i2)) }
+    { fun: (\a2 b2 -> (case find (\(a :> b :> _) -> (a :> b) == (a2 :> b2)) defs of
+                      Just (_ :> _ :> r) -> r
+                      Nothing -> error "no answer found.") `const` storeCalledArgs s (a2 :> b2)),
+      verifier: verifier s.argsList (\list (a2 :> b2) -> _verify list (a2 :> b2)) }
 else
-instance instanceMockArrayArgs8 :: 
-     (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, Eq d, Show e, Eq e, Show f, Eq f, Show g, Eq g, Show h, Eq h) 
-  => MockBuilder (Array (Definition (a : b : c : d : e : f : g : h) r)) (a -> b -> c -> d -> e -> f -> g -> h -> r) (a : b : c : d : e : f : g : h) where
+instance instanceMockArrayArgs2 :: (Show a, Eq a) => MockBuilder (Array (a :> r)) (a -> r) a where
   mock defs = do
     let s = store unit
-    { fun: (\a2 b2 c2 d2 e2 f2 g2 h2 -> storeCalledArgs s (a2 : b2 : c2 : d2 : e2 : f2 : g2 : h2) # findMatchedReturnValue defs),
-      verifier: verifier s.argsList (\list (a2 : b2 : c2 : d2 : e2 : f2 : g2 : h2) -> _verify list (a2 : b2 : c2 : d2 : e2 : f2 : g2 : h2)) }
-else
-instance instanceMockArrayArgs7 :: 
-     (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, Eq d, Show e, Eq e, Show f, Eq f, Show g, Eq g) 
-  => MockBuilder (Array (Definition (a : b : c : d : e : f : g) r)) (a -> b -> c -> d -> e -> f -> g -> r) (a : b : c : d : e : f : g) where
-  mock defs = do
-    let s = store unit
-    { fun: (\a2 b2 c2 d2 e2 f2 g2 -> storeCalledArgs s (a2 : b2 : c2 : d2 : e2 : f2 : g2) # findMatchedReturnValue defs),
-      verifier: verifier s.argsList (\list (a2 : b2 : c2 : d2 : e2 : f2 : g2) -> _verify list (a2 : b2 : c2 : d2 : e2 : f2 : g2)) }
-else
-instance instanceMockArrayArgs6 :: 
-     (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, Eq d, Show e, Eq e, Show f, Eq f) 
-  => MockBuilder (Array (Definition (a : b : c : d : e : f) r)) (a -> b -> c -> d -> e -> f -> r) (a : b : c : d : e : f) where
-  mock defs = do
-    let s = store unit
-    { fun: (\a2 b2 c2 d2 e2 f2 -> storeCalledArgs s (a2 : b2 : c2 : d2 : e2 : f2) # findMatchedReturnValue defs),
-      verifier: verifier s.argsList (\list (a2 : b2 : c2 : d2 : e2 : f2) -> _verify list (a2 : b2 : c2 : d2 : e2 : f2)) }
-else
-instance instanceMockArrayArgs5 :: 
-     (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, Eq d, Show e, Eq e) 
-  => MockBuilder (Array (Definition (a : b : c : d : e) r)) (a -> b -> c -> d -> e -> r) (a : b : c : d : e) where
-  mock defs = do
-    let s = store unit
-    { fun: (\a2 b2 c2 d2 e2 -> storeCalledArgs s (a2 : b2 : c2 : d2 : e2) # findMatchedReturnValue defs),
-      verifier: verifier s.argsList (\list (a2 : b2 : c2 : d2 : e2) -> _verify list (a2 : b2 : c2 : d2 : e2)) }
-else
-instance instanceMockArrayArgs4 :: 
-     (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, Eq d) 
-  => MockBuilder (Array (Definition (a : b : c : d) r)) (a -> b -> c -> d -> r) (a : b : c : d) where
-  mock defs = do
-    let s = store unit
-    { fun: (\a2 b2 c2 d2 -> storeCalledArgs s (a2 : b2 : c2 : d2) # findMatchedReturnValue defs),
-      verifier: verifier s.argsList (\list (a2 : b2 : c2 : d2) -> _verify list (a2 : b2 : c2 : d2)) }
-else
-instance instanceMockArrayArgs3 :: 
-     (Show a, Eq a, Show b, Eq b, Show c, Eq c) 
-  => MockBuilder (Array (Definition (a : b : c) r)) (a -> b -> c -> r) (a : b : c) where
-  mock defs = do
-    let s = store unit
-    { fun: (\a2 b2 c2 -> storeCalledArgs s (a2 : b2 : c2) # findMatchedReturnValue defs),
-      verifier: verifier s.argsList (\list (a2 : b2 : c2) -> _verify list (a2 : b2 : c2)) }
-else
-instance instanceMockArrayArgs2 :: (Show a, Eq a, Show b, Eq b) => MockBuilder (Array (Definition (a : b) r)) (a -> b -> r) (a : b) where
-  mock defs = do
-    let s = store unit
-    { fun: (\a2 b2 -> storeCalledArgs s (a2 : b2) # findMatchedReturnValue defs),
-      verifier: verifier s.argsList (\list (a2 : b2) -> _verify list (a2 : b2)) }
-else
-instance instanceMockArrayArgs1 :: (Show a, Eq a) => MockBuilder (Array (Definition a r)) (a -> r) a where
-  mock defs = do
-    let s = store unit
-    { fun: (\a2 -> storeCalledArgs s a2 # findMatchedReturnValue defs),
+    { fun: (\a2 -> (case find (\(a :> _) -> a == a2) defs of
+                      Just (_ :> r) -> r
+                      Nothing -> error "no answer found.") `const` storeCalledArgs s a2),
       verifier: verifier s.argsList (\list a2 -> _verify list a2) }
 else
-instance instanceMockArgs9 :: 
-     (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, Eq d, Show e, Eq e, Show f, Eq f, Show g, Eq g, Show h, Eq h, Show i, Eq i) 
-  => MockBuilder (Definition (a : b : c : d : e : f : g : h : i) r) (a -> b -> c -> d -> e -> f -> g -> h -> i -> r) (a : b : c : d : e : f : g : h : i) where
-  mock (Definition (a : b : c : d : e : f : g : h : i) r) = do
+instance instanceMockArgs4 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c) => MockBuilder (a :> b :> c :> r) (a -> b -> c -> r) (a :> b :> c) where
+  mock (a :> b :> c :> r) = do
     let s = store unit
-    { fun: (\a2 b2 c2 d2 e2 f2 g2 h2 i2 -> r `const` validateWithStoreArgs s (a : b : c : d : e : f : g : h : i) (a2 : b2 : c2 : d2 : e2 : f2 : g2 : h2 : i2)),
-      verifier: verifier s.argsList (\list (a2 : b2 : c2 : d2 : e2 : f2 : g2 : h2 : i2) -> _verify list (a2 : b2 : c2 : d2 : e2 : f2 : g2 : h2 : i2)) }
+    { fun: (\a2 b2 c2 -> r `const` validateWithStoreArgs s (a :> b :> c) (a2 :> b2 :> c2)),
+      verifier: verifier s.argsList (\list (a2 :> b2 :> c2) -> _verify list (a2 :> b2 :> c2)) }
 else
-instance instanceMockArgs8 :: 
-     (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, Eq d, Show e, Eq e, Show f, Eq f, Show g, Eq g, Show h, Eq h) 
-  => MockBuilder (Definition (a : b : c : d : e : f : g : h) r) (a -> b -> c -> d -> e -> f -> g -> h -> r) (a : b : c : d : e : f : g : h) where
-  mock (Definition (a : b : c : d : e : f : g : h) r) = do
+instance instanceMockArgs3 :: (Show a, Eq a, Show b, Eq b) => MockBuilder (a :> b :> r) (a -> b -> r) (a :> b) where
+  mock (a :> b :> r) = do
     let s = store unit
-    { fun: (\a2 b2 c2 d2 e2 f2 g2 h2 -> r `const` validateWithStoreArgs s (a : b : c : d : e : f : g : h) (a2 : b2 : c2 : d2 : e2 : f2 : g2 : h2)),
-      verifier: verifier s.argsList (\list (a2 : b2 : c2 : d2 : e2 : f2 : g2 : h2) -> _verify list (a2 : b2 : c2 : d2 : e2 : f2 : g2 : h2)) }
+    { fun: (\a2 b2 -> r `const` validateWithStoreArgs s (a :> b) (a2 :> b2)),
+      verifier: verifier s.argsList (\list (a2 :> b2) -> _verify list (a2 :> b2)) }
 else
-instance instanceMockArgs7 :: 
-     (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, Eq d, Show e, Eq e, Show f, Eq f, Show g, Eq g) 
-  => MockBuilder (Definition (a : b : c : d : e : f : g) r) (a -> b -> c -> d -> e -> f -> g -> r) (a : b : c : d : e : f : g) where
-  mock (Definition (a : b : c : d : e : f : g) r) = do
-    let s = store unit
-    { fun: (\a2 b2 c2 d2 e2 f2 g2 -> r `const` validateWithStoreArgs s (a : b : c : d : e : f : g) (a2 : b2 : c2 : d2 : e2 : f2 : g2)),
-      verifier: verifier s.argsList (\list (a2 : b2 : c2 : d2 : e2 : f2 : g2) -> _verify list (a2 : b2 : c2 : d2 : e2 : f2 : g2)) }
-else
-instance instanceMockArgs6 :: 
-     (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, Eq d, Show e, Eq e, Show f, Eq f) 
-  => MockBuilder (Definition (a : b : c : d : e : f) r) (a -> b -> c -> d -> e -> f -> r) (a : b : c : d : e : f) where
-  mock (Definition (a : b : c : d : e : f) r) = do
-    let s = store unit
-    { fun: (\a2 b2 c2 d2 e2 f2 -> r `const` validateWithStoreArgs s (a : b : c : d : e : f) (a2 : b2 : c2 : d2 : e2 : f2)),
-      verifier: verifier s.argsList (\list (a2 : b2 : c2 : d2 : e2 : f2) -> _verify list (a2 : b2 : c2 : d2 : e2 : f2)) }
-else
-instance instanceMockArgs5 :: 
-     (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, Eq d, Show e, Eq e) 
-  => MockBuilder (Definition (a : b : c : d : e) r) (a -> b -> c -> d -> e -> r) (a : b : c : d : e) where
-  mock (Definition (a : b : c : d : e) r) = do
-    let s = store unit
-    { fun: (\a2 b2 c2 d2 e2 -> r `const` validateWithStoreArgs s (a : b : c : d : e) (a2 : b2 : c2 : d2 : e2)),
-      verifier: verifier s.argsList (\list (a2 : b2 : c2 : d2 : e2) -> _verify list (a2 : b2 : c2 : d2 : e2)) }
-else
-instance instanceMockArgs4 :: 
-     (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, Eq d) 
-  => MockBuilder (Definition (a : b : c : d) r) (a -> b -> c -> d -> r) (a : b : c : d) where
-  mock (Definition (a : b : c : d) r) = do
-    let s = store unit
-    { fun: (\a2 b2 c2 d2 -> r `const` validateWithStoreArgs s (a : b : c : d) (a2 : b2 : c2 : d2)),
-      verifier: verifier s.argsList (\list (a2 : b2 : c2 : d2) -> _verify list (a2 : b2 : c2 : d2)) }
-else
-instance instanceMockArgs3 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c) => MockBuilder (Definition (a : b : c) r) (a -> b -> c -> r) (a : b : c) where
-  mock (Definition (a : b : c) r) = do
-    let s = store unit
-    { fun: (\a2 b2 c2 -> r `const` validateWithStoreArgs s (a : b : c) (a2 : b2 : c2)),
-      verifier: verifier s.argsList (\list (a2 : b2 : c2) -> _verify list (a2 : b2 : c2)) }
-else
-instance instanceMockArgs2 :: (Show a, Eq a, Show b, Eq b) => MockBuilder (Definition (a : b) r) (a -> b -> r) (a : b) where
-  mock (Definition (a : b) r) = do
-    let s = store unit
-    { fun: (\a2 b2 -> r `const` validateWithStoreArgs s (a : b) (a2 : b2)),
-      verifier: verifier s.argsList (\list (a2 : b2) -> _verify list (a2 : b2)) }
-else
-instance instanceMockArgs1 :: (Show a, Eq a) => MockBuilder (Definition a r) (a -> r) a where
-  mock (Definition a r) = do
+instance instanceMockArgs2 :: (Show a, Eq a) => MockBuilder (a :> r) (a -> r) a where
+  mock (a :> r) = do
     let s = store unit
     { fun: (\a2 -> r `const` validateWithStoreArgs s a a2),
       verifier: verifier s.argsList (\list a2 -> _verify list a2) }
+
 
 _verify :: forall a. Eq a => Show a => Array a -> a -> Maybe VerifyFailed
 _verify list a = 
@@ -266,8 +154,11 @@ message expected actual = joinWith "\n" ["Function was not called with expected 
 error :: forall a. String -> a
 error = unsafePerformEffect <<< throw
 
-findMatchedReturnValue :: forall a r. Eq a => Array (Definition a r) -> a ->  r
-findMatchedReturnValue defs args = 
-  case find (\(Definition a _) -> a == args) defs of
-    Just (Definition _ r) -> r
-    Nothing -> error "no answer found."
+whenCalledWith :: forall a. a -> a
+whenCalledWith = identity
+
+returning :: forall a b. a -> b -> Cons b a
+returning a b = b :> a 
+
+thenReturn :: forall a b. a -> b -> Cons a b
+thenReturn = (:>)

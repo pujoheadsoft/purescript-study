@@ -1,4 +1,4 @@
-module Test.MockSpec3 where
+module Test.MockSpec2 where
 
 import Prelude
 
@@ -7,13 +7,13 @@ import Control.Monad.State (StateT, runStateT)
 import Data.Identity (Identity)
 import Domain.Article (Article)
 import Effect.Aff (Aff)
-import Test.Mock3 (Verifier, mock, verify, verifyCount, (:>), whenCalledWith, thenReturn, returning)
+import Test.Mock2 (Verifier, mock, verify, verifyCount, (:>), whenCalledWith, thenReturn, returning)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 
 spec :: Spec Unit
 spec = do
-  describe "Mock3のテスト" do
+  describe "Mock2のテスト" do
     describe "任意の引数に対して任意の値を返す関数を生成することができる" do
       it "引数が1つの場合" do
         let

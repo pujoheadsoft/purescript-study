@@ -7,7 +7,7 @@ import Effect (Effect)
 import Effect.Console (log)
 import Halogen.Aff as HA
 import Halogen.VDom.Driver (runUI)
-import Test.Mock2 (mock, verify, (:), (:>))
+import Test.Mock (mock, verify, (:), (:>))
 import Unsafe.Coerce (unsafeCoerce)
 
 -- main :: Effect Unit
