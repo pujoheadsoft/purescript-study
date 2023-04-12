@@ -9,7 +9,7 @@ import Data.Identity (Identity)
 import Domain.Article (Article)
 import Effect.Aff (Aff)
 import Effect.Exception (Error)
-import Test.Mock (Verifier, calledWith, mock, returning, returns, verify, verifyCount, (:), (:>))
+import Test.Mock (Verifier, whenCalledWith, mock, returning, returns, verify, verifyCount, (:), (:>))
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (expectError, shouldEqual)
 
@@ -26,7 +26,7 @@ spec = do
       it "引数が1つの場合" do
         let
           m = mock $ "a" :> 100
-          x = mock <<< returning 100 $ calledWith "a"
+          x = mock <<< returning 100 $ whenCalledWith "a"
           -- x = mock $ returning "Z" $ whenCalledWith (X : Y)
           -- x = mock $ whenCalledWith (X : Y) `thenReturn` Z
           --a = (to unit) :: Any
@@ -66,7 +66,7 @@ spec = do
     describe "特定の引数で呼び出されたことを検証することができる" do
       it "引数が1つの場合" do
         let
-          m = mock $ calledWith 9 `returns` 100
+          m = mock $ whenCalledWith 9 `returns` 100
           _ = m.fun 9
         verify m 9
 
@@ -84,7 +84,7 @@ spec = do
 
       -- it "一度も呼び出さない状態で検証をするとfailになる" do
       --   let
-      --     m = mock $ calledWith 1 `returns` 100
+      --     m = mock $ whenCalledWith 1 `returns` 100
       --   expectError $ verify m.mock
       
       it "Monadを返すことができる1" do
@@ -108,19 +108,19 @@ spec = do
       it "Monadを返すことができる3" do
         let
           updateMock :: { fun :: (String -> StateT State Aff Unit), verifier :: Verifier String }
-          updateMock = mock $ calledWith "新しいtitle" `returns` pure unit
+          updateMock = mock $ whenCalledWith "新しいtitle" `returns` pure unit
         _ <- runStateT (updateMock.fun "新しいtitle") {article: {title: "Dummy"}} 
         verify updateMock "新しいtitle"
 
     describe "呼び出し回数を検証することができる" do
       it "呼び出された回数を検証することができる(0回)" do
         let
-          m = mock $ calledWith 1 `returns` 100
+          m = mock $ whenCalledWith 1 `returns` 100
         verifyCount m 1 0
 
       it "呼び出された回数を検証することができる(複数回)" do
         let
-          m = mock $ calledWith (1 : 2) `returns` 100
+          m = mock $ whenCalledWith (1 : 2) `returns` 100
           _ = m.fun 1 2
           _ = m.fun 1 2
           _ = m.fun 1 2

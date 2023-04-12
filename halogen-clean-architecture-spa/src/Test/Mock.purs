@@ -2,7 +2,7 @@ module Test.Mock
   (
   Cons(..),
   (:),
-  calledWith,
+  whenCalledWith,
   returns,
   returning,
   Definition,
@@ -73,8 +73,8 @@ instance verifyFailedSemigroup :: Semigroup VerifyFailed where
 instance verifyFailedMonoid :: Monoid VerifyFailed where
   mempty = VerifyFailed ""
 
-calledWith :: forall a. a -> Definition a Unit
-calledWith a = Definition a unit
+whenCalledWith :: forall a. a -> Definition a Unit
+whenCalledWith a = Definition a unit
 
 returns :: forall a r. Definition a Unit -> r -> Definition a r
 returns (Definition a _) r = Definition a r
@@ -83,7 +83,7 @@ returning :: forall a r. r ->  Definition a Unit -> Definition a r
 returning r (Definition a _) = Definition a r
 
 calledWithReturns :: forall a r. a -> r -> Definition a r
-calledWithReturns = calledWith >>> returns
+calledWithReturns = whenCalledWith >>> returns
 
 infixr 9 calledWithReturns as :>
 

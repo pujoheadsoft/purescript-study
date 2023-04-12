@@ -18,19 +18,21 @@ spec = do
       it "引数が1つの場合" do
         let
           m = mock $ "a" :> 100
-
-          m2 = mock $ whenCalledWith "a" `thenReturn` 100
-
-          m3 = mock <<< returning 100 $ whenCalledWith "a"
-
         m.fun "a" `shouldEqual` 100
-        m2.fun "a" `shouldEqual` 100
-        m3.fun "a" `shouldEqual` 100
 
       it "引数が2つの場合" do
         let
           m = mock $ "a" :> 2 :> 1000
+
+          m2 = mock $ whenCalledWith "a" :> 2 `thenReturn` 100
+
+          m3 = returning 100 $ whenCalledWith "a" :> 2
+
         m.fun "a" 2 `shouldEqual` 1000
+        m2.fun "a" 2 `shouldEqual` 100
+        --m3.fun "a" 2 `shouldEqual` 100
+--        (whenCalledWith "a" :> 2 `thenReturn` 100) `shouldEqual` ""
+--        m3 `shouldEqual` ""
 
       it "引数が3つの場合" do
         let

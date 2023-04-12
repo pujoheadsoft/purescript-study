@@ -157,8 +157,8 @@ error = unsafePerformEffect <<< throw
 whenCalledWith :: forall a. a -> a
 whenCalledWith = identity
 
-returning :: forall a b. a -> b -> Cons b a
-returning a b = b :> a 
+returning :: forall a b. a -> b -> Cons a b
+returning a b = Cons a b
 
 thenReturn :: forall a b. a -> b -> Cons a b
 thenReturn = (:>)
