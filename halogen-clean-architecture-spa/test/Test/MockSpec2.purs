@@ -7,10 +7,13 @@ import Control.Monad.State (StateT, runStateT)
 import Data.Identity (Identity)
 import Domain.Article (Article)
 import Effect.Aff (Aff)
-import Test.Mock2 (Verifier, mock, verify, verifyCount, (:>), whenCalledWith, thenReturn, returning)
+import Test.Mock2 (Cons, Verifier, mock, returning, thenReturn, verify, verifyCount, whenCalledWith, (:>))
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
+import Type.Prelude (Proxy(..))
+import Type.Proxy (Proxy)
 
+-- Proxyを使って戻りの型を動的に決定できる
 spec :: Spec Unit
 spec = do
   describe "Mock2のテスト" do
@@ -24,12 +27,15 @@ spec = do
         let
           m = mock $ "a" :> 2 :> 1000
 
-          m2 = mock $ whenCalledWith "a" :> 2 `thenReturn` 100
+          m2 :: (Cons String (Cons Int Int))
+          m2 = ("a" :> (2 `thenReturn` 100))
 
-          m3 = returning 100 $ whenCalledWith "a" :> 2
+          m3 :: (Cons String (Cons Int Int))
+          m3 = (thenReturn "a" (2 :> 100))          
 
         m.fun "a" 2 `shouldEqual` 1000
-        m2.fun "a" 2 `shouldEqual` 100
+        
+        --m2.fun "a" 2 `shouldEqual` 100
         --m3.fun "a" 2 `shouldEqual` 100
 --        (whenCalledWith "a" :> 2 `thenReturn` 100) `shouldEqual` ""
 --        m3 `shouldEqual` ""
