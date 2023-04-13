@@ -15,7 +15,8 @@ module Test.Mock3
   whenCalledWith,
   -- thenReturn,
   returning,
-  Arg
+  Arg,
+  arg
   )
   where
 

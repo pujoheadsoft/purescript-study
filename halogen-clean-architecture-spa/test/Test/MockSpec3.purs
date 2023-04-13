@@ -7,7 +7,7 @@ import Control.Monad.State (StateT, runStateT)
 import Data.Identity (Identity)
 import Domain.Article (Article)
 import Effect.Aff (Aff)
-import Test.Mock3 (Cons, Verifier, mock, returning, verify, verifyCount, whenCalledWith, (:>), (:))
+import Test.Mock3 (Cons, Verifier, arg, mock, returning, verify, verifyCount, whenCalledWith, (:), (:>))
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 import Type.Prelude (Proxy(..))
@@ -58,18 +58,18 @@ spec = do
   --       m.fun 1 "a" true `shouldEqual` 100
   -- --      m.fun 1 "b" true `shouldEqual` 100
 
---    describe "特定の引数で呼び出されたことを検証することができる" do
-      -- it "引数が1つの場合" do
-      --   let
-      --     m = mock $ 9 : 100
-      --     _ = m.fun 9
-      --   verify m 9
+    describe "特定の引数で呼び出されたことを検証することができる" do
+      it "引数が1つの場合" do
+        let
+          m = mock $ 9 : 100
+          _ = m.fun 9
+        verify m (arg 9)
 
-      -- it "引数が2つの場合" do
-      --   let
-      --     m = mock $ 9 : false : 100
-      --     _ = m.fun 9 false
-      --   verify m $ 9 : false
+      it "引数が2つの場合" do
+        let
+          m = mock $ 9 : false : 100
+          _ = m.fun 9 false
+        verify m $ 9 : false
 
       -- it "引数が3つの場合" do
       --   let
