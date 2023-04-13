@@ -13,7 +13,6 @@ import Test.Mock (Verifier, whenCalledWith, mock, returning, returns, verify, ve
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (expectError, shouldEqual)
 
-
 expectErrorF :: forall m f. MonadError Error m => f -> m Unit
 expectErrorF f = expectError $ ((\_ -> let 
     _ = f 

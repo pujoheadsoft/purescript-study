@@ -2,30 +2,23 @@ module Test.MockSpec3 where
 
 import Prelude
 
-import Component.State (State)
-import Control.Monad.State (StateT, runStateT)
-import Data.Identity (Identity)
-import Domain.Article (Article)
-import Effect.Aff (Aff)
-import Test.Mock3 (Cons, Verifier, arg, mock, returning, verify, verifyCount, whenCalledWith, (:), (:>))
+import Test.Mock3 (arg, mock, verify, (:>))
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
-import Type.Prelude (Proxy(..))
-import Type.Proxy (Proxy)
 
 -- Proxyを使って戻りの型を動的に決定できる
 spec :: Spec Unit
 spec = do
-  describe "Mock2のテスト" do
+  describe "Mock3のテスト" do
     describe "任意の引数に対して任意の値を返す関数を生成することができる" do
       it "引数が1つの場合" do
         let
-          m = mock $ "a" : 100
+          m = mock $ "a" :> 100
         m.fun "a" `shouldEqual` 100
 
       it "引数が2つの場合" do
         let
-          m = mock $ "a" : 2 : 1000    
+          m = mock $ "a" :> 2 :> 1000    
 
         m.fun "a" 2 `shouldEqual` 1000
         
@@ -34,11 +27,10 @@ spec = do
 --        (whenCalledWith "a" :> 2 `thenReturn` 100) `shouldEqual` ""
 --        m3 `shouldEqual` ""
 
-      -- it "引数が3つの場合" do
-      --   let
-      --     m = mock $ "a" : 2 : true : 10000
-      --   m.fun "a" 2 true `shouldEqual` 10000
-
+      it "引数が3つの場合" do
+        let
+          m = mock $ "a" :> 2 :> true :> 10000
+        m.fun "a" 2 true `shouldEqual` 10000
 
   --   describe "期待する引数でない引数で呼び出した場合failになる" do
   --     it "引数が1つの場合" do
@@ -61,21 +53,21 @@ spec = do
     describe "特定の引数で呼び出されたことを検証することができる" do
       it "引数が1つの場合" do
         let
-          m = mock $ 9 : 100
+          m = mock $ 9 :> 100
           _ = m.fun 9
         verify m (arg 9)
 
       it "引数が2つの場合" do
         let
-          m = mock $ 9 : false : 100
+          m = mock $ 9 :> false :> 100
           _ = m.fun 9 false
-        verify m $ 9 : false
+        verify m $ 9 :> false
 
-      -- it "引数が3つの場合" do
-      --   let
-      --     m = mock $ 9 : false : "hoge" : 100
-      --     _ = m.fun 9 false "hoge"
-      --   verify m $ 9 : false : "hoge"
+      it "引数が3つの場合" do
+        let
+          m = mock $ 9 :> false :> "hoge" :> 100
+          _ = m.fun 9 false "hoge"
+        verify m $ 9 :> false :> "hoge"
 
       -- it "一度も呼び出さない状態で検証をするとfailになる" do
       --   let
@@ -89,16 +81,16 @@ spec = do
     --       _ = (m.fun :: (Int -> Identity String)) 1
     --     verify m 1
       
-    --   it "Monadを返すことができる2" do
-    --     let
-    --       -- Monad m のようにする場合、いまどのMonadで動いてるのかわからないといけない(mは駄目で、ちゃんと指定しないといけない)
-    --       findByTitleMock :: { fun :: (String -> Aff Article), verifier :: Verifier String }
-    --       findByTitleMock = mock $ "古いタイトル" :> pure { title: "新しいタイトル" }
-    --     result <- findByTitleMock.fun "古いタイトル"
+      -- it "Monadを返すことができる2" do
+      --   let
+      --     -- Monad m のようにする場合、いまどのMonadで動いてるのかわからないといけない(mは駄目で、ちゃんと指定しないといけない)
+      --     findByTitleMock :: { fun :: (String -> Aff Article), verifier :: Verifier (Arg String) }
+      --     findByTitleMock = mock $ "古いタイトル" :> pure { title: "新しいタイトル" }
+      --   result <- findByTitleMock.fun "古いタイトル"
 
-    --     result `shouldEqual` {title: "新しいタイトル"}
+      --   result `shouldEqual` {title: "新しいタイトル"}
         
-    --     verify findByTitleMock "古いタイトル"
+      --   verify findByTitleMock (arg "古いタイトル")
       
     --   it "Monadを返すことができる3" do
     --     let
@@ -121,23 +113,23 @@ spec = do
     --       _ = m.fun 1 2
     --     verifyCount m (1 :> 2) 3
     
-    -- describe "一つのMockで複数の引数の組み合わせに対応できる" do
-    --   describe "任意の値を返すことができる" do
-    --     it "引数が1つの場合" do
-    --       let
-    --         m = mock [1 :> "r1",
-    --                   2 :> "r2"]
+    describe "一つのMockで複数の引数の組み合わせに対応できる" do
+      describe "任意の値を返すことができる" do
+        it "引数が1つの場合" do
+          let
+            m = mock [1 :> "r1",
+                      2 :> "r2"]
           
-    --       m.fun 1 `shouldEqual` "r1"
-    --       m.fun 2 `shouldEqual` "r2"
+          m.fun 1 `shouldEqual` "r1"
+          m.fun 2 `shouldEqual` "r2"
 
-    --     it "引数が2つの場合" do
-    --       let
-    --         m = mock [1 :> "2" :> "r1",
-    --                   2 :> "3" :> "r2"]
+        it "引数が2つの場合" do
+          let
+            m = mock [1 :> "2" :> "r1",
+                      2 :> "3" :> "r2"]
           
-    --       m.fun 1 "2" `shouldEqual` "r1"
-    --       m.fun 2 "3" `shouldEqual` "r2"
+          m.fun 1 "2" `shouldEqual` "r1"
+          m.fun 2 "3" `shouldEqual` "r2"
 
     --   describe "検証することができる" do
     --     it "引数が1つの場合" do
