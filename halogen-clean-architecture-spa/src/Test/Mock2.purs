@@ -24,7 +24,6 @@ import Data.String (joinWith)
 import Effect.Exception (Error, throw)
 import Effect.Unsafe (unsafePerformEffect)
 import Test.Spec.Assertions (fail)
-import Unsafe.Coerce (unsafeCoerce)
 
 type Mock fn v = {
   fun :: fn,
@@ -111,22 +110,6 @@ instance instanceMockArgs2 :: (Show a, Eq a) => MockBuilder (a :> r) (a -> r) a 
     let s = store unit
     { fun: (\a2 -> r `const` validateWithStoreArgs s a a2),
       verifier: verifier s.argsList (\list a2 -> _verify list a2) }
-else
-instance instanceMockArgsX :: (Show a, Eq a) => MockBuilder (Arg a :> Arg r) (a -> r) a where
-  mock (Arg {v: a, any: x} :> Arg {v: r, any: y}) = do
-    let s = store unit
-    { fun: (\a2 -> r `const` validateWithStoreArgs s a a2),
-      verifier: verifier s.argsList (\list a2 -> _verify list a2) }
-
-newtype Arg v = Arg {
-  v :: v,
-  any :: Boolean
-}
-
-anyX :: forall a. Arg a
-anyX = unsafeCoerce Arg {v: "", any: true}
-
-cc = anyX :: Arg Int
 
 _verify :: forall a. Eq a => Show a => Array a -> a -> Maybe VerifyFailed
 _verify list a = 

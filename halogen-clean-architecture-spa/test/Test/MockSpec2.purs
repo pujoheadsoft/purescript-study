@@ -7,11 +7,9 @@ import Control.Monad.State (StateT, runStateT)
 import Data.Identity (Identity)
 import Domain.Article (Article)
 import Effect.Aff (Aff)
-import Test.Mock2 (Cons, Verifier, mock, returning, thenReturn, verify, verifyCount, whenCalledWith, (:>))
+import Test.Mock2 (Cons, Verifier, mock, thenReturn, verify, verifyCount, (:>))
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
-import Type.Prelude (Proxy(..))
-import Type.Proxy (Proxy)
 
 -- Proxyを使って戻りの型を動的に決定できる
 spec :: Spec Unit
