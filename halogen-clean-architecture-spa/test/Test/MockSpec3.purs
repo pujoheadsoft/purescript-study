@@ -2,7 +2,12 @@ module Test.MockSpec3 where
 
 import Prelude
 
-import Test.Mock3 (arg, mock, verify, (:>))
+import Component.State (State)
+import Control.Monad.State (StateT, runStateT)
+import Data.Identity (Identity)
+import Domain.Article (Article)
+import Effect.Aff (Aff)
+import Test.Mock3 (Arg, Cons, Verifier, arg, mock, verify, verifyCount, (:>))
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 
@@ -74,44 +79,42 @@ spec = do
       --     m = mock $ whenCalledWith 1 `returns` 100
       --   expectError $ verify m.mock
       
-    --   it "Monadを返すことができる1" do
-    --     let
-    --       m = mock $ 1 :> pure "hoge"
-
-    --       _ = (m.fun :: (Int -> Identity String)) 1
-    --     verify m 1
+      it "Monadを返すことができる1" do
+        let
+          m = mock $ 1 :> (pure "hoge" :: Identity String)
+          _ = (m.fun :: (Int -> Identity String)) 1
+        verify m (arg 1)
       
-      -- it "Monadを返すことができる2" do
-      --   let
-      --     -- Monad m のようにする場合、いまどのMonadで動いてるのかわからないといけない(mは駄目で、ちゃんと指定しないといけない)
-      --     findByTitleMock :: { fun :: (String -> Aff Article), verifier :: Verifier (Arg String) }
-      --     findByTitleMock = mock $ "古いタイトル" :> pure { title: "新しいタイトル" }
-      --   result <- findByTitleMock.fun "古いタイトル"
+      it "Monadを返すことができる2" do
+        let
+          -- Monad m のようにする場合、いまどのMonadで動いてるのかわからないといけない(mは駄目で、ちゃんと指定しないといけない)
+          findByTitleMock = mock $ "古いタイトル" :> (pure { title: "新しいタイトル" } :: Aff Article)
 
-      --   result `shouldEqual` {title: "新しいタイトル"}
+        result <- findByTitleMock.fun "古いタイトル"
+
+        result `shouldEqual` {title: "新しいタイトル"}
         
-      --   verify findByTitleMock (arg "古いタイトル")
+        verify findByTitleMock (arg "古いタイトル")
       
-    --   it "Monadを返すことができる3" do
-    --     let
-    --       updateMock :: { fun :: (String -> StateT State Aff Unit), verifier :: Verifier String }
-    --       updateMock = mock $ "新しいtitle" :> pure unit
-    --     _ <- runStateT (updateMock.fun "新しいtitle") {article: {title: "Dummy"}} 
-    --     verify updateMock "新しいtitle"
+      it "Monadを返すことができる3" do
+        let
+          updateMock = mock $ "新しいtitle" :> (pure unit :: StateT State Aff Unit)
+        _ <- runStateT (updateMock.fun "新しいtitle") {article: {title: "Dummy"}} 
+        verify updateMock (arg "新しいtitle")
 
-    -- describe "呼び出し回数を検証することができる" do
-    --   it "呼び出された回数を検証することができる(0回)" do
-    --     let
-    --       m = mock $ 1 :> 100
-    --     verifyCount m 1 0
+    describe "呼び出し回数を検証することができる" do
+      it "呼び出された回数を検証することができる(0回)" do
+        let
+          m = mock $ 1 :> 100
+        verifyCount m (arg 1) 0
 
-    --   it "呼び出された回数を検証することができる(複数回)" do
-    --     let
-    --       m = mock $ 1 :> 2 :> 100
-    --       _ = m.fun 1 2
-    --       _ = m.fun 1 2
-    --       _ = m.fun 1 2
-    --     verifyCount m (1 :> 2) 3
+      it "呼び出された回数を検証することができる(複数回)" do
+        let
+          m = mock $ 1 :> 2 :> 100
+          _ = m.fun 1 2
+          _ = m.fun 1 2
+          _ = m.fun 1 2
+        verifyCount m (1 :> 2) 3
     
     describe "一つのMockで複数の引数の組み合わせに対応できる" do
       describe "任意の値を返すことができる" do
