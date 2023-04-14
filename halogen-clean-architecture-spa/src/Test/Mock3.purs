@@ -1,20 +1,18 @@
 module Test.Mock3
   (
   Cons(..),
-  Definition,
   class MockBuilder,
   mock,
   verify,
+  class VerifyCountBuilder,
   verifyCount,
   (#>),
   (:>),
   cons,
   class ConsGen,
+  class VerifyBuilder,
   Verifier,
   showCalledArgs,
-  whenCalledWith,
-  -- thenReturn,
-  returning,
   Arg,
   arg
   )
@@ -44,7 +42,6 @@ type CallredArgsStore v = {
   store :: v -> Unit
 }
 
--- CalledArgs (a : b : c)
 type CalledArgsList v = Array v
 
 newtype Verifier v = Verifier {
@@ -66,8 +63,6 @@ instance eqCons :: (Eq a, Eq b) => Eq (Cons a b) where
 infixr 8 type Cons as #>
 infixr 8 Cons as #>
 
-data Definition a = Definition a
-
 type Message = String
 
 data VerifyFailed = VerifyFailed Message
@@ -84,36 +79,46 @@ class MockBuilder a r v | a -> r, a -> v where
 class Finder d a r | d -> a, d -> r where
   findMatchedReturnValue :: Array d -> a ->  r
 
-instance instanceMockArrayArgs3 :: (Show a, Eq a, Show b, Eq b) => MockBuilder (Array (Arg a #> Arg b #> Arg r)) (a -> b -> r) (Arg a #> Arg b) where
+instance finderArg3 :: (Eq a, Eq b) => Finder (Arg a #> Arg b #> Arg r) (Arg a #> Arg b) r where
+  findMatchedReturnValue defs (a2 #> b2) = case find (\(a #> b #> _) -> (a #> b) == (a2 #> b2)) defs of
+    Just (_ #> _ #> (Arg {v: r, any: _})) -> r
+    Nothing -> error "no answer found."
+else
+instance finderArg2 :: Eq a => Finder (Arg a #> Arg r) (Arg a) r where
+  findMatchedReturnValue defs a2 = case find (\(a #> _) -> a == a2) defs of
+    Just (_ #> (Arg {v: r, any: _})) -> r
+    Nothing -> error "no answer found."
+
+instance instanceMockArrayArgs3 :: (Show a, Eq a, Show b, Eq b)
+  => MockBuilder (Array (Arg a #> Arg b #> Arg r)) (a -> b -> r) (Arg a #> Arg b) where
   mock defs = do
     let s = store unit
-    { fun: (\a2 b2 -> (case find (\(a #> b #> _) -> (a #> b) == (arg a2 :> arg b2)) defs of
-                      Just (_ #> _ #> (Arg {v: r, any: _})) -> r
-                      Nothing -> error "no answer found.") `const` storeCalledArgs s (arg a2 :> arg b2)),
+    { fun: (\a2 b2 -> findMatchedReturnValue defs (arg a2 :> arg b2) `const` storeCalledArgs s (arg a2 :> arg b2)),
       verifier: verifier s.argsList (\list (a2 #> b2) -> _verify list (a2 #> b2)) }
 else
-instance instanceMockArrayArgs2 :: (Show a, Eq a) => MockBuilder (Array (Arg a #> Arg r)) (a -> r) (Arg a) where
+instance instanceMockArrayArgs2 :: (Show a, Eq a)
+  => MockBuilder (Array (Arg a #> Arg r)) (a -> r) (Arg a) where
   mock defs = do
     let s = store unit
-    { fun: (\a2 -> (case find (\(a #> _) -> a == (arg a2)) defs of
-                      Just (_ #> (Arg {v: r, any: _})) -> r
-                      Nothing -> error "no answer found.") `const` storeCalledArgs s (arg a2)),
+    { fun: (\a2 -> findMatchedReturnValue defs (arg a2) `const` storeCalledArgs s (arg a2)),
       verifier: verifier s.argsList (\list a2 -> _verify list a2) }
 else
-instance instanceMockArgs4 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c) => MockBuilder (Arg a #> Arg b #> Arg c #> Arg r) (a -> b -> c -> r) (Arg a #> Arg b #> Arg c) where
+instance instanceMockArgs4 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c)
+  => MockBuilder (Arg a #> Arg b #> Arg c #> Arg r) (a -> b -> c -> r) (Arg a #> Arg b #> Arg c) where
   mock (a #> b #> c #> (Arg {v: r, any: _})) = do
     let s = store unit
-    -- 
     { fun: (\a2 b2 c2 -> r `const` validateWithStoreArgs s (a #> b #> c) (arg a2 :> arg b2 :> arg c2) ),
       verifier: verifier s.argsList (\list (a2 #> b2 #> c2) -> _verify list (a2 #> b2 #> c2)) }
 else
-instance instanceMockArgs3 :: (Show a, Eq a, Show b, Eq b) => MockBuilder (Arg a #> Arg b #> Arg r) (a -> b -> r) (Arg a #> Arg b) where
+instance instanceMockArgs3 :: (Show a, Eq a, Show b, Eq b)
+  => MockBuilder (Arg a #> Arg b #> Arg r) (a -> b -> r) (Arg a #> Arg b) where
   mock (a #> b #> (Arg {v: r, any: _})) = do
     let s = store unit
     { fun: (\a2 b2 -> r `const` validateWithStoreArgs s (a #> b) (arg a2 :> arg b2)),
       verifier: verifier s.argsList (\list (a2 #> b2) -> _verify list (a2 #> b2)) }
 else
-instance instanceMockArgs2 :: (Show a, Eq a) => MockBuilder (Arg a #> Arg r) (a -> r) (Arg a) where
+instance instanceMockArgs2 :: (Show a, Eq a) 
+  => MockBuilder (Arg a #> Arg r) (a -> r) (Arg a) where
   mock (a #> Arg {v: r, any: _}) = do
     let s = store unit
     { fun: (\a2 -> r `const` validateWithStoreArgs s a (arg a2)),
@@ -160,19 +165,84 @@ else
 instance instaneConsGen :: ConsGen a b (Cons (Arg a) (Arg b)) where
   cons a b = Cons (Arg {v: a, any: false}) (Arg {v: b, any: false})
 
+arg :: forall a. a -> Arg a
+arg a = Arg {v: a, any: false}
+
+-- infixr 8 type Arg as :
+infixr 8 cons as :>
+
+_verify :: forall a. Eq a => Show a => Array a -> a -> Maybe VerifyFailed
+_verify list a = 
+  if any (_ == a) list then Nothing 
+  else Just $ VerifyFailed ("No answer found for argument: " <> show a)
+
+class VerifyBuilder v a where
+  verify :: forall m r. MonadThrow Error m => { verifier :: Verifier v | r} -> a -> m Unit
+
+instance instanceVerifyBuilderArg1 :: VerifyBuilder (Arg a) a where
+  verify {verifier : (Verifier { calledArgsList, verify: doVerify })} a = 
+    zzz doVerify calledArgsList (arg a)
+else
+instance instanceVerifyBuilder :: VerifyBuilder a a where
+  verify {verifier : (Verifier { calledArgsList, verify: doVerify })} args = 
+    zzz doVerify calledArgsList args
+
+zzz :: forall v m. MonadThrow Error m => (CalledArgsList v -> v -> Maybe VerifyFailed) -> CalledArgsList v -> v -> m Unit
+zzz doVerify calledArgsList args = case doVerify calledArgsList args of
+      Just (VerifyFailed msg) -> fail msg
+      Nothing -> pure unit
+
+validateArgs :: forall a. Eq a => Show a => a -> a -> Unit
+validateArgs expected actual = if (expected == actual) then unit else error $ message expected actual
+
+storeCalledArgs :: forall a. CallredArgsStore a -> a -> a
+storeCalledArgs s a = const a (s.store a)
+
+validateWithStoreArgs :: forall a. Eq a => Show a => CallredArgsStore a -> a -> a -> Unit
+validateWithStoreArgs s expected actual = validateArgs expected (storeCalledArgs s actual)
+
+class VerifyCountBuilder v a where
+  verifyCount :: forall m r. MonadThrow Error m => Eq v => { verifier :: Verifier v | r} -> a -> Int -> m Unit
+
+instance instanceVerifyCountBuilderArg1 :: VerifyCountBuilder (Arg a) a where
+  verifyCount {verifier : (Verifier { calledArgsList })} a count =  yyy calledArgsList (arg a) count
+else
+instance instanceVerifyCountBuilder :: VerifyCountBuilder a a where
+  verifyCount {verifier : (Verifier { calledArgsList })} v count = yyy calledArgsList v count
+
+yyy :: forall v m. MonadThrow Error m => Eq v => CalledArgsList v -> v -> Int -> m Unit
+yyy calledArgsList v count = 
+  let
+    callCount = length (filter (\args -> args == v) calledArgsList)
+  in if count == callCount then pure unit
+    else fail $ joinWith "\n" ["Function was not called the expected number of times.",  "expected: " <> show count, "but was : " <> show callCount]
+
+showCalledArgs :: forall v r. Eq v => Show v => { verifier :: Verifier v | r} -> v -> String
+showCalledArgs { verifier : (Verifier { calledArgsList }) } v = show (filter (\args -> args == v) calledArgsList)
+
+{-
+  Function was not called with expected arguments.
+  expected: 1, "2", 3
+  but was : 1, "1", 1
+-}
+message :: forall a. Show a => a -> a -> String
+message expected actual = joinWith "\n" ["Function was not called with expected arguments.",  "expected: " <> show expected, "but was : " <> show actual]
+
+error :: forall a. String -> a
+error = unsafePerformEffect <<< throw
+
+
+
+
+
+
 anyX :: forall a. Arg a
 anyX = unsafeCoerce Arg {v: "", any: true}
 
 anyV :: forall a. a -> Arg a
 anyV a = Arg {v: a, any: true}
 
-arg :: forall a. a -> Arg a
-arg a = Arg {v: a, any: false}
-
 cc = anyX :: Arg Int
-
--- infixr 8 type Arg as :
-infixr 8 cons as :>
 
 dd :: Cons (Arg String) (Cons (Arg Int) (Arg Boolean))
 dd = arg "a" #> arg 1 #> arg true
@@ -192,57 +262,3 @@ gg = "a" :> 1 :> true :> "b"
 
 hh :: Cons (Arg String) (Cons (Arg Int) (Arg Boolean))
 hh = anyV "a" :> anyV 1 :> anyV true
-
-_verify :: forall a. Eq a => Show a => Array a -> a -> Maybe VerifyFailed
-_verify list a = 
-  if any (_ == a) list then Nothing 
-  else Just $ VerifyFailed ("No answer found for argument: " <> show a)
-
-verify :: forall a m r. MonadThrow Error m => { verifier :: Verifier a | r} -> a -> m Unit
-verify {verifier : (Verifier { calledArgsList, verify: doVerify })} args = 
-  case doVerify calledArgsList args of
-    Just (VerifyFailed msg) -> fail msg
-    Nothing -> pure unit
-
-validateArgs :: forall a. Eq a => Show a => a -> a -> Unit
-validateArgs expected actual = if (expected == actual) then unit else error $ message expected actual
-
-storeCalledArgs :: forall a. CallredArgsStore a -> a -> a
-storeCalledArgs s a = const a (s.store a)
-
-validateWithStoreArgs :: forall a. Eq a => Show a => CallredArgsStore a -> a -> a -> Unit
-validateWithStoreArgs s expected actual = validateArgs expected (storeCalledArgs s actual)
-
-verifyCount :: forall v m r. MonadThrow Error m => Eq v => { verifier :: Verifier v | r} -> v -> Int -> m Unit
-verifyCount {verifier : (Verifier { calledArgsList })} v count =
-  let
-    callCount = length (filter (\args -> args == v) calledArgsList)
-  in if count == callCount then pure unit
-    else fail $ joinWith "\n" ["Function was not called the expected number of times.",  "expected: " <> show count, "but was : " <> show callCount]
-
-
-showCalledArgs :: forall v r. Eq v => Show v => { verifier :: Verifier v | r} -> v -> String
-showCalledArgs { verifier : (Verifier { calledArgsList }) } v = show (filter (\args -> args == v) calledArgsList)
-
-{-
-  Function was not called with expected arguments.
-  expected: 1, "2", 3
-  but was : 1, "1", 1
--}
-message :: forall a. Show a => a -> a -> String
-message expected actual = joinWith "\n" ["Function was not called with expected arguments.",  "expected: " <> show expected, "but was : " <> show actual]
-
-error :: forall a. String -> a
-error = unsafePerformEffect <<< throw
-
-whenCalledWith :: forall a. a -> a
-whenCalledWith = identity
-
-returning :: forall a. a -> a
-returning = identity
-
--- thenReturn :: forall a b. a -> b -> Cons a b
--- thenReturn = (#>)
-
-
-

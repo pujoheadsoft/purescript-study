@@ -7,7 +7,7 @@ import Control.Monad.State (StateT, runStateT)
 import Data.Identity (Identity)
 import Domain.Article (Article)
 import Effect.Aff (Aff)
-import Test.Mock3 (Arg, Cons, Verifier, arg, mock, verify, verifyCount, (:>))
+import Test.Mock3 (Arg, Cons, Verifier, mock, verify, verifyCount, (:>))
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 
@@ -60,7 +60,7 @@ spec = do
         let
           m = mock $ 9 :> 100
           _ = m.fun 9
-        verify m (arg 9)
+        verify m 9
 
       it "引数が2つの場合" do
         let
@@ -83,7 +83,7 @@ spec = do
         let
           m = mock $ 1 :> (pure "hoge" :: Identity String)
           _ = (m.fun :: (Int -> Identity String)) 1
-        verify m (arg 1)
+        verify m 1
       
       it "Monadを返すことができる2" do
         let
@@ -94,19 +94,19 @@ spec = do
 
         result `shouldEqual` {title: "新しいタイトル"}
         
-        verify findByTitleMock (arg "古いタイトル")
+        verify findByTitleMock "古いタイトル"
       
       it "Monadを返すことができる3" do
         let
           updateMock = mock $ "新しいtitle" :> (pure unit :: StateT State Aff Unit)
         _ <- runStateT (updateMock.fun "新しいtitle") {article: {title: "Dummy"}} 
-        verify updateMock (arg "新しいtitle")
+        verify updateMock "新しいtitle"
 
     describe "呼び出し回数を検証することができる" do
       it "呼び出された回数を検証することができる(0回)" do
         let
           m = mock $ 1 :> 100
-        verifyCount m (arg 1) 0
+        verifyCount m 1 0
 
       it "呼び出された回数を検証することができる(複数回)" do
         let
@@ -134,36 +134,36 @@ spec = do
           m.fun 1 "2" `shouldEqual` "r1"
           m.fun 2 "3" `shouldEqual` "r2"
 
-    --   describe "検証することができる" do
-    --     it "引数が1つの場合" do
-    --       let
-    --         m = mock [1 :> "r1",
-    --                   2 :> "r2"]
+      describe "検証することができる" do
+        it "引数が1つの場合" do
+          let
+            m = mock [1 :> "r1",
+                      2 :> "r2"]
           
-    --         _ = m.fun 1
-    --         _ = m.fun 2
-    --       verify m 1
-    --       verify m 2
+            _ = m.fun 1
+            _ = m.fun 2
+          verify m 1
+          verify m 2
 
-    --     it "引数が2つの場合" do
-    --       let
-    --         m = mock [1 :> "2" :> "r1",
-    --                   2 :> "3" :> "r2"]
-    --         _ = m.fun 1 "2"
-    --         _ = m.fun 2 "3"
+        it "引数が2つの場合" do
+          let
+            m = mock [1 :> "2" :> "r1",
+                      2 :> "3" :> "r2"]
+            _ = m.fun 1 "2"
+            _ = m.fun 2 "3"
 
-    --       verify m (1 :> "2")
-    --       verify m (2 :> "3")
+          verify m (1 :> "2")
+          verify m (2 :> "3")
 
-    --   it "呼び出された回数を検証することができる(複数回)" do
-    --     let
-    --       m = mock [1 :> "2" :> "r1",
-    --                 2 :> "3" :> "r2"]
-    --       _ = m.fun 1 "2"
-    --       _ = m.fun 2 "3"
-    --       _ = m.fun 1 "2"
+      it "呼び出された回数を検証することができる(複数回)" do
+        let
+          m = mock [1 :> "2" :> "r1",
+                    2 :> "3" :> "r2"]
+          _ = m.fun 1 "2"
+          _ = m.fun 2 "3"
+          _ = m.fun 1 "2"
 
-    --     verifyCount m (1 :> "2") 2
+        verifyCount m (1 :> "2") 2
 
     -- describe "Cons" do
     --   describe "Show" do
