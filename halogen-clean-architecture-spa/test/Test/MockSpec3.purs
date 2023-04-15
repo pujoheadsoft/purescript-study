@@ -7,7 +7,7 @@ import Control.Monad.State (StateT, runStateT)
 import Data.Identity (Identity)
 import Domain.Article (Article)
 import Effect.Aff (Aff)
-import Test.Mock3 (Arg, Cons, Verifier, mock, verify, verifyCount, (:>))
+import Test.Mock3 (Cons, Param, Verifier, any, mock, verify, verifyCount, (:>), matcher)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 
@@ -27,11 +27,6 @@ spec = do
 
         m.fun "a" 2 `shouldEqual` 1000
         
-        --m2.fun "a" 2 `shouldEqual` 100
-        --m3.fun "a" 2 `shouldEqual` 100
---        (whenCalledWith "a" :> 2 `thenReturn` 100) `shouldEqual` ""
---        m3 `shouldEqual` ""
-
       it "引数が3つの場合" do
         let
           m = mock $ "a" :> 2 :> true :> 10000
@@ -165,14 +160,73 @@ spec = do
 
         verifyCount m (1 :> "2") 2
 
-    -- describe "Cons" do
-    --   describe "Show" do
-    --     it "arg2" do
-    --       show (10 :> true) `shouldEqual` "10, true"
-    --     it "arg3" do
-    --       show ("1" :> false :> [3, 4]) `shouldEqual` "\"1\", false, [3,4]"
-    --   describe "Eq" do
-    --     it "arg2" do
-    --       (1 :> "2") `shouldEqual` (1 :> "2")
-    --     it "arg3" do
-    --       ("1" :> false :> [3, 4]) `shouldEqual` ("1" :> false :> [3, 4])
+    describe "Matcher" do
+      describe "any" do
+        it "引数が1つの場合" do
+          let
+            m = mock $ (any :: Param String) :> "Expected"
+          
+          m.fun "" `shouldEqual` "Expected"
+          m.fun "1" `shouldEqual` "Expected"
+          m.fun "a" `shouldEqual` "Expected"
+
+        it "引数が2つの場合" do
+          let
+            m = mock $ (any :: Param String) :> (any :: Param Int) :> "Expected"
+          
+          m.fun "" 0    `shouldEqual` "Expected"
+          m.fun "1" 9   `shouldEqual` "Expected"
+          m.fun "a" 100 `shouldEqual` "Expected"
+
+        it "引数が2つの場合2" do
+          let
+            m = mock $ "a" :> (any :: Param Int) :> "Expected"
+          
+          m.fun "a" 0   `shouldEqual` "Expected"
+          m.fun "a" 9   `shouldEqual` "Expected"
+          m.fun "a" 100 `shouldEqual` "Expected"
+
+      describe "any verify" do
+        it "引数が1つの場合" do
+          let
+            m = mock $ (any :: Param String) :> "Expected"
+          
+            _ = m.fun "foo"
+            _ = m.fun "bar"
+          
+          verify m "foo"
+          verify m "bar"
+          verify m (any :: Param String)
+
+        it "引数が2つの場合" do
+          let
+            m = mock $ (any :: Param String) :> (any :: Param Int) :> "Expected"
+          
+            _ = m.fun "foo" 0    
+            _ = m.fun "bar" 9
+
+          verify m ("foo" :> 0)
+          verify m ("bar" :> 9)
+          verify m ((any :: Param String) :> 0)
+          verify m ((any :: Param String) :> 9)
+
+    describe "custom matcher" do
+      it "引数が1つの場合" do
+        let
+          m = mock $ matcher (\v -> v > 10) "> 10" :> "Expected"
+
+        m.fun 11 `shouldEqual` "Expected"
+
+        verify m (matcher (\v -> v > 10) "> 10")
+
+    describe "Cons" do
+      describe "Show" do
+        it "arg2" do
+          show (10 :> true) `shouldEqual` "10, true"
+        it "arg3" do
+          show ("1" :> false :> [3, 4]) `shouldEqual` "\"1\", false, [3,4]"
+      describe "Eq" do
+        it "arg2" do
+          (1 :> "2") `shouldEqual` (1 :> "2")
+        it "arg3" do
+          ("1" :> false :> [3, 4]) `shouldEqual` ("1" :> false :> [3, 4])
