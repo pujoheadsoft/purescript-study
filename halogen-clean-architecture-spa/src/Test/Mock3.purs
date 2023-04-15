@@ -17,7 +17,8 @@ module Test.Mock3
   param,
   any,
   anyV,
-  matcher
+  matcher,
+  Mock
   )
   where
 

@@ -3,18 +3,90 @@ module Test.MockSpec3 where
 import Prelude
 
 import Component.State (State)
+import Control.Monad.Error.Class (class MonadThrow)
+import Control.Monad.Except (class MonadError)
 import Control.Monad.State (StateT, runStateT)
 import Data.Identity (Identity)
 import Domain.Article (Article)
 import Effect.Aff (Aff)
-import Test.Mock3 (Cons, Param, Verifier, any, mock, verify, verifyCount, (:>), matcher)
-import Test.Spec (Spec, describe, it)
-import Test.Spec.Assertions (shouldEqual)
+import Effect.Exception (Error)
+import Test.Mock3 (Cons, Mock, Param, Verifier, any, matcher, mock, verify, verifyCount, (:>))
+import Test.Spec (Spec, SpecT, describe, it)
+import Test.Spec.Assertions (expectError, shouldEqual)
 
--- Proxyを使って戻りの型を動的に決定できる
+{-
+  テストのパターン
+  引数 1 - 10、multi 1 - 10
+  に対して
+  ・関数を期待する引数で呼ぶと期待する値が返る
+  ・関数を期待する引数以外で呼ぶとfail
+  ・特定の引数で呼ばれたか検証
+  ・特定の引数で特定回数呼ばれたか検証
+  ・期待する引数をmatcherにできる(組み込みのものと、カスタムのもの)
+  ・検証する引数をmatcherにできる(組み込みのものと、カスタムのもの)
+
+-}
+
+type Fixture mock r m = {
+  name :: String,
+  createMock :: Unit -> mock,
+  executeFunction :: mock -> r,
+  expected :: r,
+  verifyMock :: mock -> m Unit,
+  verifyCount :: mock -> Int -> m Unit,
+  verifyFailed :: mock -> m Unit
+}
+
+{-
+  MonadThrow と MonadError がある
+-}
+
+zzz :: forall m. MonadError Error m => m Unit
+zzz = 
+  let
+    m = mock $ "" :> 1
+  in expectError $ verify m ""
+
+--xxxx :: forall g arg m. Monad m => String -> SpecT g arg m Unit
+xxxx :: forall mock m g r. Monad m => Eq r => Show r => MonadError Error g => Fixture mock r g -> SpecT g Unit m Unit
+xxxx f = describe f.name do
+  it "任意の引数に対して任意の値を返す関数を生成することができる" do
+    let m = f.createMock unit
+    f.executeFunction m `shouldEqual` f.expected
+  it "特定の引数で呼び出されたことを検証できる" do
+    let 
+      m = f.createMock unit
+      _ = f.executeFunction m
+    f.verifyMock m
+  it "特定の引数で呼び出されたなかったら検証で失敗する" do
+    let 
+      m = f.createMock unit
+      _ = f.executeFunction m
+    expectError $ f.verifyFailed m
+  it "特定の引数で特定回数呼び出されたことを検証できる(0回)" do
+    let m = f.createMock unit
+    f.verifyCount m 0
+  it "特定の引数で特定回数呼び出されたことを検証できる(複数回)" do
+    let 
+      m = f.createMock unit
+      _ = f.executeFunction m
+      _ = f.executeFunction m
+      _ = f.executeFunction m
+    f.verifyCount m 3
+
 spec :: Spec Unit
 spec = do
   describe "Mock3のテスト" do
+    xxxx {
+      name: "引数1つの場合", 
+      createMock: \_ -> mock $ "1" :> 1,
+      executeFunction: \m -> m.fun "1",
+      expected: 1, 
+      verifyMock: \m -> verify m "1",
+      verifyCount: \m c -> verifyCount m "1" c,
+      verifyFailed: \m -> verify m "2"
+    }
+
     describe "任意の引数に対して任意の値を返す関数を生成することができる" do
       it "引数が1つの場合" do
         let
@@ -32,13 +104,14 @@ spec = do
           m = mock $ "a" :> 2 :> true :> 10000
         m.fun "a" 2 true `shouldEqual` 10000
 
-  --   describe "期待する引数でない引数で呼び出した場合failになる" do
-  --     it "引数が1つの場合" do
-  --       let
-  --         m = mock $ 1 :> 100
-  --       m.fun 1 `shouldEqual` 100
-  --       --m.fun 2 `shouldEqual` 100
-  --       --expectErrorF (\_ -> m.fun 2)
+    describe "期待する引数でない引数で呼び出した場合failになる" do
+      it "引数が1つの場合" do
+        let
+          m = mock $ 1 :> 100
+        m.fun 1 `shouldEqual` 100
+        expectError $ verify m 2
+        --m.fun 2 `shouldEqual` 100
+        --expectErrorF (\_ -> m.fun 2)
   --     it "引数が2つの場合" do
   --       let
   --         m = mock $ 1 :> "a" :> 100
