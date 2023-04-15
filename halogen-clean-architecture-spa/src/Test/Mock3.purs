@@ -109,23 +109,23 @@ instance instanceMockArrayParams2 :: (Show a, Eq a)
 else
 instance instanceMockParams4 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c)
   => MockBuilder (Param a #> Param b #> Param c #> Param r) (a -> b -> c -> r) (Param a #> Param b #> Param c) where
-  mock (a #> b #> c #> (Param {v: r, matcher: _})) = do
+  mock (a #> b #> c #> r) = do
     let s = store unit
-    { fun: (\a2 b2 c2 -> r `const` validateWithStoreParams s (a #> b #> c) (param a2 :> param b2 :> param c2) ),
+    { fun: (\a2 b2 c2 -> (value r) `const` validateWithStoreParams s (a #> b #> c) (param a2 :> param b2 :> param c2) ),
       verifier: verifier s.argsList (\list (a2 #> b2 #> c2) -> _verify list (a2 #> b2 #> c2)) }
 else
 instance instanceMockParams3 :: (Show a, Eq a, Show b, Eq b)
   => MockBuilder (Param a #> Param b #> Param r) (a -> b -> r) (Param a #> Param b) where
-  mock (a #> b #> (Param {v: r, matcher: _})) = do
+  mock (a #> b #> r) = do
     let s = store unit
-    { fun: (\a2 b2 -> r `const` validateWithStoreParams s (a #> b) (param a2 :> param b2)),
+    { fun: (\a2 b2 -> (value r) `const` validateWithStoreParams s (a #> b) (param a2 :> param b2)),
       verifier: verifier s.argsList (\list (a2 #> b2) -> _verify list (a2 #> b2)) }
 else
 instance instanceMockParams2 :: (Show a, Eq a) 
   => MockBuilder (Param a #> Param r) (a -> r) (Param a) where
-  mock (a #> Param {v: r, matcher: _}) = do
+  mock (a #> r) = do
     let s = store unit
-    { fun: (\a2 -> r `const` validateWithStoreParams s a (param a2)),
+    { fun: (\a2 -> (value r) `const` validateWithStoreParams s a (param a2)),
       verifier: verifier s.argsList (\list a2 -> _verify list a2) }
 
 type Matcher v = v -> v -> Boolean
@@ -137,6 +137,9 @@ newtype Param v = Param {
   v :: v,
   matcher :: Maybe (Matcher v)
 }
+
+value :: forall v. Param v -> v
+value (Param {v, matcher: _}) = v
 
 instance eqParam :: Eq a => Eq (Param a) where
   eq (Param {v: a, matcher: (Just m1)}) (Param {v: b, matcher: (Just m2)}) = (m1 a b) && (m2 a b)
@@ -180,7 +183,6 @@ instance instaneConsGen :: ConsGen a b (Cons (Param a) (Param b)) where
 param :: forall a. a -> Param a
 param a = Param {v: a, matcher: Nothing}
 
--- infixr 8 type Param as :
 infixr 8 cons as :>
 
 _verify :: forall a. Eq a => Show a => Array a -> a -> Maybe VerifyFailed
