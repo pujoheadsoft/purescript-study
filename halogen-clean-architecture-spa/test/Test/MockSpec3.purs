@@ -418,18 +418,29 @@ spec = do
 
     describe "Matcher" do
       mockTest {
-        name: "任意の引数を扱う場合", 
+        name: "任意の引数を扱う", 
         create: \_ -> mock $ (any :: Param String) :> 11,
+        expected: [11, 11, 11], 
+        execute: \m -> [m.fun "1233", m.fun "1234", m.fun "2234"],
+        executeFailed: Nothing,
+        verifyMock: \m -> verify m "1234",
+        verifyCount: \m c -> verifyCount m c "1234",
+        verifyFailed: \m -> verify m "foo"
+      }
+
+      mockTest {
+        name: "任意の引数で検証を行う", 
+        create: \_ -> mock $ "1234" :> 11,
         expected: 11, 
         execute: \m -> m.fun "1234",
-        executeFailed: Nothing,
+        executeFailed: Just \m -> m.fun "1233",
         verifyMock: \m -> verify m (any :: Param String),
         verifyCount: \m c -> verifyCount m c (any :: Param String),
         verifyFailed: \m -> verify m "not called param"
       }
-      
+
       mockTest {
-        name: "独自の方法で引数の検証方法を行う場合", 
+        name: "独自の方法で引数を扱う場合", 
         create: \_ -> mock $ matcher (\v -> v > 10) "> 10" :> "Expected",
         expected: "Expected", 
         execute: \m -> m.fun 11,
@@ -440,7 +451,7 @@ spec = do
       }
 
       mockTest {
-        name: "独自の方法で引数の検証方法を行う場合2", 
+        name: "独自の方法で検証を行う", 
         create: \_ -> mock $ 10 :> "Expected",
         expected: "Expected", 
         execute: \m -> m.fun 10,
@@ -450,24 +461,11 @@ spec = do
         verifyFailed: \m -> verify m $ matcher (\v -> v > 11) "> 11"
       }
 
-    describe "Cons" do
-      describe "Show" do
-        it "arg2" do
-          show (10 :> true) `shouldEqual` "10, true"
-        it "arg3" do
-          show ("1" :> false :> [3, 4]) `shouldEqual` "\"1\", false, [3,4]"
-      describe "Eq" do
-        it "arg2" do
-          (1 :> "2") `shouldEqual` (1 :> "2")
-        it "arg3" do
-          ("1" :> false :> [3, 4]) `shouldEqual` ("1" :> false :> [3, 4])
-
-
     describe "MonadのMock" do
       it "Monadを返すことができる1" do
         let
           m = mock $ 1 :> (pure "hoge" :: Identity String)
-          _ = (m.fun :: (Int -> Identity String)) 1
+          _ = m.fun 1
         verify m 1
       
       it "Monadを返すことができる2" do
@@ -486,3 +484,15 @@ spec = do
           updateMock = mock $ "新しいtitle" :> (pure unit :: StateT State Aff Unit)
         _ <- runStateT (updateMock.fun "新しいtitle") {article: {title: "Dummy"}} 
         verify updateMock "新しいtitle"
+
+    describe "Cons" do
+      describe "Show" do
+        it "arg2" do
+          show (10 :> true) `shouldEqual` "10, true"
+        it "arg3" do
+          show ("1" :> false :> [3, 4]) `shouldEqual` "\"1\", false, [3,4]"
+      describe "Eq" do
+        it "arg2" do
+          (1 :> "2") `shouldEqual` (1 :> "2")
+        it "arg3" do
+          ("1" :> false :> [3, 4]) `shouldEqual` ("1" :> false :> [3, 4])
