@@ -220,7 +220,7 @@ spec = do
           m.fun "1" 10, 
           m.fun "2" 20
         ],
-        executeFailed: Just \m -> [ m.fun "1" 30 ],
+        executeFailed: Just \m -> [ m.fun "2" 10 ],
         verifyMock: \m -> do 
           verify m $ "1" :> 10
           verify m $ "2" :> 20
@@ -246,7 +246,7 @@ spec = do
           m.fun "1" 10 true, 
           m.fun "2" 20 false
         ],
-        executeFailed: Just \m -> [ m.fun "1" 10 false ],
+        executeFailed: Just \m -> [ m.fun "2" 20 true ],
         verifyMock: \m -> do 
           verify m $ "1" :> 10 :> true
           verify m $ "2" :> 20 :> false
@@ -256,6 +256,162 @@ spec = do
           verifyCount m c $ "2" :> 20 :> false
         ,
         verifyFailed: \m -> verify m $ "1" :> 10 :> false
+      }
+
+      mockTest {
+        name: "引数が4つの場合", 
+        create: \_ -> mock $ [
+          "1" :> 10 :> true  :> "a1" :> 2.0, 
+          "2" :> 20 :> false :> "a2" :> 3.0
+        ],
+        expected: [
+          2.0, 
+          3.0
+        ], 
+        execute: \m -> [
+          m.fun "1" 10 true  "a1", 
+          m.fun "2" 20 false "a2"
+        ],
+        executeFailed: Just \m -> [ m.fun "2" 20 false "a1" ],
+        verifyMock: \m -> do 
+          verify m $ "1" :> 10 :> true  :> "a1"
+          verify m $ "2" :> 20 :> false :> "a2"
+        ,
+        verifyCount: \m c -> do
+          verifyCount m c $ "1" :> 10 :> true  :> "a1"
+          verifyCount m c $ "2" :> 20 :> false :> "a2"
+        ,
+        verifyFailed: \m -> verify m $ "1" :> 10 :> true :> "a3"
+      }
+
+      mockTest {
+        name: "引数が5つの場合", 
+        create: \_ -> mock $ [
+          "1" :> 10 :> true  :> "a1" :> 2.0 :> false, 
+          "2" :> 20 :> false :> "a2" :> 3.0 :> true
+        ],
+        expected: [
+          false, 
+          true
+        ], 
+        execute: \m -> [
+          m.fun "1" 10 true  "a1" 2.0, 
+          m.fun "2" 20 false "a2" 3.0
+        ],
+        executeFailed: Just \m -> [ m.fun "2" 20 false "a2" 3.1 ],
+        verifyMock: \m -> do 
+          verify m $ "1" :> 10 :> true  :> "a1" :> 2.0
+          verify m $ "2" :> 20 :> false :> "a2" :> 3.0
+        ,
+        verifyCount: \m c -> do
+          verifyCount m c $ "1" :> 10 :> true  :> "a1" :> 2.0
+          verifyCount m c $ "2" :> 20 :> false :> "a2" :> 3.0
+        ,
+        verifyFailed: \m -> verify m $ "1" :> 10 :> true :> "a1" :> 1.0
+      }
+
+      mockTest {
+        name: "引数が6つの場合", 
+        create: \_ -> mock $ [
+          "1" :> 10 :> true  :> "a1" :> 2.0 :> false :> "b2", 
+          "2" :> 20 :> false :> "a2" :> 3.0 :> true  :> "b3"
+        ],
+        expected: [
+          "b2", 
+          "b3"
+        ], 
+        execute: \m -> [
+          m.fun "1" 10 true  "a1" 2.0 false, 
+          m.fun "2" 20 false "a2" 3.0 true
+        ],
+        executeFailed: Just \m -> [ m.fun "2" 20 false "a2" 3.0 false ],
+        verifyMock: \m -> do 
+          verify m $ "1" :> 10 :> true  :> "a1" :> 2.0 :> false
+          verify m $ "2" :> 20 :> false :> "a2" :> 3.0 :> true
+        ,
+        verifyCount: \m c -> do
+          verifyCount m c $ "1" :> 10 :> true  :> "a1" :> 2.0 :> false
+          verifyCount m c $ "2" :> 20 :> false :> "a2" :> 3.0 :> true
+        ,
+        verifyFailed: \m -> verify m $ "1" :> 10 :> true :> "a1" :> 2.0 :> true
+      }
+
+      mockTest {
+        name: "引数が7つの場合", 
+        create: \_ -> mock $ [
+          "1" :> 10 :> true  :> "a1" :> 2.0 :> false :> "b2" :> 200, 
+          "2" :> 20 :> false :> "a2" :> 3.0 :> true  :> "b3" :> 300
+        ],
+        expected: [
+          200, 
+          300
+        ], 
+        execute: \m -> [
+          m.fun "1" 10 true  "a1" 2.0 false "b2", 
+          m.fun "2" 20 false "a2" 3.0 true  "b3"
+        ],
+        executeFailed: Just \m -> [ m.fun "2" 20 false "a2" 3.0 true "b2" ],
+        verifyMock: \m -> do 
+          verify m $ "1" :> 10 :> true  :> "a1" :> 2.0 :> false :> "b2"
+          verify m $ "2" :> 20 :> false :> "a2" :> 3.0 :> true  :> "b3"
+        ,
+        verifyCount: \m c -> do
+          verifyCount m c $ "1" :> 10 :> true  :> "a1" :> 2.0 :> false :> "b2"
+          verifyCount m c $ "2" :> 20 :> false :> "a2" :> 3.0 :> true  :> "b3"
+        ,
+        verifyFailed: \m -> verify m $ "1" :> 10 :> true :> "a1" :> 2.0 :> false :> "b3"
+      }
+
+      mockTest {
+        name: "引数が8つの場合", 
+        create: \_ -> mock $ [
+          "1" :> 10 :> true  :> "a1" :> 2.0 :> false :> "b2" :> 200 :> true,
+          "2" :> 20 :> false :> "a2" :> 3.0 :> true  :> "b3" :> 300 :> false
+        ],
+        expected: [
+          true, 
+          false
+        ], 
+        execute: \m -> [
+          m.fun "1" 10 true  "a1" 2.0 false "b2" 200, 
+          m.fun "2" 20 false "a2" 3.0 true  "b3" 300
+        ],
+        executeFailed: Just \m -> [ m.fun "2" 20 false "a2" 3.0 true "b3" 200 ],
+        verifyMock: \m -> do 
+          verify m $ "1" :> 10 :> true  :> "a1" :> 2.0 :> false :> "b2" :> 200
+          verify m $ "2" :> 20 :> false :> "a2" :> 3.0 :> true  :> "b3" :> 300
+        ,
+        verifyCount: \m c -> do
+          verifyCount m c $ "1" :> 10 :> true  :> "a1" :> 2.0 :> false :> "b2" :> 200
+          verifyCount m c $ "2" :> 20 :> false :> "a2" :> 3.0 :> true  :> "b3" :> 300
+        ,
+        verifyFailed: \m -> verify m $ "1" :> 10 :> true :> "a1" :> 2.0 :> false :> "b2" :> 300
+      }
+
+      mockTest {
+        name: "引数が9つの場合", 
+        create: \_ -> mock $ [
+          "1" :> 10 :> true  :> "a1" :> 2.0 :> false :> "b2" :> 200 :> true  :> "c3",
+          "2" :> 20 :> false :> "a2" :> 3.0 :> true  :> "b3" :> 300 :> false :> "c4"
+        ],
+        expected: [
+          "c3", 
+          "c4"
+        ], 
+        execute: \m -> [
+          m.fun "1" 10 true  "a1" 2.0 false "b2" 200 true, 
+          m.fun "2" 20 false "a2" 3.0 true  "b3" 300 false
+        ],
+        executeFailed: Just \m -> [ m.fun "2" 20 false "a2" 3.0 true "b3" 300 true ],
+        verifyMock: \m -> do 
+          verify m $ "1" :> 10 :> true  :> "a1" :> 2.0 :> false :> "b2" :> 200 :> true
+          verify m $ "2" :> 20 :> false :> "a2" :> 3.0 :> true  :> "b3" :> 300 :> false
+        ,
+        verifyCount: \m c -> do
+          verifyCount m c $ "1" :> 10 :> true  :> "a1" :> 2.0 :> false :> "b2" :> 200 :> true
+          verifyCount m c $ "2" :> 20 :> false :> "a2" :> 3.0 :> true  :> "b3" :> 300 :> false
+        ,
+        verifyFailed: \m -> verify m $ "1" :> 10 :> true :> "a1" :> 2.0 :> false :> "b2" :> 200 :> false
       }
 
     mockTest {

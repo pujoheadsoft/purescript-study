@@ -86,14 +86,72 @@ class MockBuilder a r v | a -> r, a -> v where
 class Finder d a r | d -> a, d -> r where
   findMatchedReturnValue :: Array d -> a -> Maybe r
 
-instance finderArg3 :: (Eq a, Eq b, Eq c) => Finder (Param a #> Param b #> Param c #> Param r) (Param a #> Param b #> Param c) r where
-  findMatchedReturnValue defs (a2 #> b2 #> c2) = do
-    find (\(a #> b #> c #> _) -> (a #> b #> c) == (a2 #> b2 #> c2)) defs
+instance finderArg9 :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h, Eq i) => 
+  Finder
+    (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g #> Param h #> Param i #> Param r)
+    (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g #> Param h #> Param i)
+    r where
+  findMatchedReturnValue defs args = do
+    find (\(a #> b #> c #> d #> e #> f #> g #> h #> i #> _) -> (a #> b #> c #> d #> e #> f #> g #> h #> i) == args) defs
+      >>= \(_ #> _ #> _ #> _ #> _ #> _ #> _ #> _ #> _ #> r) -> pure $ value r
+else
+instance finderArg8 :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h) => 
+  Finder
+    (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g #> Param h #> Param r)
+    (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g #> Param h)
+    r where
+  findMatchedReturnValue defs args = do
+    find (\(a #> b #> c #> d #> e #> f #> g #> h #> _) -> (a #> b #> c #> d #> e #> f #> g #> h) == args) defs
+      >>= \(_ #> _ #> _ #> _ #> _ #> _ #> _ #> _ #> r) -> pure $ value r
+else
+instance finderArg7 :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g) => 
+  Finder
+    (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g #> Param r)
+    (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g)
+    r where
+  findMatchedReturnValue defs args = do
+    find (\(a #> b #> c #> d #> e #> f #> g #> _) -> (a #> b #> c #> d #> e #> f #> g) == args) defs
+      >>= \(_ #> _ #> _ #> _ #> _ #> _ #> _ #> r) -> pure $ value r
+else
+instance finderArg6 :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f) => 
+  Finder
+    (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param r)
+    (Param a #> Param b #> Param c #> Param d #> Param e #> Param f)
+    r where
+  findMatchedReturnValue defs args = do
+    find (\(a #> b #> c #> d #> e #> f #> _) -> (a #> b #> c #> d #> e #> f) == args) defs
+      >>= \(_ #> _ #> _ #> _ #> _ #> _ #> r) -> pure $ value r
+else
+instance finderArg5 :: (Eq a, Eq b, Eq c, Eq d, Eq e) => 
+  Finder
+    (Param a #> Param b #> Param c #> Param d #> Param e #> Param r)
+    (Param a #> Param b #> Param c #> Param d #> Param e)
+    r where
+  findMatchedReturnValue defs args = do
+    find (\(a #> b #> c #> d #> e #> _) -> (a #> b #> c #> d #> e) == args) defs
+      >>= \(_ #> _ #> _ #> _ #> _ #> r) -> pure $ value r
+else
+instance finderArg4 :: (Eq a, Eq b, Eq c, Eq d) => 
+  Finder
+    (Param a #> Param b #> Param c #> Param d #> Param r)
+    (Param a #> Param b #> Param c #> Param d)
+    r where
+  findMatchedReturnValue defs args = do
+    find (\(a #> b #> c #> d #> _) -> (a #> b #> c #> d) == args) defs
+      >>= \(_ #> _ #> _ #> _ #> r) -> pure $ value r
+else
+instance finderArg3 :: (Eq a, Eq b, Eq c) => 
+  Finder
+    (Param a #> Param b #> Param c #> Param r)
+    (Param a #> Param b #> Param c)
+    r where
+  findMatchedReturnValue defs args = do
+    find (\(a #> b #> c #> _) -> (a #> b #> c) == args) defs
       >>= \(_ #> _ #> _ #> r) -> pure $ value r
 else
 instance finderArg2 :: (Eq a, Eq b) => Finder (Param a #> Param b #> Param r) (Param a #> Param b) r where
-  findMatchedReturnValue defs (a2 #> b2) = do
-    find (\(a #> b #> _) -> (a #> b) == (a2 #> b2)) defs
+  findMatchedReturnValue defs args = do
+    find (\(a #> b #> _) -> (a #> b) == args) defs
       >>= \(_ #> _ #> r) -> pure $ value r
 else
 instance finderArg1 :: Eq a => Finder (Param a #> Param r) (Param a) r where
@@ -110,6 +168,60 @@ _findMatchedReturnValue defs a s =
     Just v -> v
     Nothing -> error "no answer found."
 
+instance instanceMockArrayArg9 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, Eq d, Show e, Eq e, Show f, Eq f, Show g, Eq g, Show h, Eq h, Show i, Eq i)
+  => MockBuilder 
+    (Array (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g #> Param h #> Param i #> Param r))
+    (a -> b -> c -> d -> e -> f -> g -> h -> i -> r)
+    (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g #> Param h #> Param i) where
+  mock defs = do
+    let s = store unit
+    mockT s.argsList (\a2 b2 c2 d2 e2 f2 g2 h2 i2 -> _findMatchedReturnValue defs (p a2 :> p b2 :> p c2 :> p d2 :> p e2 :> p f2 :> p g2 :> p h2 :> p i2) s)
+else
+instance instanceMockArrayArg8 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, Eq d, Show e, Eq e, Show f, Eq f, Show g, Eq g, Show h, Eq h)
+  => MockBuilder 
+    (Array (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g #> Param h #> Param r))
+    (a -> b -> c -> d -> e -> f -> g -> h -> r)
+    (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g #> Param h) where
+  mock defs = do
+    let s = store unit
+    mockT s.argsList (\a2 b2 c2 d2 e2 f2 g2 h2 -> _findMatchedReturnValue defs (p a2 :> p b2 :> p c2 :> p d2 :> p e2 :> p f2 :> p g2 :> p h2) s)
+else
+instance instanceMockArrayArg7 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, Eq d, Show e, Eq e, Show f, Eq f, Show g, Eq g)
+  => MockBuilder 
+    (Array (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g #> Param r))
+    (a -> b -> c -> d -> e -> f -> g -> r)
+    (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g) where
+  mock defs = do
+    let s = store unit
+    mockT s.argsList (\a2 b2 c2 d2 e2 f2 g2 -> _findMatchedReturnValue defs (p a2 :> p b2 :> p c2 :> p d2 :> p e2 :> p f2 :> p g2) s)
+else
+instance instanceMockArrayArg6 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, Eq d, Show e, Eq e, Show f, Eq f)
+  => MockBuilder 
+    (Array (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param r))
+    (a -> b -> c -> d -> e -> f -> r)
+    (Param a #> Param b #> Param c #> Param d #> Param e #> Param f) where
+  mock defs = do
+    let s = store unit
+    mockT s.argsList (\a2 b2 c2 d2 e2 f2 -> _findMatchedReturnValue defs (p a2 :> p b2 :> p c2 :> p d2 :> p e2 :> p f2) s)
+else
+instance instanceMockArrayArg5 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, Eq d, Show e, Eq e)
+  => MockBuilder 
+    (Array (Param a #> Param b #> Param c #> Param d #> Param e #> Param r))
+    (a -> b -> c -> d -> e -> r)
+    (Param a #> Param b #> Param c #> Param d #> Param e) where
+  mock defs = do
+    let s = store unit
+    mockT s.argsList (\a2 b2 c2 d2 e2 -> _findMatchedReturnValue defs (p a2 :> p b2 :> p c2 :> p d2 :> p e2) s)
+else
+instance instanceMockArrayArg4 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, Eq d)
+  => MockBuilder 
+    (Array (Param a #> Param b #> Param c #> Param d #> Param r))
+    (a -> b -> c -> d -> r)
+    (Param a #> Param b #> Param c #> Param d) where
+  mock defs = do
+    let s = store unit
+    mockT s.argsList (\a2 b2 c2 d2 -> _findMatchedReturnValue defs (p a2 :> p b2 :> p c2 :> p d2) s)
+else
 instance instanceMockArrayArg3 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c)
   => MockBuilder 
     (Array (Param a #> Param b #> Param c #> Param r))
