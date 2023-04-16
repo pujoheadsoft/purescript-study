@@ -438,7 +438,7 @@ instance instanceVerifyCountBuilder :: VerifyCountBuilder a a where
 yyy :: forall v m. MonadThrow Error m => Eq v => CalledParamsList v -> v -> Int -> m Unit
 yyy calledParamsList v count = 
   let
-    callCount = length (filter (\args -> args == v) calledParamsList)
+    callCount = length (filter (\args -> v == args) calledParamsList)
   in if count == callCount then pure unit
     else fail $ joinWith "\n" ["Function was not called the expected number of times.",  "expected: " <> show count, "but was : " <> show callCount]
 

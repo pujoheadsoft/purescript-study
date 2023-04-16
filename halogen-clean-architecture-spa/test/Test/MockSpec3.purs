@@ -81,104 +81,106 @@ mockTest f = describe f.name do
 spec :: Spec Unit
 spec = do
   describe "Mock3のテスト" do
-    mockTest {
-      name: "引数が1つの場合", 
-      create: \_ -> mock $ "1" :> 1,
-      expected: 1, 
-      execute: \m -> m.fun "1",
-      executeFailed: Just \m -> m.fun "2",
-      verifyMock: \m -> verify m "1",
-      verifyCount: \m c -> verifyCount m c "1",
-      verifyFailed: \m -> verify m "2"
-    }
+    describe "Single Mock" do
 
-    mockTest {
-      name: "引数が2つの場合", 
-      create: \_ -> mock $ 100 :> "1" :> true,
-      expected: true, 
-      execute: \m -> m.fun 100 "1",
-      executeFailed: Just \m -> m.fun 100 "2",
-      verifyMock: \m -> verify m $ 100 :> "1",
-      verifyCount: \m c -> verifyCount m c $ 100 :> "1",
-      verifyFailed: \m -> verify m $ 100 :> "2"
-    }
+      mockTest {
+        name: "引数が1つの場合", 
+        create: \_ -> mock $ "1" :> 1,
+        expected: 1, 
+        execute: \m -> m.fun "1",
+        executeFailed: Just \m -> m.fun "2",
+        verifyMock: \m -> verify m "1",
+        verifyCount: \m c -> verifyCount m c "1",
+        verifyFailed: \m -> verify m "2"
+      }
 
-    mockTest {
-      name: "引数が3つの場合", 
-      create: \_ -> mock $ 100 :> "1" :> true :> 11.1,
-      expected: 11.1, 
-      execute: \m -> m.fun 100 "1" true,
-      executeFailed: Just \m -> m.fun 100 "1" false,
-      verifyMock: \m -> verify m $ 100 :> "1" :> true,
-      verifyCount: \m c -> verifyCount m c $ 100 :> "1" :> true,
-      verifyFailed: \m -> verify m $ 100 :> "1" :> false
-    }
+      mockTest {
+        name: "引数が2つの場合", 
+        create: \_ -> mock $ 100 :> "1" :> true,
+        expected: true, 
+        execute: \m -> m.fun 100 "1",
+        executeFailed: Just \m -> m.fun 100 "2",
+        verifyMock: \m -> verify m $ 100 :> "1",
+        verifyCount: \m c -> verifyCount m c $ 100 :> "1",
+        verifyFailed: \m -> verify m $ 100 :> "2"
+      }
 
-    mockTest {
-      name: "引数が4つの場合", 
-      create: \_ -> mock $ 100 :> "1" :> true :> 11.1 :> [1, 2],
-      expected: [1, 2], 
-      execute: \m -> m.fun 100 "1" true 11.1,
-      executeFailed: Just \m -> m.fun 100 "1" true 11.0,
-      verifyMock: \m -> verify m $ 100 :> "1" :> true :> 11.1,
-      verifyCount: \m c -> verifyCount m c $ 100 :> "1" :> true :> 11.1,
-      verifyFailed: \m -> verify m $ 100 :> "1" :> true :> 11.0
-    }
+      mockTest {
+        name: "引数が3つの場合", 
+        create: \_ -> mock $ 100 :> "1" :> true :> 11.1,
+        expected: 11.1, 
+        execute: \m -> m.fun 100 "1" true,
+        executeFailed: Just \m -> m.fun 100 "1" false,
+        verifyMock: \m -> verify m $ 100 :> "1" :> true,
+        verifyCount: \m c -> verifyCount m c $ 100 :> "1" :> true,
+        verifyFailed: \m -> verify m $ 100 :> "1" :> false
+      }
 
-    mockTest {
-      name: "引数が5つの場合", 
-      create: \_ -> mock $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"},
-      expected: {name: "Name"}, 
-      execute: \m -> m.fun 100 "1" true 11.1 [1, 2],
-      executeFailed: Just \m -> m.fun 100 "1" true 11.1 [1, 3],
-      verifyMock: \m -> verify m $ 100 :> "1" :> true :> 11.1 :> [1, 2],
-      verifyCount: \m c -> verifyCount m c $ 100 :> "1" :> true :> 11.1 :> [1, 2],
-      verifyFailed: \m -> verify m $ 100 :> "1" :> true :> 11.1 :> [2, 2]
-    }
+      mockTest {
+        name: "引数が4つの場合", 
+        create: \_ -> mock $ 100 :> "1" :> true :> 11.1 :> [1, 2],
+        expected: [1, 2], 
+        execute: \m -> m.fun 100 "1" true 11.1,
+        executeFailed: Just \m -> m.fun 100 "1" true 11.0,
+        verifyMock: \m -> verify m $ 100 :> "1" :> true :> 11.1,
+        verifyCount: \m c -> verifyCount m c $ 100 :> "1" :> true :> 11.1,
+        verifyFailed: \m -> verify m $ 100 :> "1" :> true :> 11.0
+      }
 
-    mockTest {
-      name: "引数が6つの場合", 
-      create: \_ -> mock $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"} :> 20,
-      expected: 20, 
-      execute: \m -> m.fun 100 "1" true 11.1 [1, 2] {name: "Name"},
-      executeFailed: Just \m -> m.fun 100 "1" true 11.1 [1, 3] {name: "Nam"},
-      verifyMock: \m -> verify m $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"},
-      verifyCount: \m c -> verifyCount m c $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"},
-      verifyFailed: \m -> verify m $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Nome"}
-    }
+      mockTest {
+        name: "引数が5つの場合", 
+        create: \_ -> mock $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"},
+        expected: {name: "Name"}, 
+        execute: \m -> m.fun 100 "1" true 11.1 [1, 2],
+        executeFailed: Just \m -> m.fun 100 "1" true 11.1 [1, 3],
+        verifyMock: \m -> verify m $ 100 :> "1" :> true :> 11.1 :> [1, 2],
+        verifyCount: \m c -> verifyCount m c $ 100 :> "1" :> true :> 11.1 :> [1, 2],
+        verifyFailed: \m -> verify m $ 100 :> "1" :> true :> 11.1 :> [2, 2]
+      }
 
-    mockTest {
-      name: "引数が7つの場合", 
-      create: \_ -> mock $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"} :> 20 :> "X",
-      expected: "X", 
-      execute: \m -> m.fun 100 "1" true 11.1 [1, 2] {name: "Name"} 20,
-      executeFailed: Just \m -> m.fun 100 "1" true 11.1 [1, 3] {name: "Name"} 21,
-      verifyMock: \m -> verify m $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"} :> 20,
-      verifyCount: \m c -> verifyCount m c $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"} :> 20,
-      verifyFailed: \m -> verify m $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"} :> 19
-    }
+      mockTest {
+        name: "引数が6つの場合", 
+        create: \_ -> mock $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"} :> 20,
+        expected: 20, 
+        execute: \m -> m.fun 100 "1" true 11.1 [1, 2] {name: "Name"},
+        executeFailed: Just \m -> m.fun 100 "1" true 11.1 [1, 3] {name: "Nam"},
+        verifyMock: \m -> verify m $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"},
+        verifyCount: \m c -> verifyCount m c $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"},
+        verifyFailed: \m -> verify m $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Nome"}
+      }
 
-    mockTest {
-      name: "引数が8つの場合", 
-      create: \_ -> mock $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"} :> 20 :> "X" :> false,
-      expected: false, 
-      execute: \m -> m.fun 100 "1" true 11.1 [1, 2] {name: "Name"} 20 "X",
-      executeFailed: Just \m -> m.fun 100 "1" true 11.1 [1, 3] {name: "Name"} 20 "Y",
-      verifyMock: \m -> verify m $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"} :> 20 :> "X",
-      verifyCount: \m c -> verifyCount m c $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"} :> 20 :> "X",
-      verifyFailed: \m -> verify m $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"} :> 20 :> "Z"
-    }
+      mockTest {
+        name: "引数が7つの場合", 
+        create: \_ -> mock $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"} :> 20 :> "X",
+        expected: "X", 
+        execute: \m -> m.fun 100 "1" true 11.1 [1, 2] {name: "Name"} 20,
+        executeFailed: Just \m -> m.fun 100 "1" true 11.1 [1, 3] {name: "Name"} 21,
+        verifyMock: \m -> verify m $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"} :> 20,
+        verifyCount: \m c -> verifyCount m c $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"} :> 20,
+        verifyFailed: \m -> verify m $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"} :> 19
+      }
 
-    mockTest {
-      name: "引数が9つの場合", 
-      create: \_ -> mock $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"} :> 20 :> "X" :> false :> 0.1,
-      expected: 0.1, 
-      execute: \m -> m.fun 100 "1" true 11.1 [1, 2] {name: "Name"} 20 "X" false,
-      executeFailed: Just \m -> m.fun 100 "1" true 11.1 [1, 3] {name: "Name"} 20 "X" true,
-      verifyMock: \m -> verify m $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"} :> 20 :> "X" :> false,
-      verifyCount: \m c -> verifyCount m c $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"} :> 20 :> "X" :> false,
-      verifyFailed: \m -> verify m $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"} :> 20 :> "X" :> true
-    }
+      mockTest {
+        name: "引数が8つの場合", 
+        create: \_ -> mock $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"} :> 20 :> "X" :> false,
+        expected: false, 
+        execute: \m -> m.fun 100 "1" true 11.1 [1, 2] {name: "Name"} 20 "X",
+        executeFailed: Just \m -> m.fun 100 "1" true 11.1 [1, 3] {name: "Name"} 20 "Y",
+        verifyMock: \m -> verify m $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"} :> 20 :> "X",
+        verifyCount: \m c -> verifyCount m c $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"} :> 20 :> "X",
+        verifyFailed: \m -> verify m $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"} :> 20 :> "Z"
+      }
+
+      mockTest {
+        name: "引数が9つの場合", 
+        create: \_ -> mock $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"} :> 20 :> "X" :> false :> 0.1,
+        expected: 0.1, 
+        execute: \m -> m.fun 100 "1" true 11.1 [1, 2] {name: "Name"} 20 "X" false,
+        executeFailed: Just \m -> m.fun 100 "1" true 11.1 [1, 3] {name: "Name"} 20 "X" true,
+        verifyMock: \m -> verify m $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"} :> 20 :> "X" :> false,
+        verifyCount: \m c -> verifyCount m c $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"} :> 20 :> "X" :> false,
+        verifyFailed: \m -> verify m $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"} :> 20 :> "X" :> true
+      }
 
     describe "Multi Mock" do
       mockTest {
@@ -414,26 +416,39 @@ spec = do
         verifyFailed: \m -> verify m $ "1" :> 10 :> true :> "a1" :> 2.0 :> false :> "b2" :> 200 :> false
       }
 
-    mockTest {
-      name: "任意の引数が1つの場合", 
-      create: \_ -> mock $ (any :: Param String) :> 11,
-      expected: 11, 
-      execute: \m -> m.fun "1234",
-      executeFailed: Nothing,
-      verifyMock: \m -> verify m (any :: Param String),
-      verifyCount: \m c -> verifyCount m c (any :: Param String),
-      verifyFailed: \m -> verify m "not called param"
-    }
+    describe "Matcher" do
+      mockTest {
+        name: "任意の引数を扱う場合", 
+        create: \_ -> mock $ (any :: Param String) :> 11,
+        expected: 11, 
+        execute: \m -> m.fun "1234",
+        executeFailed: Nothing,
+        verifyMock: \m -> verify m (any :: Param String),
+        verifyCount: \m c -> verifyCount m c (any :: Param String),
+        verifyFailed: \m -> verify m "not called param"
+      }
+      
+      mockTest {
+        name: "独自の方法で引数の検証方法を行う場合", 
+        create: \_ -> mock $ matcher (\v -> v > 10) "> 10" :> "Expected",
+        expected: "Expected", 
+        execute: \m -> m.fun 11,
+        executeFailed: Just \m -> m.fun 10,
+        verifyMock: \m -> verify m 11,
+        verifyCount: \m c -> verifyCount m c 11,
+        verifyFailed: \m -> verify m 10
+      }
 
-
-    describe "custom matcher" do
-      it "引数が1つの場合" do
-        let
-          m = mock $ matcher (\v -> v > 10) "> 10" :> "Expected"
-
-        m.fun 11 `shouldEqual` "Expected"
-
-        verify m (matcher (\v -> v > 10) "> 10")
+      mockTest {
+        name: "独自の方法で引数の検証方法を行う場合2", 
+        create: \_ -> mock $ 10 :> "Expected",
+        expected: "Expected", 
+        execute: \m -> m.fun 10,
+        executeFailed: Just \m -> m.fun 1000,
+        verifyMock: \m -> verify m $ matcher (\v -> v < 11) "< 11",
+        verifyCount: \m c -> verifyCount m c $ matcher (\v -> v > 9) "> 9",
+        verifyFailed: \m -> verify m $ matcher (\v -> v > 11) "> 11"
+      }
 
     describe "Cons" do
       describe "Show" do
