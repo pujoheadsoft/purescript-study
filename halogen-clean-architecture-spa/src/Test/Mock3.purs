@@ -426,21 +426,48 @@ storeCalledParams s a = const a (s.store a)
 validateWithStoreParams :: forall a. Eq a => Show a => CallredParamsStore a -> a -> a -> Unit
 validateWithStoreParams s expected actual = validateParams expected (storeCalledParams s actual)
 
-class VerifyCountBuilder v a where
-  verifyCount :: forall m r. MonadThrow Error m => Eq v => { verifier :: Verifier v | r} -> Int -> a -> m Unit
+class VerifyCountBuilder c v a where
+  verifyCount :: forall m r. MonadThrow Error m => Eq v => { verifier :: Verifier v | r} -> c -> a -> m Unit
 
-instance instanceVerifyCountBuilderParam1 :: Eq a => VerifyCountBuilder (Param a) a where
-  verifyCount {verifier : (Verifier { calledParamsList })} count a =  yyy calledParamsList (param a) count
+instance instanceVerifyCountBuilder3 ::  Eq a => VerifyCountBuilder CountVerifyMethod (Param a) a where
+  verifyCount {verifier : (Verifier { calledParamsList })} count a = yyy calledParamsList (param a) count
 else
-instance instanceVerifyCountBuilder :: VerifyCountBuilder a a where
-  verifyCount {verifier : (Verifier { calledParamsList })} count v = yyy calledParamsList v count
+instance instanceVerifyCountBuilderParam1 :: Eq a => VerifyCountBuilder Int (Param a) a where
+  verifyCount {verifier : (Verifier { calledParamsList })} count a =  yyy calledParamsList (param a) (Equal count)
+else
+instance instanceVerifyCountBuilder2 :: VerifyCountBuilder CountVerifyMethod a a where
+  verifyCount {verifier : (Verifier { calledParamsList })} count a = yyy calledParamsList a count
+else
+instance instanceVerifyCountBuilder :: VerifyCountBuilder Int a a where
+  verifyCount {verifier : (Verifier { calledParamsList })} count a = yyy calledParamsList a (Equal count)
 
-yyy :: forall v m. MonadThrow Error m => Eq v => CalledParamsList v -> v -> Int -> m Unit
-yyy calledParamsList v count = 
+data CountVerifyMethod =
+    Equal Int
+  | LessThanEqual Int
+  | GreaterThanEqual Int
+  | LessThan Int
+  | GreaterThan Int
+
+compareCount :: CountVerifyMethod -> Int -> Boolean
+compareCount (Equal e) a            = a == e
+compareCount (LessThanEqual e) a    = a <= e
+compareCount (LessThan e) a         = a <  e
+compareCount (GreaterThanEqual e) a = a >= e
+compareCount (GreaterThan e) a      = a >  e
+
+instance showCountVerifyMethod :: Show CountVerifyMethod where
+  show (Equal e)            = show e
+  show (LessThanEqual e)    = "<= " <> show e
+  show (LessThan e)         = "< " <> show e
+  show (GreaterThanEqual e) = ">= " <> show e
+  show (GreaterThan e)      = "> " <> show e
+
+yyy :: forall v m. MonadThrow Error m => Eq v => CalledParamsList v -> v -> CountVerifyMethod -> m Unit
+yyy calledParamsList v method = 
   let
     callCount = length (filter (\args -> v == args) calledParamsList)
-  in if count == callCount then pure unit
-    else fail $ joinWith "\n" ["Function was not called the expected number of times.",  "expected: " <> show count, "but was : " <> show callCount]
+  in if compareCount method callCount then pure unit
+    else fail $ joinWith "\n" ["Function was not called the expected number of times.",  "expected: " <> show method, "but was : " <> show callCount]
 
 showCalledParams :: forall v r. Eq v => Show v => { verifier :: Verifier v | r} -> v -> String
 showCalledParams { verifier : (Verifier { calledParamsList }) } v = show (filter (\args -> args == v) calledParamsList)
