@@ -18,7 +18,8 @@ module Test.Mock3
   any,
   anyV,
   matcher,
-  Mock
+  Mock,
+  runRuntimeThrowableFunction
   )
   where
 
@@ -27,6 +28,7 @@ import Prelude
 import Control.Monad.Error.Class (class MonadThrow)
 import Data.Array (filter, find, length)
 import Data.Array as A
+import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Data.String (joinWith)
 import Effect.Exception (Error, throw)
@@ -82,52 +84,142 @@ class MockBuilder a r v | a -> r, a -> v where
   mock :: a -> Mock r v
 
 class Finder d a r | d -> a, d -> r where
-  findMatchedReturnValue :: Array d -> a ->  r
+  findMatchedReturnValue :: Array d -> a -> Maybe r
 
-instance finderParam3 :: (Eq a, Eq b) => Finder (Param a #> Param b #> Param r) (Param a #> Param b) r where
-  findMatchedReturnValue defs (a2 #> b2) = case find (\(a #> b #> _) -> (a #> b) == (a2 #> b2)) defs of
-    Just (_ #> _ #> (Param {v: r, matcher: _})) -> r
-    Nothing -> error "no answer found."
+instance finderArg3 :: (Eq a, Eq b, Eq c) => Finder (Param a #> Param b #> Param c #> Param r) (Param a #> Param b #> Param c) r where
+  findMatchedReturnValue defs (a2 #> b2 #> c2) = do
+    find (\(a #> b #> c #> _) -> (a #> b #> c) == (a2 #> b2 #> c2)) defs
+      >>= \(_ #> _ #> _ #> r) -> pure $ value r
 else
-instance finderParam2 :: Eq a => Finder (Param a #> Param r) (Param a) r where
-  findMatchedReturnValue defs a2 = case find (\(a #> _) -> a == a2) defs of
-    Just (_ #> (Param {v: r, matcher: _})) -> r
+instance finderArg2 :: (Eq a, Eq b) => Finder (Param a #> Param b #> Param r) (Param a #> Param b) r where
+  findMatchedReturnValue defs (a2 #> b2) = do
+    find (\(a #> b #> _) -> (a #> b) == (a2 #> b2)) defs
+      >>= \(_ #> _ #> r) -> pure $ value r
+else
+instance finderArg1 :: Eq a => Finder (Param a #> Param r) (Param a) r where
+  findMatchedReturnValue defs a2 = do
+    find (\(a #> _) -> a == a2) defs
+      >>= \(_ #> r) -> pure $ value r
+
+_findMatchedReturnValue :: forall r a v. Finder v a r => CalledParamsList v -> a -> CallredParamsStore a -> r
+_findMatchedReturnValue defs a s =
+  let
+    r = findMatchedReturnValue defs a
+    _ = storeCalledParams s a
+  in case r of
+    Just v -> v
     Nothing -> error "no answer found."
 
-instance instanceMockArrayParams3 :: (Show a, Eq a, Show b, Eq b)
+instance instanceMockArrayArg3 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c)
+  => MockBuilder 
+    (Array (Param a #> Param b #> Param c #> Param r))
+    (a -> b -> c -> r)
+    (Param a #> Param b #> Param c) where
+  mock defs = do
+    let s = store unit
+    mockT s.argsList (\a2 b2 c2 -> _findMatchedReturnValue defs (p a2 :> p b2 :> p c2) s)
+else
+instance instanceMockArrayArg2 :: (Show a, Eq a, Show b, Eq b)
   => MockBuilder (Array (Param a #> Param b #> Param r)) (a -> b -> r) (Param a #> Param b) where
   mock defs = do
     let s = store unit
-    { fun: (\a2 b2 -> findMatchedReturnValue defs (param a2 :> param b2) `const` storeCalledParams s (param a2 :> param b2)),
-      verifier: verifier s.argsList (\list (a2 #> b2) -> _verify list (a2 #> b2)) }
+    mockT s.argsList (\a2 b2 -> _findMatchedReturnValue defs (p a2 :> p b2) s)
 else
-instance instanceMockArrayParams2 :: (Show a, Eq a)
+instance instanceMockArrayArg1 :: (Show a, Eq a)
   => MockBuilder (Array (Param a #> Param r)) (a -> r) (Param a) where
   mock defs = do
     let s = store unit
-    { fun: (\a2 -> findMatchedReturnValue defs (param a2) `const` storeCalledParams s (param a2)),
-      verifier: verifier s.argsList (\list a2 -> _verify list a2) }
+    mockT s.argsList (\a2 -> _findMatchedReturnValue defs (p a2) s)
 else
-instance instanceMockParams4 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c)
+instance instanceMockArg9 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, Eq d, Show e, Eq e, Show f, Eq f, Show g, Eq g, Show h, Eq h, Show i, Eq i)
+  => MockBuilder
+    (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g #> Param h #> Param i #> Param r)
+    (a -> b -> c -> d -> e -> f -> g -> h -> i -> r)
+    (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g #> Param h #> Param i) where
+  mock (a #> b #> c #> d #> e #> f #> g #> h #> i #> r) =
+    let s = store unit
+    in mockT s.argsList (\a2 b2 c2 d2 e2 f2 g2 h2 i2 -> (value r)
+      `const` validateWithStoreParams s 
+        (a #> b #> c #> d #> e #> f #> g #> h #> i)
+        (p a2 :> p b2 :> p c2 :> p d2 :> p e2 :> p f2 :> p g2 :> p h2 :> p i2) )
+else
+instance instanceMockArg8 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, Eq d, Show e, Eq e, Show f, Eq f, Show g, Eq g, Show h, Eq h)
+  => MockBuilder
+    (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g #> Param h #> Param r)
+    (a -> b -> c -> d -> e -> f -> g -> h -> r)
+    (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g #> Param h) where
+  mock (a #> b #> c #> d #> e #> f #> g #> h #> r) =
+    let s = store unit
+    in mockT s.argsList (\a2 b2 c2 d2 e2 f2 g2 h2 -> (value r)
+      `const` validateWithStoreParams s 
+        (a #> b #> c #> d #> e #> f #> g #> h)
+        (p a2 :> p b2 :> p c2 :> p d2 :> p e2 :> p f2 :> p g2 :> p h2) )
+else
+instance instanceMockArg7 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, Eq d, Show e, Eq e, Show f, Eq f, Show g, Eq g)
+  => MockBuilder
+    (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g #> Param r)
+    (a -> b -> c -> d -> e -> f -> g -> r)
+    (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g) where
+  mock (a #> b #> c #> d #> e #> f #> g #> r) =
+    let s = store unit
+    in mockT s.argsList (\a2 b2 c2 d2 e2 f2 g2 -> (value r)
+      `const` validateWithStoreParams s 
+        (a #> b #> c #> d #> e #> f #> g)
+        (p a2 :> p b2 :> p c2 :> p d2 :> p e2 :> p f2 :> p g2) )
+else
+instance instanceMockArg6 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, Eq d, Show e, Eq e, Show f, Eq f)
+  => MockBuilder
+    (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param r)
+    (a -> b -> c -> d -> e -> f -> r)
+    (Param a #> Param b #> Param c #> Param d #> Param e #> Param f) where
+  mock (a #> b #> c #> d #> e #> f #> r) =
+    let s = store unit
+    in mockT s.argsList (\a2 b2 c2 d2 e2 f2 -> (value r) `const` 
+      validateWithStoreParams s (a #> b #> c #> d #> e #> f) (p a2 :> p b2 :> p c2 :> p d2 :> p e2 :> p f2) )
+else
+instance instanceMockArg5 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, Eq d, Show e, Eq e)
+  => MockBuilder
+    (Param a #> Param b #> Param c #> Param d #> Param e #> Param r)
+    (a -> b -> c -> d -> e -> r)
+    (Param a #> Param b #> Param c #> Param d #> Param e) where
+  mock (a #> b #> c #> d #> e #> r) =
+    let s = store unit
+    in mockT s.argsList (\a2 b2 c2 d2 e2 -> (value r) `const` 
+      validateWithStoreParams s (a #> b #> c #> d #> e) (p a2 :> p b2 :> p c2 :> p d2 :> p e2) )
+else
+instance instanceMockArg4 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, Eq d)
+  => MockBuilder
+    (Param a #> Param b #> Param c #> Param d #> Param r)
+    (a -> b -> c -> d -> r)
+    (Param a #> Param b #> Param c #> Param d) where
+  mock (a #> b #> c #> d #> r) =
+    let s = store unit
+    in mockT s.argsList (\a2 b2 c2 d2 -> (value r) `const` 
+      validateWithStoreParams s (a #> b #> c #> d) (p a2 :> p b2 :> p c2 :> p d2) )
+else
+instance instanceMockArg3 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c)
   => MockBuilder (Param a #> Param b #> Param c #> Param r) (a -> b -> c -> r) (Param a #> Param b #> Param c) where
-  mock (a #> b #> c #> r) = do
+  mock (a #> b #> c #> r) =
     let s = store unit
-    { fun: (\a2 b2 c2 -> (value r) `const` validateWithStoreParams s (a #> b #> c) (param a2 :> param b2 :> param c2) ),
-      verifier: verifier s.argsList (\list (a2 #> b2 #> c2) -> _verify list (a2 #> b2 #> c2)) }
+    in mockT s.argsList (\a2 b2 c2 -> (value r) `const` validateWithStoreParams s (a #> b #> c) (p a2 :> p b2 :> p c2) )
 else
-instance instanceMockParams3 :: (Show a, Eq a, Show b, Eq b)
+instance instanceMockArg2 :: (Show a, Eq a, Show b, Eq b)
   => MockBuilder (Param a #> Param b #> Param r) (a -> b -> r) (Param a #> Param b) where
-  mock (a #> b #> r) = do
+  mock (a #> b #> r) =
     let s = store unit
-    { fun: (\a2 b2 -> (value r) `const` validateWithStoreParams s (a #> b) (param a2 :> param b2)),
-      verifier: verifier s.argsList (\list (a2 #> b2) -> _verify list (a2 #> b2)) }
+    in mockT s.argsList (\a2 b2 -> (value r) `const` validateWithStoreParams s (a #> b) (p a2 :> p b2))
 else
-instance instanceMockParams2 :: (Show a, Eq a) 
+instance instanceMockArg1 :: (Show a, Eq a) 
   => MockBuilder (Param a #> Param r) (a -> r) (Param a) where
-  mock (a #> r) = do
+  mock (a #> r) =
     let s = store unit
-    { fun: (\a2 -> (value r) `const` validateWithStoreParams s a (param a2)),
-      verifier: verifier s.argsList (\list a2 -> _verify list a2) }
+    in mockT s.argsList (\a2 -> (value r) `const` validateWithStoreParams s a (p a2))
+
+mockT :: forall fun v. Eq v => Show v => CalledParamsList v -> fun -> Mock fun v
+mockT argsList fun = {
+  fun,
+  verifier: verifier argsList (\list args -> _verify list args)
+}
 
 type Matcher v = v -> v -> Boolean
 
@@ -184,6 +276,8 @@ instance instaneConsGen :: ConsGen a b (Cons (Param a) (Param b)) where
 param :: forall a. a -> Param a
 param a = Param {v: a, matcher: Nothing}
 
+p = param
+
 infixr 8 cons as :>
 
 _verify :: forall a. Eq a => Show a => Array a -> a -> Maybe VerifyFailed
@@ -221,13 +315,13 @@ validateWithStoreParams :: forall a. Eq a => Show a => CallredParamsStore a -> a
 validateWithStoreParams s expected actual = validateParams expected (storeCalledParams s actual)
 
 class VerifyCountBuilder v a where
-  verifyCount :: forall m r. MonadThrow Error m => Eq v => { verifier :: Verifier v | r} -> a -> Int -> m Unit
+  verifyCount :: forall m r. MonadThrow Error m => Eq v => { verifier :: Verifier v | r} -> Int -> a -> m Unit
 
 instance instanceVerifyCountBuilderParam1 :: Eq a => VerifyCountBuilder (Param a) a where
-  verifyCount {verifier : (Verifier { calledParamsList })} a count =  yyy calledParamsList (param a) count
+  verifyCount {verifier : (Verifier { calledParamsList })} count a =  yyy calledParamsList (param a) count
 else
 instance instanceVerifyCountBuilder :: VerifyCountBuilder a a where
-  verifyCount {verifier : (Verifier { calledParamsList })} v count = yyy calledParamsList v count
+  verifyCount {verifier : (Verifier { calledParamsList })} count v = yyy calledParamsList v count
 
 yyy :: forall v m. MonadThrow Error m => Eq v => CalledParamsList v -> v -> Int -> m Unit
 yyy calledParamsList v count = 
@@ -280,3 +374,17 @@ gg = "a" :> 1 :> true :> "b"
 
 hh :: Cons (Param String) (Cons (Param Int) (Param Boolean))
 hh = anyV "a" :> anyV 1 :> anyV true
+
+type TryCatchResult r = {
+  hasError :: Boolean,
+  error :: String,
+  result :: r
+}
+
+foreign import _runRuntimeThrowableFunction :: forall r. (Unit -> r) -> TryCatchResult r
+
+runRuntimeThrowableFunction :: forall r m. MonadThrow Error m => (Unit -> r) -> m Unit
+runRuntimeThrowableFunction f =
+  let
+    r = _runRuntimeThrowableFunction f
+  in if r.hasError then fail r.error else pure unit

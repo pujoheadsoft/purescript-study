@@ -3,14 +3,13 @@ module Test.MockSpec3 where
 import Prelude
 
 import Component.State (State)
-import Control.Monad.Error.Class (class MonadThrow)
 import Control.Monad.Except (class MonadError)
 import Control.Monad.State (StateT, runStateT)
 import Data.Identity (Identity)
+import Data.Maybe (Maybe(..))
 import Domain.Article (Article)
-import Effect.Aff (Aff)
-import Effect.Exception (Error)
-import Test.Mock3 (Cons, Mock, Param, Verifier, any, matcher, mock, verify, verifyCount, (:>))
+import Effect.Aff (Aff, Error)
+import Test.Mock3 (Param, any, matcher, mock, runRuntimeThrowableFunction, verify, verifyCount, (:>))
 import Test.Spec (Spec, SpecT, describe, it)
 import Test.Spec.Assertions (expectError, shouldEqual)
 
@@ -29,8 +28,9 @@ import Test.Spec.Assertions (expectError, shouldEqual)
 
 type Fixture mock r m = {
   name :: String,
-  createMock :: Unit -> mock,
-  executeFunction :: mock -> r,
+  create :: Unit -> mock,
+  execute :: mock -> r,
+  executeFailed :: Maybe (mock -> r),
   expected :: r,
   verifyMock :: mock -> m Unit,
   verifyCount :: mock -> Int -> m Unit,
@@ -41,112 +41,258 @@ type Fixture mock r m = {
   MonadThrow と MonadError がある
 -}
 
-zzz :: forall m. MonadError Error m => m Unit
-zzz = 
-  let
-    m = mock $ "" :> 1
-  in expectError $ verify m ""
+-- mock test template
+mockTest :: forall mock m g r. Monad m => Eq r => Show r => MonadError Error g => Fixture mock r g -> SpecT g Unit m Unit
+mockTest f = describe f.name do
+  it "設定した引数で実行すると設定した値を返すことができる" do
+    let m = f.create unit
+    f.execute m `shouldEqual` f.expected
 
---xxxx :: forall g arg m. Monad m => String -> SpecT g arg m Unit
-xxxx :: forall mock m g r. Monad m => Eq r => Show r => MonadError Error g => Fixture mock r g -> SpecT g Unit m Unit
-xxxx f = describe f.name do
-  it "任意の引数に対して任意の値を返す関数を生成することができる" do
-    let m = f.createMock unit
-    f.executeFunction m `shouldEqual` f.expected
-  it "特定の引数で呼び出されたことを検証できる" do
+  it "設定した引数で実行しないと失敗する" do
+    case f.executeFailed of
+      Just func -> let m = f.create unit
+        in expectError $ runRuntimeThrowableFunction (\_ -> func m)
+      Nothing -> pure unit
+
+  it "指定した引数で呼び出されたかどうかを検証できる" do
     let 
-      m = f.createMock unit
-      _ = f.executeFunction m
+      m = f.create unit
+      _ = f.execute m
     f.verifyMock m
-  it "特定の引数で呼び出されたなかったら検証で失敗する" do
+
+  it "指定した引数で呼び出されていない場合は検証に失敗する" do
     let 
-      m = f.createMock unit
-      _ = f.executeFunction m
+      m = f.create unit
+      _ = f.execute m
     expectError $ f.verifyFailed m
-  it "特定の引数で特定回数呼び出されたことを検証できる(0回)" do
-    let m = f.createMock unit
+
+  it "指定した引数で呼び出された回数を検証できる(0回)" do
+    let m = f.create unit
     f.verifyCount m 0
-  it "特定の引数で特定回数呼び出されたことを検証できる(複数回)" do
+
+  it "指定した引数で呼び出された回数を検証できる(複数回)" do
     let 
-      m = f.createMock unit
-      _ = f.executeFunction m
-      _ = f.executeFunction m
-      _ = f.executeFunction m
+      m = f.create unit
+      _ = f.execute m
+      _ = f.execute m
+      _ = f.execute m
     f.verifyCount m 3
 
 spec :: Spec Unit
 spec = do
   describe "Mock3のテスト" do
-    xxxx {
-      name: "引数1つの場合", 
-      createMock: \_ -> mock $ "1" :> 1,
-      executeFunction: \m -> m.fun "1",
+    mockTest {
+      name: "引数が1つの場合", 
+      create: \_ -> mock $ "1" :> 1,
       expected: 1, 
+      execute: \m -> m.fun "1",
+      executeFailed: Just \m -> m.fun "2",
       verifyMock: \m -> verify m "1",
-      verifyCount: \m c -> verifyCount m "1" c,
+      verifyCount: \m c -> verifyCount m c "1",
       verifyFailed: \m -> verify m "2"
     }
 
-    describe "任意の引数に対して任意の値を返す関数を生成することができる" do
+    mockTest {
+      name: "引数が2つの場合", 
+      create: \_ -> mock $ 100 :> "1" :> true,
+      expected: true, 
+      execute: \m -> m.fun 100 "1",
+      executeFailed: Just \m -> m.fun 100 "2",
+      verifyMock: \m -> verify m $ 100 :> "1",
+      verifyCount: \m c -> verifyCount m c $ 100 :> "1",
+      verifyFailed: \m -> verify m $ 100 :> "2"
+    }
+
+    mockTest {
+      name: "引数が3つの場合", 
+      create: \_ -> mock $ 100 :> "1" :> true :> 11.1,
+      expected: 11.1, 
+      execute: \m -> m.fun 100 "1" true,
+      executeFailed: Just \m -> m.fun 100 "1" false,
+      verifyMock: \m -> verify m $ 100 :> "1" :> true,
+      verifyCount: \m c -> verifyCount m c $ 100 :> "1" :> true,
+      verifyFailed: \m -> verify m $ 100 :> "1" :> false
+    }
+
+    mockTest {
+      name: "引数が4つの場合", 
+      create: \_ -> mock $ 100 :> "1" :> true :> 11.1 :> [1, 2],
+      expected: [1, 2], 
+      execute: \m -> m.fun 100 "1" true 11.1,
+      executeFailed: Just \m -> m.fun 100 "1" true 11.0,
+      verifyMock: \m -> verify m $ 100 :> "1" :> true :> 11.1,
+      verifyCount: \m c -> verifyCount m c $ 100 :> "1" :> true :> 11.1,
+      verifyFailed: \m -> verify m $ 100 :> "1" :> true :> 11.0
+    }
+
+    mockTest {
+      name: "引数が5つの場合", 
+      create: \_ -> mock $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"},
+      expected: {name: "Name"}, 
+      execute: \m -> m.fun 100 "1" true 11.1 [1, 2],
+      executeFailed: Just \m -> m.fun 100 "1" true 11.1 [1, 3],
+      verifyMock: \m -> verify m $ 100 :> "1" :> true :> 11.1 :> [1, 2],
+      verifyCount: \m c -> verifyCount m c $ 100 :> "1" :> true :> 11.1 :> [1, 2],
+      verifyFailed: \m -> verify m $ 100 :> "1" :> true :> 11.1 :> [2, 2]
+    }
+
+    mockTest {
+      name: "引数が6つの場合", 
+      create: \_ -> mock $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"} :> 20,
+      expected: 20, 
+      execute: \m -> m.fun 100 "1" true 11.1 [1, 2] {name: "Name"},
+      executeFailed: Just \m -> m.fun 100 "1" true 11.1 [1, 3] {name: "Nam"},
+      verifyMock: \m -> verify m $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"},
+      verifyCount: \m c -> verifyCount m c $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"},
+      verifyFailed: \m -> verify m $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Nome"}
+    }
+
+    mockTest {
+      name: "引数が7つの場合", 
+      create: \_ -> mock $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"} :> 20 :> "X",
+      expected: "X", 
+      execute: \m -> m.fun 100 "1" true 11.1 [1, 2] {name: "Name"} 20,
+      executeFailed: Just \m -> m.fun 100 "1" true 11.1 [1, 3] {name: "Name"} 21,
+      verifyMock: \m -> verify m $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"} :> 20,
+      verifyCount: \m c -> verifyCount m c $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"} :> 20,
+      verifyFailed: \m -> verify m $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"} :> 19
+    }
+
+    mockTest {
+      name: "引数が8つの場合", 
+      create: \_ -> mock $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"} :> 20 :> "X" :> false,
+      expected: false, 
+      execute: \m -> m.fun 100 "1" true 11.1 [1, 2] {name: "Name"} 20 "X",
+      executeFailed: Just \m -> m.fun 100 "1" true 11.1 [1, 3] {name: "Name"} 20 "Y",
+      verifyMock: \m -> verify m $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"} :> 20 :> "X",
+      verifyCount: \m c -> verifyCount m c $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"} :> 20 :> "X",
+      verifyFailed: \m -> verify m $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"} :> 20 :> "Z"
+    }
+
+    mockTest {
+      name: "引数が9つの場合", 
+      create: \_ -> mock $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"} :> 20 :> "X" :> false :> 0.1,
+      expected: 0.1, 
+      execute: \m -> m.fun 100 "1" true 11.1 [1, 2] {name: "Name"} 20 "X" false,
+      executeFailed: Just \m -> m.fun 100 "1" true 11.1 [1, 3] {name: "Name"} 20 "X" true,
+      verifyMock: \m -> verify m $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"} :> 20 :> "X" :> false,
+      verifyCount: \m c -> verifyCount m c $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"} :> 20 :> "X" :> false,
+      verifyFailed: \m -> verify m $ 100 :> "1" :> true :> 11.1 :> [1, 2] :> {name: "Name"} :> 20 :> "X" :> true
+    }
+
+    describe "Multi Mock" do
+      mockTest {
+        name: "引数が1つの場合", 
+        create: \_ -> mock $ [
+          "1" :> 10, 
+          "2" :> 20
+        ],
+        expected: [
+          10, 
+          20
+        ], 
+        execute: \m -> [
+          m.fun "1", m.fun "2"
+        ],
+        executeFailed: Just \m -> [ m.fun "3" ],
+        verifyMock: \m -> do 
+          verify m "1"
+          verify m "2"
+        ,
+        verifyCount: \m c -> do
+          verifyCount m c "1"
+          verifyCount m c "2"
+        ,
+        verifyFailed: \m -> verify m "3"
+      }
+
+      mockTest {
+        name: "引数が2つの場合", 
+        create: \_ -> mock $ [
+          "1" :> 10 :> true, 
+          "2" :> 20 :> false
+        ],
+        expected: [
+          true, 
+          false
+        ], 
+        execute: \m -> [
+          m.fun "1" 10, 
+          m.fun "2" 20
+        ],
+        executeFailed: Just \m -> [ m.fun "1" 30 ],
+        verifyMock: \m -> do 
+          verify m $ "1" :> 10
+          verify m $ "2" :> 20
+        ,
+        verifyCount: \m c -> do
+          verifyCount m c $ "1" :> 10
+          verifyCount m c $ "2" :> 20
+        ,
+        verifyFailed: \m -> verify m $ "1" :> 30
+      }
+
+      mockTest {
+        name: "引数が3つの場合", 
+        create: \_ -> mock $ [
+          "1" :> 10 :> true  :> "a1", 
+          "2" :> 20 :> false :> "a2"
+        ],
+        expected: [
+          "a1", 
+          "a2"
+        ], 
+        execute: \m -> [
+          m.fun "1" 10 true, 
+          m.fun "2" 20 false
+        ],
+        executeFailed: Just \m -> [ m.fun "1" 10 false ],
+        verifyMock: \m -> do 
+          verify m $ "1" :> 10 :> true
+          verify m $ "2" :> 20 :> false
+        ,
+        verifyCount: \m c -> do
+          verifyCount m c $ "1" :> 10 :> true
+          verifyCount m c $ "2" :> 20 :> false
+        ,
+        verifyFailed: \m -> verify m $ "1" :> 10 :> false
+      }
+
+    mockTest {
+      name: "任意の引数が1つの場合", 
+      create: \_ -> mock $ (any :: Param String) :> 11,
+      expected: 11, 
+      execute: \m -> m.fun "1234",
+      executeFailed: Nothing,
+      verifyMock: \m -> verify m (any :: Param String),
+      verifyCount: \m c -> verifyCount m c (any :: Param String),
+      verifyFailed: \m -> verify m "not called param"
+    }
+
+
+    describe "custom matcher" do
       it "引数が1つの場合" do
         let
-          m = mock $ "a" :> 100
-        m.fun "a" `shouldEqual` 100
+          m = mock $ matcher (\v -> v > 10) "> 10" :> "Expected"
 
-      it "引数が2つの場合" do
-        let
-          m = mock $ "a" :> 2 :> 1000    
+        m.fun 11 `shouldEqual` "Expected"
 
-        m.fun "a" 2 `shouldEqual` 1000
-        
-      it "引数が3つの場合" do
-        let
-          m = mock $ "a" :> 2 :> true :> 10000
-        m.fun "a" 2 true `shouldEqual` 10000
+        verify m (matcher (\v -> v > 10) "> 10")
 
-    describe "期待する引数でない引数で呼び出した場合failになる" do
-      it "引数が1つの場合" do
-        let
-          m = mock $ 1 :> 100
-        m.fun 1 `shouldEqual` 100
-        expectError $ verify m 2
-        --m.fun 2 `shouldEqual` 100
-        --expectErrorF (\_ -> m.fun 2)
-  --     it "引数が2つの場合" do
-  --       let
-  --         m = mock $ 1 :> "a" :> 100
-  --       m.fun 1 "a" `shouldEqual` 100
-  --       --m.fun 1 "b" `shouldEqual` 100
-  --     it "引数が3つの場合" do
-  --       let
-  --         m = mock $ 1 :> "a" :> true :> 100
-  --       m.fun 1 "a" true `shouldEqual` 100
-  -- --      m.fun 1 "b" true `shouldEqual` 100
+    describe "Cons" do
+      describe "Show" do
+        it "arg2" do
+          show (10 :> true) `shouldEqual` "10, true"
+        it "arg3" do
+          show ("1" :> false :> [3, 4]) `shouldEqual` "\"1\", false, [3,4]"
+      describe "Eq" do
+        it "arg2" do
+          (1 :> "2") `shouldEqual` (1 :> "2")
+        it "arg3" do
+          ("1" :> false :> [3, 4]) `shouldEqual` ("1" :> false :> [3, 4])
 
-    describe "特定の引数で呼び出されたことを検証することができる" do
-      it "引数が1つの場合" do
-        let
-          m = mock $ 9 :> 100
-          _ = m.fun 9
-        verify m 9
 
-      it "引数が2つの場合" do
-        let
-          m = mock $ 9 :> false :> 100
-          _ = m.fun 9 false
-        verify m $ 9 :> false
-
-      it "引数が3つの場合" do
-        let
-          m = mock $ 9 :> false :> "hoge" :> 100
-          _ = m.fun 9 false "hoge"
-        verify m $ 9 :> false :> "hoge"
-
-      -- it "一度も呼び出さない状態で検証をするとfailになる" do
-      --   let
-      --     m = mock $ whenCalledWith 1 `returns` 100
-      --   expectError $ verify m.mock
-      
+    describe "MonadのMock" do
       it "Monadを返すことができる1" do
         let
           m = mock $ 1 :> (pure "hoge" :: Identity String)
@@ -169,137 +315,3 @@ spec = do
           updateMock = mock $ "新しいtitle" :> (pure unit :: StateT State Aff Unit)
         _ <- runStateT (updateMock.fun "新しいtitle") {article: {title: "Dummy"}} 
         verify updateMock "新しいtitle"
-
-    describe "呼び出し回数を検証することができる" do
-      it "呼び出された回数を検証することができる(0回)" do
-        let
-          m = mock $ 1 :> 100
-        verifyCount m 1 0
-
-      it "呼び出された回数を検証することができる(複数回)" do
-        let
-          m = mock $ 1 :> 2 :> 100
-          _ = m.fun 1 2
-          _ = m.fun 1 2
-          _ = m.fun 1 2
-        verifyCount m (1 :> 2) 3
-    
-    describe "一つのMockで複数の引数の組み合わせに対応できる" do
-      describe "任意の値を返すことができる" do
-        it "引数が1つの場合" do
-          let
-            m = mock [1 :> "r1",
-                      2 :> "r2"]
-          
-          m.fun 1 `shouldEqual` "r1"
-          m.fun 2 `shouldEqual` "r2"
-
-        it "引数が2つの場合" do
-          let
-            m = mock [1 :> "2" :> "r1",
-                      2 :> "3" :> "r2"]
-          
-          m.fun 1 "2" `shouldEqual` "r1"
-          m.fun 2 "3" `shouldEqual` "r2"
-
-      describe "検証することができる" do
-        it "引数が1つの場合" do
-          let
-            m = mock [1 :> "r1",
-                      2 :> "r2"]
-          
-            _ = m.fun 1
-            _ = m.fun 2
-          verify m 1
-          verify m 2
-
-        it "引数が2つの場合" do
-          let
-            m = mock [1 :> "2" :> "r1",
-                      2 :> "3" :> "r2"]
-            _ = m.fun 1 "2"
-            _ = m.fun 2 "3"
-
-          verify m (1 :> "2")
-          verify m (2 :> "3")
-
-      it "呼び出された回数を検証することができる(複数回)" do
-        let
-          m = mock [1 :> "2" :> "r1",
-                    2 :> "3" :> "r2"]
-          _ = m.fun 1 "2"
-          _ = m.fun 2 "3"
-          _ = m.fun 1 "2"
-
-        verifyCount m (1 :> "2") 2
-
-    describe "Matcher" do
-      describe "any" do
-        it "引数が1つの場合" do
-          let
-            m = mock $ (any :: Param String) :> "Expected"
-          
-          m.fun "" `shouldEqual` "Expected"
-          m.fun "1" `shouldEqual` "Expected"
-          m.fun "a" `shouldEqual` "Expected"
-
-        it "引数が2つの場合" do
-          let
-            m = mock $ (any :: Param String) :> (any :: Param Int) :> "Expected"
-          
-          m.fun "" 0    `shouldEqual` "Expected"
-          m.fun "1" 9   `shouldEqual` "Expected"
-          m.fun "a" 100 `shouldEqual` "Expected"
-
-        it "引数が2つの場合2" do
-          let
-            m = mock $ "a" :> (any :: Param Int) :> "Expected"
-          
-          m.fun "a" 0   `shouldEqual` "Expected"
-          m.fun "a" 9   `shouldEqual` "Expected"
-          m.fun "a" 100 `shouldEqual` "Expected"
-
-      describe "any verify" do
-        it "引数が1つの場合" do
-          let
-            m = mock $ (any :: Param String) :> "Expected"
-          
-            _ = m.fun "foo"
-            _ = m.fun "bar"
-          
-          verify m "foo"
-          verify m "bar"
-          verify m (any :: Param String)
-
-        it "引数が2つの場合" do
-          let
-            m = mock $ (any :: Param String) :> (any :: Param Int) :> "Expected"
-          
-            _ = m.fun "foo" 0    
-            _ = m.fun "bar" 9
-
-          verify m ("foo" :> 0)
-          verify m ("bar" :> 9)
-          verify m ((any :: Param String) :> 0)
-          verify m ((any :: Param String) :> 9)
-
-    describe "custom matcher" do
-      it "引数が1つの場合" do
-        let
-          m = mock $ matcher (\v -> v > 10) "> 10" :> "Expected"
-
-        m.fun 11 `shouldEqual` "Expected"
-
-        verify m (matcher (\v -> v > 10) "> 10")
-
-    describe "Cons" do
-      describe "Show" do
-        it "arg2" do
-          show (10 :> true) `shouldEqual` "10, true"
-        it "arg3" do
-          show ("1" :> false :> [3, 4]) `shouldEqual` "\"1\", false, [3,4]"
-      describe "Eq" do
-        it "arg2" do
-          (1 :> "2") `shouldEqual` (1 :> "2")
-        it "arg3" do
-          ("1" :> false :> [3, 4]) `shouldEqual` ("1" :> false :> [3, 4])
