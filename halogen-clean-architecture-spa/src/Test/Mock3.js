@@ -14,7 +14,6 @@ export const _runRuntimeThrowableFunction = function(runtimeThrowableFunction) {
   try {
     result = runtimeThrowableFunction();
   } catch (error) {
-    console.log(error);
     return {
       hasError: true,
       error
