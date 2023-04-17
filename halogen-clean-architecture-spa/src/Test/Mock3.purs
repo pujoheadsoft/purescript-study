@@ -29,13 +29,11 @@ import Prelude
 import Control.Monad.Error.Class (class MonadThrow)
 import Data.Array (filter, find, length)
 import Data.Array as A
-import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Data.String (joinWith)
 import Effect.Exception (Error, throw)
 import Effect.Unsafe (unsafePerformEffect)
 import Test.Spec.Assertions (fail)
-import Undefined (undefined)
 import Unsafe.Coerce (unsafeCoerce)
 
 type Mock fn v = {
@@ -54,11 +52,11 @@ type CalledParamsList v = Array v
 
 newtype Verifier v = Verifier {
   calledParamsList :: CalledParamsList v,
-  verify :: CalledParamsList v -> v -> Maybe VerifyFailed
+  verifyFun :: CalledParamsList v -> v -> Maybe VerifyFailed
 }
 
 verifier :: forall v. CalledParamsList v -> (CalledParamsList v -> v -> Maybe VerifyFailed) -> Verifier v
-verifier l f = Verifier { calledParamsList: l, verify: f }
+verifier l f = Verifier { calledParamsList: l, verifyFun: f }
 
 data Cons a b = Cons a b
 
@@ -278,7 +276,7 @@ returnValue = return >>> value
 mockT :: forall fun v. Eq v => Show v => CalledParamsList v -> fun -> Mock fun v
 mockT argsList fun = {
   fun,
-  verifier: verifier argsList (\list args -> _verify list args)
+  verifier: verifier argsList (\list args -> doVerify list args)
 }
 
 type Matcher v = v -> v -> Boolean
@@ -336,12 +334,13 @@ instance instaneConsGen :: ConsGen a b (Cons (Param a) (Param b)) where
 param :: forall a. a -> Param a
 param a = Param {v: a, matcher: Nothing}
 
+p :: forall a. a -> Param a
 p = param
 
 infixr 8 cons as :>
 
-_verify :: forall a. Eq a => Show a => Array a -> a -> Maybe VerifyFailed
-_verify list a = 
+doVerify :: forall a. Eq a => Show a => Array a -> a -> Maybe VerifyFailed
+doVerify list a = 
   if A.any (a == _) list then Nothing 
   else Just $ verifyFailedMesssage list a
 
@@ -353,17 +352,16 @@ class VerifyBuilder v a where
   verify :: forall m r. MonadThrow Error m => { verifier :: Verifier v | r} -> a -> m Unit
 
 instance instanceVerifyBuilderParam1 :: Eq a => VerifyBuilder (Param a) a where
-  verify {verifier : (Verifier { calledParamsList, verify: doVerify })} a = 
-    zzz doVerify calledParamsList (param a)
+  verify v a = _verify v (param a)
 else
 instance instanceVerifyBuilder :: VerifyBuilder a a where
-  verify {verifier : (Verifier { calledParamsList, verify: doVerify })} args = 
-    zzz doVerify calledParamsList args
+  verify v args = _verify v args
 
-zzz :: forall v m. MonadThrow Error m => (CalledParamsList v -> v -> Maybe VerifyFailed) -> CalledParamsList v -> v -> m Unit
-zzz doVerify calledParamsList args = case doVerify calledParamsList args of
-      Just (VerifyFailed msg) -> fail msg
-      Nothing -> pure unit
+_verify :: forall v m r. MonadThrow Error m => { verifier :: Verifier v | r} -> v -> m Unit
+_verify {verifier : (Verifier { calledParamsList, verifyFun })} args =
+  case verifyFun calledParamsList args of
+    Just (VerifyFailed msg) -> fail msg
+    Nothing -> pure unit
 
 validateParams :: forall a. Eq a => Show a => a -> a -> Unit
 validateParams expected actual = if (expected == actual) then unit else error $ message expected actual
@@ -373,21 +371,6 @@ storeCalledParams s a = const a (s.store a)
 
 validateWithStoreParams :: forall a. Eq a => Show a => CallredParamsStore a -> a -> a -> Unit
 validateWithStoreParams s expected actual = validateParams expected (storeCalledParams s actual)
-
-class VerifyCountBuilder c v a where
-  verifyCount :: forall m r. MonadThrow Error m => Eq v => { verifier :: Verifier v | r} -> c -> a -> m Unit
-
-instance instanceVerifyCountBuilder3 ::  Eq a => VerifyCountBuilder CountVerifyMethod (Param a) a where
-  verifyCount {verifier : (Verifier { calledParamsList })} count a = yyy calledParamsList (param a) count
-else
-instance instanceVerifyCountBuilderParam1 :: Eq a => VerifyCountBuilder Int (Param a) a where
-  verifyCount {verifier : (Verifier { calledParamsList })} count a =  yyy calledParamsList (param a) (Equal count)
-else
-instance instanceVerifyCountBuilder2 :: VerifyCountBuilder CountVerifyMethod a a where
-  verifyCount {verifier : (Verifier { calledParamsList })} count a = yyy calledParamsList a count
-else
-instance instanceVerifyCountBuilder :: VerifyCountBuilder Int a a where
-  verifyCount {verifier : (Verifier { calledParamsList })} count a = yyy calledParamsList a (Equal count)
 
 data CountVerifyMethod =
     Equal Int
@@ -410,8 +393,23 @@ instance showCountVerifyMethod :: Show CountVerifyMethod where
   show (GreaterThanEqual e) = ">= " <> show e
   show (GreaterThan e)      = "> " <> show e
 
-yyy :: forall v m. MonadThrow Error m => Eq v => CalledParamsList v -> v -> CountVerifyMethod -> m Unit
-yyy calledParamsList v method = 
+class VerifyCountBuilder c v a where
+  verifyCount :: forall m r. MonadThrow Error m => Eq v => { verifier :: Verifier v | r} -> c -> a -> m Unit
+
+instance instanceVerifyCountBuilder3 ::  Eq a => VerifyCountBuilder CountVerifyMethod (Param a) a where
+  verifyCount v count a = _verifyCount v (param a) count
+else
+instance instanceVerifyCountBuilderParam1 :: Eq a => VerifyCountBuilder Int (Param a) a where
+  verifyCount v count a =  _verifyCount v (param a) (Equal count)
+else
+instance instanceVerifyCountBuilder2 :: VerifyCountBuilder CountVerifyMethod a a where
+  verifyCount v count a = _verifyCount v a count
+else
+instance instanceVerifyCountBuilder :: VerifyCountBuilder Int a a where
+  verifyCount v count a = _verifyCount v a (Equal count)
+
+_verifyCount :: forall v m r. MonadThrow Error m => Eq v => { verifier :: Verifier v | r} -> v -> CountVerifyMethod -> m Unit
+_verifyCount {verifier : (Verifier { calledParamsList })} v method = 
   let
     callCount = length (filter (\args -> v == args) calledParamsList)
   in if compareCount method callCount then pure unit
