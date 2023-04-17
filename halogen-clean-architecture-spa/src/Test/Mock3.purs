@@ -249,11 +249,11 @@ instance instanceMockArg9 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, 
     (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g #> Param h #> Param i #> Param r)
     (a -> b -> c -> d -> e -> f -> g -> h -> i -> r)
     (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g #> Param h #> Param i) where
-  mock (a #> b #> c #> d #> e #> f #> g #> h #> i #> r) =
+  mock defs =
     let s = store unit
-    in mockT s.argsList (\a2 b2 c2 d2 e2 f2 g2 h2 i2 -> (value r)
+    in mockT s.argsList (\a2 b2 c2 d2 e2 f2 g2 h2 i2 -> (returnValue defs)
       `const` validateWithStoreParams s 
-        (a #> b #> c #> d #> e #> f #> g #> h #> i)
+        (args defs)
         (p a2 :> p b2 :> p c2 :> p d2 :> p e2 :> p f2 :> p g2 :> p h2 :> p i2) )
 else
 instance instanceMockArg8 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, Eq d, Show e, Eq e, Show f, Eq f, Show g, Eq g, Show h, Eq h)
@@ -261,11 +261,11 @@ instance instanceMockArg8 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, 
     (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g #> Param h #> Param r)
     (a -> b -> c -> d -> e -> f -> g -> h -> r)
     (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g #> Param h) where
-  mock (a #> b #> c #> d #> e #> f #> g #> h #> r) =
+  mock defs =
     let s = store unit
-    in mockT s.argsList (\a2 b2 c2 d2 e2 f2 g2 h2 -> (value r)
+    in mockT s.argsList (\a2 b2 c2 d2 e2 f2 g2 h2 -> (returnValue defs)
       `const` validateWithStoreParams s 
-        (a #> b #> c #> d #> e #> f #> g #> h)
+        (args defs)
         (p a2 :> p b2 :> p c2 :> p d2 :> p e2 :> p f2 :> p g2 :> p h2) )
 else
 instance instanceMockArg7 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, Eq d, Show e, Eq e, Show f, Eq f, Show g, Eq g)
@@ -273,11 +273,11 @@ instance instanceMockArg7 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, 
     (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g #> Param r)
     (a -> b -> c -> d -> e -> f -> g -> r)
     (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g) where
-  mock (a #> b #> c #> d #> e #> f #> g #> r) =
+  mock defs =
     let s = store unit
-    in mockT s.argsList (\a2 b2 c2 d2 e2 f2 g2 -> (value r)
+    in mockT s.argsList (\a2 b2 c2 d2 e2 f2 g2 -> (returnValue defs)
       `const` validateWithStoreParams s 
-        (a #> b #> c #> d #> e #> f #> g)
+        (args defs)
         (p a2 :> p b2 :> p c2 :> p d2 :> p e2 :> p f2 :> p g2) )
 else
 instance instanceMockArg6 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, Eq d, Show e, Eq e, Show f, Eq f)
@@ -285,48 +285,51 @@ instance instanceMockArg6 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, 
     (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param r)
     (a -> b -> c -> d -> e -> f -> r)
     (Param a #> Param b #> Param c #> Param d #> Param e #> Param f) where
-  mock (a #> b #> c #> d #> e #> f #> r) =
+  mock defs =
     let s = store unit
-    in mockT s.argsList (\a2 b2 c2 d2 e2 f2 -> (value r) `const` 
-      validateWithStoreParams s (a #> b #> c #> d #> e #> f) (p a2 :> p b2 :> p c2 :> p d2 :> p e2 :> p f2) )
+    in mockT s.argsList (\a2 b2 c2 d2 e2 f2 -> (returnValue defs) `const` 
+      validateWithStoreParams s (args defs) (p a2 :> p b2 :> p c2 :> p d2 :> p e2 :> p f2) )
 else
 instance instanceMockArg5 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, Eq d, Show e, Eq e)
   => MockBuilder
     (Param a #> Param b #> Param c #> Param d #> Param e #> Param r)
     (a -> b -> c -> d -> e -> r)
     (Param a #> Param b #> Param c #> Param d #> Param e) where
-  mock (a #> b #> c #> d #> e #> r) =
+  mock defs =
     let s = store unit
-    in mockT s.argsList (\a2 b2 c2 d2 e2 -> (value r) `const` 
-      validateWithStoreParams s (a #> b #> c #> d #> e) (p a2 :> p b2 :> p c2 :> p d2 :> p e2) )
+    in mockT s.argsList (\a2 b2 c2 d2 e2 -> (returnValue defs) `const` 
+      validateWithStoreParams s (args defs) (p a2 :> p b2 :> p c2 :> p d2 :> p e2) )
 else
 instance instanceMockArg4 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, Eq d)
   => MockBuilder
     (Param a #> Param b #> Param c #> Param d #> Param r)
     (a -> b -> c -> d -> r)
     (Param a #> Param b #> Param c #> Param d) where
-  mock (a #> b #> c #> d #> r) =
+  mock defs =
     let s = store unit
-    in mockT s.argsList (\a2 b2 c2 d2 -> (value r) `const` 
-      validateWithStoreParams s (a #> b #> c #> d) (p a2 :> p b2 :> p c2 :> p d2) )
+    in mockT s.argsList (\a2 b2 c2 d2 -> (returnValue defs) `const` 
+      validateWithStoreParams s (args defs) (p a2 :> p b2 :> p c2 :> p d2) )
 else
 instance instanceMockArg3 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c)
   => MockBuilder (Param a #> Param b #> Param c #> Param r) (a -> b -> c -> r) (Param a #> Param b #> Param c) where
-  mock (a #> b #> c #> r) =
+  mock defs =
     let s = store unit
-    in mockT s.argsList (\a2 b2 c2 -> (value r) `const` validateWithStoreParams s (a #> b #> c) (p a2 :> p b2 :> p c2) )
+    in mockT s.argsList (\a2 b2 c2 -> (returnValue defs) `const` validateWithStoreParams s (args defs) (p a2 :> p b2 :> p c2) )
 else
 instance instanceMockArg2 :: (Show a, Eq a, Show b, Eq b)
   => MockBuilder (Param a #> Param b #> Param r) (a -> b -> r) (Param a #> Param b) where
-  mock (a #> b #> r) =
+  mock defs =
     let s = store unit
-    in mockT s.argsList (\a2 b2 -> (value r) `const` validateWithStoreParams s (a #> b) (p a2 :> p b2))
+    in mockT s.argsList (\a2 b2 -> returnValue defs `const` validateWithStoreParams s (args defs) (p a2 :> p b2))
 else
 instance instanceMockArg1 :: (Show a, Eq a) 
   => MockBuilder (Param a #> Param r) (a -> r) (Param a) where
-  mock (a #> r) =
+  mock defs =
     let s = store unit
-    in mockT s.argsList (\a2 -> (value r) `const` validateWithStoreParams s a (p a2))
+    in mockT s.argsList (\a2 -> returnValue defs `const` validateWithStoreParams s (args defs) (p a2))
+
+returnValue :: forall defs args r. Extractor defs args (Param r) => defs -> r
+returnValue = return >>> value
 
 mockT :: forall fun v. Eq v => Show v => CalledParamsList v -> fun -> Mock fun v
 mockT argsList fun = {
@@ -528,3 +531,53 @@ runRuntimeThrowableFunction f =
   let
     r = _runRuntimeThrowableFunction f
   in if r.hasError then fail r.error else pure unit
+
+class Extractor d a r | d -> a, d -> r where
+  args :: d -> a
+  return :: d -> r
+
+instance extractor9 :: Extractor 
+  (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g #> Param h #> Param i #> Param r)
+  (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g #> Param h #> Param i) (Param r) where
+  args (a #> b #> c #> d #> e #> f #> g #> h #> i #> _) = a #> b #> c #> d #> e #> f #> g #> h #> i
+  return (_ #> _ #> _ #> _ #> _ #> _ #> _ #> _ #> _ #> r) = r
+else
+instance extractor8 :: Extractor 
+  (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g #> Param h #> Param r)
+  (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g #> Param h) (Param r) where
+  args (a #> b #> c #> d #> e #> f #> g #> h #> _) = a #> b #> c #> d #> e #> f #> g #> h
+  return (_ #> _ #> _ #> _ #> _ #> _ #> _ #> _ #> r) = r
+else
+instance extractor7 :: Extractor 
+  (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g #> Param r)
+  (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g) (Param r) where
+  args (a #> b #> c #> d #> e #> f #> g #> _) = a #> b #> c #> d #> e #> f #> g
+  return (_ #> _ #> _ #> _ #> _ #> _ #> _ #> r) = r
+else
+instance extractor6 :: Extractor 
+  (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param r)
+  (Param a #> Param b #> Param c #> Param d #> Param e #> Param f) (Param r) where
+  args (a #> b #> c #> d #> e #> f #> _) = a #> b #> c #> d #> e #> f
+  return (_ #> _ #> _ #> _ #> _ #> _ #> r) = r
+else
+instance extractor5 :: Extractor 
+  (Param a #> Param b #> Param c #> Param d #> Param e #> Param r)
+  (Param a #> Param b #> Param c #> Param d #> Param e) (Param r) where
+  args (a #> b #> c #> d #> e #> _) = a #> b #> c #> d #> e
+  return (_ #> _ #> _ #> _ #> _ #> r) = r
+else
+instance extractor4 :: Extractor (Param a #> Param b #> Param c #> Param d #> Param r) (Param a #> Param b #> Param c #> Param d) (Param r) where
+  args (a #> b #> c #> d #> _) = a #> b #> c #> d
+  return (_ #> _ #> _ #> _ #> r) = r
+else
+instance extractor3 :: Extractor (Param a #> Param b #> Param c #> Param r) (Param a #> Param b #> Param c) (Param r) where
+  args (a #> b #> c #> _) = a #> b #> c
+  return (_ #> _ #> _ #> r) = r
+else
+instance extractor2 :: Extractor (Param a #> Param b #> Param r) (Param a #> Param b) (Param r) where
+  args (a #> b #> _) = a #> b
+  return (_ #> _ #> r) = r
+else
+instance extractor1 :: Extractor (Param a #> Param r) (Param a) (Param r) where
+  args (a #> _) = a
+  return (_ #> r) = r
