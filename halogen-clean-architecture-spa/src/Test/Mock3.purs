@@ -73,12 +73,6 @@ type Message = String
 
 data VerifyFailed = VerifyFailed Message
 
-instance verifyFailedSemigroup :: Semigroup VerifyFailed where
-  append (VerifyFailed m1) (VerifyFailed m2) = VerifyFailed (m1 <> m2)
-
-instance verifyFailedMonoid :: Monoid VerifyFailed where
-  mempty = VerifyFailed ""
-
 class MockBuilder a r v | a -> r, a -> v where
   mock :: a -> Mock r v
 
