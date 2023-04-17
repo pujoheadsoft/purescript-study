@@ -84,91 +84,6 @@ instance verifyFailedMonoid :: Monoid VerifyFailed where
 class MockBuilder a r v | a -> r, a -> v where
   mock :: a -> Mock r v
 
-class Finder d a r | d -> a, d -> r where
-  findMatchedReturnValue :: Array d -> a -> Maybe r
-
-instance finderArg9 :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h, Eq i) => 
-  Finder
-    (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g #> Param h #> Param i #> Param r)
-    (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g #> Param h #> Param i)
-    r where
-  findMatchedReturnValue defs args = do
-    find (\(a #> b #> c #> d #> e #> f #> g #> h #> i #> _) -> (a #> b #> c #> d #> e #> f #> g #> h #> i) == args) defs
-      >>= \(_ #> _ #> _ #> _ #> _ #> _ #> _ #> _ #> _ #> r) -> pure $ value r
-else
-instance finderArg8 :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g, Eq h) => 
-  Finder
-    (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g #> Param h #> Param r)
-    (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g #> Param h)
-    r where
-  findMatchedReturnValue defs args = do
-    find (\(a #> b #> c #> d #> e #> f #> g #> h #> _) -> (a #> b #> c #> d #> e #> f #> g #> h) == args) defs
-      >>= \(_ #> _ #> _ #> _ #> _ #> _ #> _ #> _ #> r) -> pure $ value r
-else
-instance finderArg7 :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f, Eq g) => 
-  Finder
-    (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g #> Param r)
-    (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g)
-    r where
-  findMatchedReturnValue defs args = do
-    find (\(a #> b #> c #> d #> e #> f #> g #> _) -> (a #> b #> c #> d #> e #> f #> g) == args) defs
-      >>= \(_ #> _ #> _ #> _ #> _ #> _ #> _ #> r) -> pure $ value r
-else
-instance finderArg6 :: (Eq a, Eq b, Eq c, Eq d, Eq e, Eq f) => 
-  Finder
-    (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param r)
-    (Param a #> Param b #> Param c #> Param d #> Param e #> Param f)
-    r where
-  findMatchedReturnValue defs args = do
-    find (\(a #> b #> c #> d #> e #> f #> _) -> (a #> b #> c #> d #> e #> f) == args) defs
-      >>= \(_ #> _ #> _ #> _ #> _ #> _ #> r) -> pure $ value r
-else
-instance finderArg5 :: (Eq a, Eq b, Eq c, Eq d, Eq e) => 
-  Finder
-    (Param a #> Param b #> Param c #> Param d #> Param e #> Param r)
-    (Param a #> Param b #> Param c #> Param d #> Param e)
-    r where
-  findMatchedReturnValue defs args = do
-    find (\(a #> b #> c #> d #> e #> _) -> (a #> b #> c #> d #> e) == args) defs
-      >>= \(_ #> _ #> _ #> _ #> _ #> r) -> pure $ value r
-else
-instance finderArg4 :: (Eq a, Eq b, Eq c, Eq d) => 
-  Finder
-    (Param a #> Param b #> Param c #> Param d #> Param r)
-    (Param a #> Param b #> Param c #> Param d)
-    r where
-  findMatchedReturnValue defs args = do
-    find (\(a #> b #> c #> d #> _) -> (a #> b #> c #> d) == args) defs
-      >>= \(_ #> _ #> _ #> _ #> r) -> pure $ value r
-else
-instance finderArg3 :: (Eq a, Eq b, Eq c) => 
-  Finder
-    (Param a #> Param b #> Param c #> Param r)
-    (Param a #> Param b #> Param c)
-    r where
-  findMatchedReturnValue defs args = do
-    find (\(a #> b #> c #> _) -> (a #> b #> c) == args) defs
-      >>= \(_ #> _ #> _ #> r) -> pure $ value r
-else
-instance finderArg2 :: (Eq a, Eq b) => Finder (Param a #> Param b #> Param r) (Param a #> Param b) r where
-  findMatchedReturnValue defs args = do
-    find (\(a #> b #> _) -> (a #> b) == args) defs
-      >>= \(_ #> _ #> r) -> pure $ value r
-else
-instance finderArg1 :: Eq a => Finder (Param a #> Param r) (Param a) r where
-  findMatchedReturnValue defs a2 = do
-    find (\(a #> _) -> a == a2) defs
-      >>= \(_ #> r) -> pure $ value r
-
-_findMatchedReturnValue :: forall r a v. Finder v a r => CalledParamsList v -> a -> CallredParamsStore a -> r
-_findMatchedReturnValue defs a s =
-  let
-    r = findMatchedReturnValue defs a
-    _ = storeCalledParams s a
-  in case r of
-    Just v -> v
-    Nothing -> error "no answer found."
-
 instance instanceMockArrayArg9 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, Eq d, Show e, Eq e, Show f, Eq f, Show g, Eq g, Show h, Eq h, Show i, Eq i)
   => MockBuilder 
     (Array (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g #> Param h #> Param i #> Param r))
@@ -176,7 +91,7 @@ instance instanceMockArrayArg9 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c, Sho
     (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g #> Param h #> Param i) where
   mock defs = do
     let s = store unit
-    mockT s.argsList (\a2 b2 c2 d2 e2 f2 g2 h2 i2 -> _findMatchedReturnValue defs (p a2 :> p b2 :> p c2 :> p d2 :> p e2 :> p f2 :> p g2 :> p h2 :> p i2) s)
+    mockT s.argsList (\a2 b2 c2 d2 e2 f2 g2 h2 i2 -> findReturnValueWithStore defs (p a2 :> p b2 :> p c2 :> p d2 :> p e2 :> p f2 :> p g2 :> p h2 :> p i2) s)
 else
 instance instanceMockArrayArg8 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, Eq d, Show e, Eq e, Show f, Eq f, Show g, Eq g, Show h, Eq h)
   => MockBuilder 
@@ -185,7 +100,7 @@ instance instanceMockArrayArg8 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c, Sho
     (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g #> Param h) where
   mock defs = do
     let s = store unit
-    mockT s.argsList (\a2 b2 c2 d2 e2 f2 g2 h2 -> _findMatchedReturnValue defs (p a2 :> p b2 :> p c2 :> p d2 :> p e2 :> p f2 :> p g2 :> p h2) s)
+    mockT s.argsList (\a2 b2 c2 d2 e2 f2 g2 h2 -> findReturnValueWithStore defs (p a2 :> p b2 :> p c2 :> p d2 :> p e2 :> p f2 :> p g2 :> p h2) s)
 else
 instance instanceMockArrayArg7 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, Eq d, Show e, Eq e, Show f, Eq f, Show g, Eq g)
   => MockBuilder 
@@ -194,7 +109,7 @@ instance instanceMockArrayArg7 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c, Sho
     (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g) where
   mock defs = do
     let s = store unit
-    mockT s.argsList (\a2 b2 c2 d2 e2 f2 g2 -> _findMatchedReturnValue defs (p a2 :> p b2 :> p c2 :> p d2 :> p e2 :> p f2 :> p g2) s)
+    mockT s.argsList (\a2 b2 c2 d2 e2 f2 g2 -> findReturnValueWithStore defs (p a2 :> p b2 :> p c2 :> p d2 :> p e2 :> p f2 :> p g2) s)
 else
 instance instanceMockArrayArg6 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, Eq d, Show e, Eq e, Show f, Eq f)
   => MockBuilder 
@@ -203,7 +118,7 @@ instance instanceMockArrayArg6 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c, Sho
     (Param a #> Param b #> Param c #> Param d #> Param e #> Param f) where
   mock defs = do
     let s = store unit
-    mockT s.argsList (\a2 b2 c2 d2 e2 f2 -> _findMatchedReturnValue defs (p a2 :> p b2 :> p c2 :> p d2 :> p e2 :> p f2) s)
+    mockT s.argsList (\a2 b2 c2 d2 e2 f2 -> findReturnValueWithStore defs (p a2 :> p b2 :> p c2 :> p d2 :> p e2 :> p f2) s)
 else
 instance instanceMockArrayArg5 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, Eq d, Show e, Eq e)
   => MockBuilder 
@@ -212,7 +127,7 @@ instance instanceMockArrayArg5 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c, Sho
     (Param a #> Param b #> Param c #> Param d #> Param e) where
   mock defs = do
     let s = store unit
-    mockT s.argsList (\a2 b2 c2 d2 e2 -> _findMatchedReturnValue defs (p a2 :> p b2 :> p c2 :> p d2 :> p e2) s)
+    mockT s.argsList (\a2 b2 c2 d2 e2 -> findReturnValueWithStore defs (p a2 :> p b2 :> p c2 :> p d2 :> p e2) s)
 else
 instance instanceMockArrayArg4 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, Eq d)
   => MockBuilder 
@@ -221,7 +136,7 @@ instance instanceMockArrayArg4 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c, Sho
     (Param a #> Param b #> Param c #> Param d) where
   mock defs = do
     let s = store unit
-    mockT s.argsList (\a2 b2 c2 d2 -> _findMatchedReturnValue defs (p a2 :> p b2 :> p c2 :> p d2) s)
+    mockT s.argsList (\a2 b2 c2 d2 -> findReturnValueWithStore defs (p a2 :> p b2 :> p c2 :> p d2) s)
 else
 instance instanceMockArrayArg3 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c)
   => MockBuilder 
@@ -230,28 +145,28 @@ instance instanceMockArrayArg3 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c)
     (Param a #> Param b #> Param c) where
   mock defs = do
     let s = store unit
-    mockT s.argsList (\a2 b2 c2 -> _findMatchedReturnValue defs (p a2 :> p b2 :> p c2) s)
+    mockT s.argsList (\a2 b2 c2 -> findReturnValueWithStore defs (p a2 :> p b2 :> p c2) s)
 else
 instance instanceMockArrayArg2 :: (Show a, Eq a, Show b, Eq b)
   => MockBuilder (Array (Param a #> Param b #> Param r)) (a -> b -> r) (Param a #> Param b) where
   mock defs = do
     let s = store unit
-    mockT s.argsList (\a2 b2 -> _findMatchedReturnValue defs (p a2 :> p b2) s)
+    mockT s.argsList (\a2 b2 -> findReturnValueWithStore defs (p a2 :> p b2) s)
 else
 instance instanceMockArrayArg1 :: (Show a, Eq a)
   => MockBuilder (Array (Param a #> Param r)) (a -> r) (Param a) where
   mock defs = do
     let s = store unit
-    mockT s.argsList (\a2 -> _findMatchedReturnValue defs (p a2) s)
+    mockT s.argsList (\a2 -> findReturnValueWithStore defs (p a2) s)
 else
 instance instanceMockArg9 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, Eq d, Show e, Eq e, Show f, Eq f, Show g, Eq g, Show h, Eq h, Show i, Eq i)
   => MockBuilder
     (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g #> Param h #> Param i #> Param r)
     (a -> b -> c -> d -> e -> f -> g -> h -> i -> r)
     (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g #> Param h #> Param i) where
-  mock defs =
+  mock defs = do
     let s = store unit
-    in mockT s.argsList (\a2 b2 c2 d2 e2 f2 g2 h2 i2 -> 
+    mockT s.argsList (\a2 b2 c2 d2 e2 f2 g2 h2 i2 -> 
       extractReturnValueWithValidate defs (p a2 :> p b2 :> p c2 :> p d2 :> p e2 :> p f2 :> p g2 :> p h2 :> p i2) s)
 else
 instance instanceMockArg8 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, Eq d, Show e, Eq e, Show f, Eq f, Show g, Eq g, Show h, Eq h)
@@ -259,9 +174,9 @@ instance instanceMockArg8 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, 
     (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g #> Param h #> Param r)
     (a -> b -> c -> d -> e -> f -> g -> h -> r)
     (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g #> Param h) where
-  mock defs =
+  mock defs = do
     let s = store unit
-    in mockT s.argsList (\a2 b2 c2 d2 e2 f2 g2 h2 -> 
+    mockT s.argsList (\a2 b2 c2 d2 e2 f2 g2 h2 -> 
       extractReturnValueWithValidate defs (p a2 :> p b2 :> p c2 :> p d2 :> p e2 :> p f2 :> p g2 :> p h2) s)
 else
 instance instanceMockArg7 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, Eq d, Show e, Eq e, Show f, Eq f, Show g, Eq g)
@@ -269,9 +184,9 @@ instance instanceMockArg7 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, 
     (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g #> Param r)
     (a -> b -> c -> d -> e -> f -> g -> r)
     (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param g) where
-  mock defs =
+  mock defs = do
     let s = store unit
-    in mockT s.argsList (\a2 b2 c2 d2 e2 f2 g2 -> 
+    mockT s.argsList (\a2 b2 c2 d2 e2 f2 g2 -> 
       extractReturnValueWithValidate defs (p a2 :> p b2 :> p c2 :> p d2 :> p e2 :> p f2 :> p g2) s)
 else
 instance instanceMockArg6 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, Eq d, Show e, Eq e, Show f, Eq f)
@@ -279,45 +194,45 @@ instance instanceMockArg6 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, 
     (Param a #> Param b #> Param c #> Param d #> Param e #> Param f #> Param r)
     (a -> b -> c -> d -> e -> f -> r)
     (Param a #> Param b #> Param c #> Param d #> Param e #> Param f) where
-  mock defs =
+  mock defs = do
     let s = store unit
-    in mockT s.argsList (\a2 b2 c2 d2 e2 f2 -> extractReturnValueWithValidate defs (p a2 :> p b2 :> p c2 :> p d2 :> p e2 :> p f2) s)
+    mockT s.argsList (\a2 b2 c2 d2 e2 f2 -> extractReturnValueWithValidate defs (p a2 :> p b2 :> p c2 :> p d2 :> p e2 :> p f2) s)
 else
 instance instanceMockArg5 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, Eq d, Show e, Eq e)
   => MockBuilder
     (Param a #> Param b #> Param c #> Param d #> Param e #> Param r)
     (a -> b -> c -> d -> e -> r)
     (Param a #> Param b #> Param c #> Param d #> Param e) where
-  mock defs =
+  mock defs = do
     let s = store unit
-    in mockT s.argsList (\a2 b2 c2 d2 e2 -> extractReturnValueWithValidate defs (p a2 :> p b2 :> p c2 :> p d2 :> p e2) s)
+    mockT s.argsList (\a2 b2 c2 d2 e2 -> extractReturnValueWithValidate defs (p a2 :> p b2 :> p c2 :> p d2 :> p e2) s)
 else
 instance instanceMockArg4 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c, Show d, Eq d)
   => MockBuilder
     (Param a #> Param b #> Param c #> Param d #> Param r)
     (a -> b -> c -> d -> r)
     (Param a #> Param b #> Param c #> Param d) where
-  mock defs =
+  mock defs = do
     let s = store unit
-    in mockT s.argsList (\a2 b2 c2 d2 -> extractReturnValueWithValidate defs (p a2 :> p b2 :> p c2 :> p d2) s)
+    mockT s.argsList (\a2 b2 c2 d2 -> extractReturnValueWithValidate defs (p a2 :> p b2 :> p c2 :> p d2) s)
 else
 instance instanceMockArg3 :: (Show a, Eq a, Show b, Eq b, Show c, Eq c)
   => MockBuilder (Param a #> Param b #> Param c #> Param r) (a -> b -> c -> r) (Param a #> Param b #> Param c) where
-  mock defs =
+  mock defs = do
     let s = store unit
-    in mockT s.argsList (\a2 b2 c2 -> extractReturnValueWithValidate defs (p a2 :> p b2 :> p c2) s)
+    mockT s.argsList (\a2 b2 c2 -> extractReturnValueWithValidate defs (p a2 :> p b2 :> p c2) s)
 else
 instance instanceMockArg2 :: (Show a, Eq a, Show b, Eq b)
   => MockBuilder (Param a #> Param b #> Param r) (a -> b -> r) (Param a #> Param b) where
-  mock defs =
+  mock defs = do
     let s = store unit
-    in mockT s.argsList (\a2 b2 -> extractReturnValueWithValidate defs (p a2 :> p b2) s)
+    mockT s.argsList (\a2 b2 -> extractReturnValueWithValidate defs (p a2 :> p b2) s)
 else
 instance instanceMockArg1 :: (Show a, Eq a) 
   => MockBuilder (Param a #> Param r) (a -> r) (Param a) where
-  mock defs =
+  mock defs = do
     let s = store unit
-    in mockT s.argsList (\a2 -> extractReturnValueWithValidate defs (p a2) s)
+    mockT s.argsList (\a2 -> extractReturnValueWithValidate defs (p a2) s)
 
 extractReturnValueWithValidate ∷ forall d a r. 
      Extractor d a (Param r)
@@ -332,6 +247,30 @@ extractReturnValueWithValidate defs params s =
     r = returnValue defs
     _ = validateWithStoreParams s a params
   in r
+
+findReturnValue :: forall d a r. 
+     Eq a 
+  => Extractor d a (Param r)
+  => Array d
+  -> a
+  -> Maybe r
+findReturnValue defsList inputArgs = do
+  find (\defs -> (args defs) == inputArgs) defsList
+    >>= \defs -> pure $ returnValue defs
+
+findReturnValueWithStore :: forall d a r.
+     Eq a
+  => Extractor d a (Param r)
+  => CalledParamsList d
+  -> a
+  -> CallredParamsStore a
+  -> r
+findReturnValueWithStore defsList inputArgs s =
+  let
+    _ = storeCalledParams s inputArgs
+  in case findReturnValue defsList inputArgs of
+    Just v -> v
+    Nothing -> error "no answer found."
 
 returnValue :: forall defs args r. Extractor defs args (Param r) => defs -> r
 returnValue = return >>> value
