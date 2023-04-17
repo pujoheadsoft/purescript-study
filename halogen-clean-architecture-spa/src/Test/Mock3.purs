@@ -19,7 +19,8 @@ module Test.Mock3
   anyV,
   matcher,
   Mock,
-  runRuntimeThrowableFunction
+  runRuntimeThrowableFunction,
+  CountVerifyMethod(..)
   )
   where
 

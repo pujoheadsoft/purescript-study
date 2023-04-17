@@ -5,11 +5,12 @@ import Prelude
 import Component.State (State)
 import Control.Monad.Except (class MonadError)
 import Control.Monad.State (StateT, runStateT)
+import Data.Array (range)
 import Data.Identity (Identity)
 import Data.Maybe (Maybe(..))
 import Domain.Article (Article)
 import Effect.Aff (Aff, Error)
-import Test.Mock3 (Param, any, matcher, mock, runRuntimeThrowableFunction, verify, verifyCount, (:>))
+import Test.Mock3 (CountVerifyMethod(..), Param, any, matcher, mock, runRuntimeThrowableFunction, verify, verifyCount, (:>))
 import Test.Spec (Spec, SpecT, describe, it)
 import Test.Spec.Assertions (expectError, shouldEqual)
 
@@ -460,6 +461,36 @@ spec = do
         verifyCount: \m c -> verifyCount m c $ matcher (\v -> v > 9) "> 9",
         verifyFailed: \m -> verify m $ matcher (\v -> v > 11) "> 11"
       }
+
+    describe "Verifyの回数を細かく指定できる" do
+      it "指定回数以上" do
+        let 
+          m = mock $ "a" :> 10
+          _ = m.fun "a"
+          _ = m.fun "a"
+          _ = m.fun "a"
+        verifyCount m (GreaterThanEqual 3) "a"
+      it "指定回数以下" do
+        let 
+          m = mock $ "a" :> 10
+          _ = m.fun "a"
+          _ = m.fun "a"
+          _ = m.fun "a"
+        verifyCount m (LessThanEqual 3) "a"
+      it "指定回数超" do
+        let 
+          m = mock $ "a" :> 10
+          _ = m.fun "a"
+          _ = m.fun "a"
+          _ = m.fun "a"
+        verifyCount m (GreaterThan 2) "a"
+      it "指定回数未満" do
+        let 
+          m = mock $ "a" :> 10
+          _ = m.fun "a"
+          _ = m.fun "a"
+          _ = m.fun "a"
+        verifyCount m (LessThan 4) "a"
 
     describe "MonadのMock" do
       it "Monadを返すことができる1" do
