@@ -14,6 +14,7 @@
   , "heterogeneous"
   , "identity"
   , "maybe"
+  , "pmock"
   , "prelude"
   , "psci-support"
   , "refs"

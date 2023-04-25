@@ -5,14 +5,18 @@ import Prelude
 import Component.State (State)
 import Control.Monad.State (StateT, modify_, runStateT)
 import Data.Tuple (snd)
+import Domain.Article (Article)
 import Effect.Aff (Aff)
 import Port.ArticlePort (ArticlePortType, ArticleRunPortType)
 import Presenter.ArticlePresenter (ArticlePresenterType, ArticleRunPresenter)
 import Run (Run, extract)
-import Run.Reader (runReader)
-import Test.Mock (Verifier, mock, verify, (:>))
+import Run.Reader (READER, runReader)
+import Test.PMock (Mock, Param, fun, mock, verify, (:>))
+import Test.PMockSpecs (mockIt)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
+import Type.Row (type (+))
+import Undefined (undefined)
 import Usecase.FindArticle (findArticleByRun, findArticleByType)
 
 spec :: Spec Unit
@@ -77,11 +81,11 @@ spec = do
     -}
     it "タイトルに紐づくArticleを取得してStateを更新できる" do
       let
-        findByTitleMock = mock $ "古いタイトル" :> pure { title: "新しいtitle" }
-        port = { findByTitle: findByTitleMock.fun } :: ArticlePortType (StateT State Aff)
+        findByTitleMock = mock $ "古いタイトル" :> (pure { title: "新しいtitle" } :: StateT State Aff Article)
+        port = { findByTitle: fun findByTitleMock } :: ArticlePortType (StateT State Aff)
         
-        updateMock = mock $ "新しいtitle" :> pure unit
-        presenter =  { update: updateMock.fun } :: ArticlePresenterType (StateT State Aff)
+        updateMock = mock $ "新しいtitle" :> (pure unit :: StateT State Aff Unit)
+        presenter =  { update: fun updateMock } :: ArticlePresenterType (StateT State Aff)
 
       -- 結果は不要
       _ <- findArticleByType "古いタイトル" port presenter
@@ -91,16 +95,23 @@ spec = do
       verify findByTitleMock "古いタイトル"
       verify updateMock "新しいtitle"
 
-    it "タイトルに紐づくArticleを取得してStateを更新できる(Runを使う版)" do
+    mockIt "タイトルに紐づくArticleを取得してStateを更新できる(Runを使う版)" \_ -> do
       let
         -- findは定数を返すのでMockは不要
         port = { find: pure { title: "新しいタイトル" } } :: ArticleRunPortType
 
-        -- こいつは型を明示してやる必要がある
-        updateMock :: forall r. { fun :: (String -> Run (r) (StateT State Aff Unit)), verifier :: Verifier String }
-        updateMock = mock $ "新しいタイトル" :> pure (pure unit :: StateT State Aff Unit)
+        {-
+          こいつは型を明示してやる必要がある
+          なぜなら まず ArticleRunPresenter の update は
+            update :: forall r. String -> Run (r) (m Unit)
+          と定義されており、Run は 任意の r である必要がある。
+          では (pure (pure unit) :: forall r. Run (r) (StateT State Aff Unit) ) のように型注釈をつけてやればいいような気がするが、
+          ここにforallは書けない。ゆえにMockの型注釈は必要である。
+        -}
+        updateMock :: forall r. Mock (String -> Run (r) (StateT State Aff Unit)) (Param String)
+        updateMock = mock $ "新しいタイトル" :> (pure (pure unit) :: Run (r) (StateT State Aff Unit) )
 
-        presenter = { update: updateMock.fun } :: ArticleRunPresenter (StateT State Aff)
+        presenter = { update: fun updateMock } :: ArticleRunPresenter (StateT State Aff)
 
       _ <- findArticleByRun port presenter
                 # runReader ""
