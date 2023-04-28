@@ -5,8 +5,8 @@ import Prelude
 import Domain.Article (Article)
 import Driver.ArticleDriver (class ArticleDriver, findJsonById)
 import Driver.ArticleESDriver (class ArticleESDriver, findIndexByTitle)
-import Run (Run(..))
-import Run.Reader (READER, ask)
+import Run (Run)
+import Run.Reader (READER)
 import Type.Row (type (+))
 
 class Monad m <= ArticlePort m where
@@ -45,12 +45,4 @@ type ArticleRunPortType = {
   find :: forall r. Run (READER String + r) Article
 }
 
-createArticleRunPort :: ArticleRunPortType
-createArticleRunPort = {
-  find: _find
-}
 
-_find :: forall r. Run (READER String + r) Article
-_find = do
-  value <- ask
-  pure {title: value}

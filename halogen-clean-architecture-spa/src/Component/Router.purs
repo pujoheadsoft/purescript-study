@@ -4,20 +4,16 @@ import Prelude
 
 import Component.State (State)
 import Component.Utils (OpaqueSlot)
-import Control.Monad.State.Class (class MonadState)
 import Data.Maybe (Maybe(..))
-import Domain.Article (Article)
 import Driver.ArticleDriver (createArticleDriverType)
 import Driver.ArticleESDriver (createArticleESDriverType)
-import Gateway.ArticleGateway (createPort)
+import Gateway.ArticleGateway (createArticleRunPort, createPort)
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
-import Port.ArticlePort (createArticleRunPort)
 import Presenter.ArticlePresenter (createArticlePresenterType, createArticleRunPresenter)
-import Run (Run, extract)
-import Run.Reader (READER, ask, runReader)
-import Type.Row (type (+))
+import Run (extract)
+import Run.Reader (runReader)
 import Usecase.FindArticle (findArticleByRun, findArticleByType)
 
 data Action

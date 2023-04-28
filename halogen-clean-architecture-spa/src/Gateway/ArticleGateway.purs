@@ -5,7 +5,10 @@ import Prelude
 import Domain.Article (Article)
 import Driver.ArticleDriver (ArticleDriverType, findJsonById)
 import Driver.ArticleESDriver (ArticleESDriverType, findIndexByTitle)
-import Port.ArticlePort (ArticlePortType, ArticlePortTypeBadDependency)
+import Port.ArticlePort (ArticlePortType, ArticlePortTypeBadDependency, ArticleRunPortType)
+import Run (Run)
+import Run.Reader (READER, ask)
+import Type.Row (type (+))
 
 {-
   Tagless Final にした Driver を利用するアプローチ (コンパイルエラーになるのでコメントアウト)
@@ -45,3 +48,13 @@ findByTitle title esDriver driver =  do
   index <- esDriver.findIndexByTitle title
   json <- driver.findById index.id
   pure {title: json.title}
+
+createArticleRunPort :: ArticleRunPortType
+createArticleRunPort = {
+  find: _find
+}
+
+_find :: forall r. Run (READER String + r) Article
+_find = do
+  value <- ask
+  pure {title: value}
