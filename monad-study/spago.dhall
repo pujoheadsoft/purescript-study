@@ -37,6 +37,7 @@ to generate this file without the comments in this block.
   , "simple-json"
   , "spec"
   , "spec-discovery"
+  , "strings"
   , "tailrec"
   , "transformers"
   , "tuples"
