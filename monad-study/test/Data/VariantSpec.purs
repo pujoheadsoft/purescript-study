@@ -2,7 +2,7 @@ module Test.Data.VariantSpec where
 
 import Prelude
 
-import Data.Variant (Variant, inj, onMatch)
+import Data.Variant (Variant, default, inj, onMatch)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 import Type.Proxy (Proxy(..))
@@ -13,8 +13,8 @@ someFoo = inj (Proxy :: Proxy "foo") 42
 someBar :: forall v. Variant (bar :: Boolean | v)
 someBar = inj (Proxy :: Proxy "bar") true
 
-someBazz :: forall v. Variant (bazz :: String | v)
-someBazz = inj (Proxy :: Proxy "bazz") "bazz"
+someBaz :: forall v. Variant (baz :: String | v)
+someBaz = inj (Proxy :: Proxy "baz") "Baz"
 
 onFooOrBar :: forall v. (Variant v -> String) -> Variant (foo :: Int, bar :: Boolean | v) -> String
 onFooOrBar = onMatch
@@ -33,5 +33,5 @@ spec = do
         onFooOrBar (\_ -> "") someBar `shouldEqual` "true"
 
       it "matchしない場合は渡した関数の結果が使われる(bazzの場合)" do
-        onFooOrBar (\_ -> "default") someBazz `shouldEqual` "default"
+        onFooOrBar (default "default") someBaz `shouldEqual` "default"
 
