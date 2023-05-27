@@ -4,14 +4,17 @@ module Study.Control.Monad.Free.SimpleFree where
 -- reference https://github.com/purescript/purescript-free/blob/0.0.6/src/Control/Monad/Free.purs
 
 import Prelude
-import Data.Tuple (Tuple(..))
-import Control.Monad.Trans.Class
+
+import Control.Monad.Rec.Class (class MonadRec, Step(..), tailRecM)
+import Control.Monad.Trans.Class (class MonadTrans)
+import Data.Either (Either(..))
 
 -- 再帰的な定義になっている
 data Free f a = 
   Pure a 
   | Free (f (Free f a))
 
+class MonadFree :: forall k. (Type -> Type) -> (k -> Type) -> Constraint
 class MonadFree f m where
   wrap :: forall a. f (m a) -> m a
 
@@ -48,3 +51,12 @@ liftF fa = wrap $ pure <$> fa
 iterM :: forall f m a. Functor f => Monad m => (f (m a) -> m a) -> Free f a -> m a
 iterM _ (Pure a) = pure a
 iterM k (Free f) = k $ (iterM k) <$> f
+
+foldFree :: forall f m. MonadRec m => (f ~> m) -> Free f ~> m
+foldFree k = tailRecM go
+  where
+  go :: forall a. Free f a -> m (Step (Free f a) a)
+  go f = case f of
+    Pure a -> Done <$> pure a
+    Free g -> Loop <$> k g
+

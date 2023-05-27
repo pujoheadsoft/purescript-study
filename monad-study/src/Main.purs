@@ -3,12 +3,13 @@ module Main where
 import Prelude
 
 import CleanArchitecture.Driver.ArticleApiDriver as ArticleApiDriver
+import CleanArchitecture.Main as CA
+import CleanArchitecture.TaglessFinal as TaglessFinal
 import CleanArchitecture.Usecase.FindArticleUsecase as FindArticleUsecase
 import CleanArchitecture.Usecase.FindArticleUsecase2 as FindArticleUsecase2
-import CleanArchitecture.TaglessFinal as TaglessFinal
-import CleanArchitecture.Main as CA
 import Effect (Effect)
 import Example.Free.FreeExample as FreeExample
+import Example.Free.SimpleFreeExample as SimpleFreeExample
 import Example.Run.Example as RunExample
 import Example.Run.Example2 as RunExample2
 import Example.Run.ExampleOnPursuit as ExampleOnPursuit
@@ -48,6 +49,7 @@ main = do
   -- ExampleOnGithub.main >>= logShow
   -- trace(extract (runReader readWithPlusRun 100)) \_ -> log("")
   FreeExample.main
+  SimpleFreeExample.main
   CA.main
   ExampleOnPursuit.main
   ArticleApiDriver.main
