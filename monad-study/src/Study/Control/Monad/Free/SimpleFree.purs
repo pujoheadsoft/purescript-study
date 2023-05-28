@@ -11,6 +11,7 @@ import Prelude
 
 import Control.Monad.Rec.Class (class MonadRec, Step(..), tailRecM)
 import Control.Monad.Trans.Class (class MonadTrans)
+import Data.Either (Either(..))
 
 -- 再帰的な定義になっている
 data Free f a
@@ -76,3 +77,22 @@ liftF' fa = wrap $ pure <$> fa
 iterM :: forall f m a. Functor f => Monad m => (f (m a) -> m a) -> Free f a -> m a
 iterM _ (Pure a) = pure a
 iterM k (Free f) = k $ (iterM k) <$> f
+
+resume
+  :: forall f a
+  . Functor f => Free f a
+  -> Either (f (Free f a)) a
+resume = resume' (\g -> Left g) Right
+
+resume' 
+  :: forall f a r
+  . Functor f 
+  => (f (Free f a) -> r)
+  -> (a -> r)
+  -> Free f a
+  -> r
+resume' k j f = case f of
+  Free g ->
+    k g
+  Pure a ->
+    j a
