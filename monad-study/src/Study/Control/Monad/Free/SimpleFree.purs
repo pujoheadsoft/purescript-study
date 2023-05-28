@@ -28,15 +28,23 @@ instance applicativeFree :: (Functor f) => Applicative (Free f) where
   pure = Pure
 
 instance bindFree :: (Functor f) => Bind (Free f) where
-  bind (Pure a) f = f a
+  -- あえてアノテーションを書くとこう
+  bind :: forall a b. Free f a -> (a -> Free f b) -> Free f b
+  bind (Pure a) fn = fn a
   -- ここでFunctorを利用している
-  -- Freeの中にFreeがあるようなネスト構造の場合、そのFreeの型もFunctorであるので、再帰的にbind関数を呼び出せる。
-  bind (Free m) f = Free ((\a -> a >>= f) <$> m)
+  -- Freeの型がPureではなくFreeの場合、(Functor f)の制約によって`f`はFunctorであるので、`map`を利用することができる。
+  -- 更に定義により`f`が持っているのはFreeになり、Freeは`Bind`のinsstanceであるため、\a -> a >>= fn という形で`bind`を呼び出すことができる。
+  bind (Free f) fn = Free $ (\a -> a >>= fn) <$> f
+  -- do記法で書くならこう
+  -- bind (Free f) fn = Free $ (\a -> do 
+  --   x <- a
+  --   fn x) <$> f
+    
 
 instance monadFree :: (Functor f) => Monad (Free f)
 
 liftF :: forall f. Functor f => f ~> Free f
-liftF fa = Free $ pure <$> fa
+liftF f = Free $ pure <$> f -- Free (Pure a) という状態
 
 -- ここまでは最低必要かな(あとはあると便利なやつ)
 
