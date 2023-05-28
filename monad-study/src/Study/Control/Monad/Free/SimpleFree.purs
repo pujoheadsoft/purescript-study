@@ -44,11 +44,15 @@ instance bindFree :: (Functor f) => Bind (Free f) where
 
 instance monadFree :: (Functor f) => Monad (Free f)
 
+-- 任意のFunctorをFreeに持ち上げる
 liftF :: forall f. Functor f => f ~> Free f
 liftF f = Free $ pure <$> f -- Free (Pure a) という状態
 
--- ここまでは最低必要かな(あとはあると便利なやつ)
+-- ここまでは最低必要だと思うやつ
+-- ここからは追加したやつ
 
+-- 渡された自然変換関数(f ~> m)を使い、`Free f a`から`m a`に変換して返す。
+-- `m`は末尾再帰モナドとなる
 foldFree :: forall f m. MonadRec m => (f ~> m) -> Free f ~> m
 foldFree k = tailRecM go
   where
@@ -57,6 +61,40 @@ foldFree k = tailRecM go
     Pure a -> Done <$> pure a
     Free g -> Loop <$> k g
 
+-- Freeのレイヤーを一つunwrapする
+-- PureならRightが返り、FreeならLeftが返る。
+resume
+  :: forall f a
+  . Functor f => Free f a
+  -> Either (f (Free f a)) a
+resume = resume' (\g -> Left g) Right
+
+-- Freeのレイヤーを一つunwrapする
+-- こちらはデータ型によって適用する関数を指定することができる
+resume' 
+  :: forall f a r
+  . Functor f 
+  => (f (Free f a) -> r)
+  -> (a -> r)
+  -> Free f a
+  -> r
+resume' k j f = case f of
+  Free g ->
+    k g
+  Pure a ->
+    j a
+
+-- Freeのレイヤーをすべてunwrapし、継続の処理`a`を返す。
+runFree :: forall f a. Functor f => (f (Free f a) -> Free f a) -> Free f a -> a
+runFree k free = go free
+  where
+  go :: Free f a -> a
+  go = case _ of
+    Pure a -> a
+    Free f -> go (k f)
+
+-- ここまで追加したやつ
+-- ここから元々あったけど最低限って意味だと不要だと思ったやつ
 
 instance monadTransFree :: MonadTrans Free where
   lift f = Free $ do
@@ -77,22 +115,3 @@ liftF' fa = wrap $ pure <$> fa
 iterM :: forall f m a. Functor f => Monad m => (f (m a) -> m a) -> Free f a -> m a
 iterM _ (Pure a) = pure a
 iterM k (Free f) = k $ (iterM k) <$> f
-
-resume
-  :: forall f a
-  . Functor f => Free f a
-  -> Either (f (Free f a)) a
-resume = resume' (\g -> Left g) Right
-
-resume' 
-  :: forall f a r
-  . Functor f 
-  => (f (Free f a) -> r)
-  -> (a -> r)
-  -> Free f a
-  -> r
-resume' k j f = case f of
-  Free g ->
-    k g
-  Pure a ->
-    j a
