@@ -1,7 +1,7 @@
 module Study.Control.Monad.Free.SimpleFreeSpec where
 
 import Prelude
-import Test.Spec
+import Test.Spec (Spec, describe, it)
 
 import Study.Control.Monad.Free.SimpleFree (Free(..))
 import Test.Spec.Assertions (shouldEqual)
