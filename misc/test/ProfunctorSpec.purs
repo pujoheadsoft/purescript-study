@@ -6,6 +6,7 @@ import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Data.Profunctor (dimap)
 import Data.Profunctor.Choice (fanin, splitChoice)
+import Data.Profunctor.Closed (closed)
 import Data.Profunctor.Split (liftSplit, lowerSplit)
 import Data.Profunctor.Star (Star(..))
 import Data.Profunctor.Strong (fanout, splitStrong)
@@ -71,6 +72,12 @@ spec = do
           value = Right true :: Either Int Boolean
         fn value `shouldEqual` "true"
     
+    describe "Closed" do
+      it "closed" do
+        let
+          fn = closed (_ <> "C") (_ <> "B")
+        fn "A" `shouldEqual` "ABC"
+
     -- StarはMonadだったり色んな型クラスのインスタンスになってるので包むと嬉しいのかな
     describe "Star" do
       it "dimap" do
