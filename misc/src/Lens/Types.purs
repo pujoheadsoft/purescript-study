@@ -1,4 +1,4 @@
-module Data.Lens.Types where
+module Lens.Types where
 
 import Prelude
 

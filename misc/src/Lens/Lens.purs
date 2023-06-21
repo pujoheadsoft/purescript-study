@@ -1,4 +1,4 @@
-module Data.Lens.Lens where
+module Lens.Lens where
 
 
 import Data.Lens.Types (Lens)
@@ -6,13 +6,23 @@ import Data.Profunctor (dimap)
 import Data.Profunctor.Strong (first)
 import Data.Tuple (Tuple(..))
 
+{-
+  中でlens'を呼び出している。
+  lens'の定義はこう。
+  lens' \s -> (Tuple (get s) \b -> set s b)
 
+  これを get と set の内容で置き換えるとlens' の求めている関数の型と一致する。
+  (関数なので実行されるまではこうならないけど)
+  lens' \s -> (Tuple a (b -> t))
+  
+  つまり lens' の期待する↓の関数に対して get は a を取得するもの、set は t を取得するもの。
+  (s -> Tuple a (b -> t))
+-}
 lens :: forall s t a b. (s -> a) -> (s -> b -> t) -> Lens s t a b
-lens get set = lens' \s -> Tuple (get s) \b -> set s b
+lens get set = lens' \s -> (Tuple (get s) \b -> set s b)
 
 
 {-
-
   ムズいので解説。
   (引数が1つに見えるが、2つ渡されていてコンパイルエラーにもならないのがムズい)
 
@@ -42,7 +52,6 @@ lens get set = lens' \s -> Tuple (get s) \b -> set s b
 
   追っていくと、s は 最終的には t になるな。
   Tuple の a も途中で b になっている
-
 -}
 lens' :: forall s t a b. (s -> Tuple a (b -> t)) -> Lens s t a b
 lens' to pab = dimap to (\(Tuple b f) -> f b) (first pab)
