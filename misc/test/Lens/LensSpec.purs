@@ -15,7 +15,7 @@ instance showBox :: Show Box where
 instance eqBox :: Eq Box where
   eq (Box a) (Box b) = a == b
 
---_Box :: forall s a p. Strong p => p s a -> p (Box s) (Box a)
+-- _Box :: forall s a p. Strong p => p s a -> p (Box s) (Box a)
 -- _Box = lens (\(Box a) -> a) (\_ -> Box)
 _Box :: Lens' Box BoxRec
 _Box = lens (\(Box a) -> a) (\(Box _) -> Box)

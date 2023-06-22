@@ -1,7 +1,7 @@
 module Lens.Lens where
 
 
-import Data.Lens.Types (Lens)
+import Lens.Types (Lens)
 import Data.Profunctor (dimap)
 import Data.Profunctor.Strong (first)
 import Data.Tuple (Tuple(..))
