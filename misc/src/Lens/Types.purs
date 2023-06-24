@@ -4,6 +4,7 @@ import Prelude
 
 import Data.Profunctor.Choice (class Choice)
 import Data.Profunctor.Strong (class Strong)
+import Lens.Internal.Forget (Forget)
 
 
 -- | Lens
@@ -39,3 +40,35 @@ type Prism' s a = Prism s s a a
 -- | → p s t
 type Optic :: (Type -> Type -> Type) -> Type -> Type -> Type -> Type -> Type
 type Optic p s t a b = p a b -> p s t
+
+
+
+-- | A getter.
+-- |
+-- | Foldの定義から展開してみるとこうなる
+-- | Forget a a b -> Forget a s t
+-- | ↓
+-- | Forget (a -> a) -> Forget (s -> a)
+type AGetter :: Type -> Type -> Type -> Type -> Type
+type AGetter s t a b = Fold a s t a b
+
+-- | A fold.
+-- | 
+-- | Optic と Forget の定義は以下
+-- | type = Optic p s t a b = p a b -> p s t
+-- | newtype Forget r a b = Forget (a -> r)
+-- |
+-- | 上記をもとに定義を展開すると Fold は以下のようになる
+-- | Forget r a b -> Forget r s t
+-- |
+-- | つまり内容的にはこう
+-- | Forget (a -> r) -> Forget (s -> r)
+-- |
+-- | 型の部分を無視してみるとこういう構造が見えてくる
+-- | (a -> r) -> (s -> r)
+type Fold :: Type -> Type -> Type -> Type -> Type -> Type
+type Fold r s t a b = Optic (Forget r) s t a b
+
+
+
+

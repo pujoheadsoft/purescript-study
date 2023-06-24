@@ -4,6 +4,7 @@ import Prelude
 
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
+import Data.Newtype (unwrap)
 import Data.Profunctor (dimap)
 import Data.Profunctor.Choice (fanin, splitChoice)
 import Data.Profunctor.Closed (closed)
@@ -83,8 +84,7 @@ spec = do
       it "dimap" do
         let
           star = Star (\v -> Just $ "value: " <> v)
-          fn = case dimap show (_ <> ".") star of
-            (Star f) -> f
+          fn = unwrap $ dimap show (_ <> ".") star
         fn 100 `shouldEqual` Just "value: 100."
     
     -- あまり使い道がわからない
