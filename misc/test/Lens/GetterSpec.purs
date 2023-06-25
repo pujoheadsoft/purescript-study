@@ -67,6 +67,44 @@ explanation = let
     _ = l :: (Forget BoxRec BoxRec BoxRec) -> (Forget BoxRec Box Box)
   in unit
 
+{-
+  完全に展開した`Lens`を、完全に展開した`AGetter`に渡してみる説明の関数
+  `Strong p => p BoxRec BoxRec -> p Box Box`
+  を
+  `(Forget BoxRec BoxRec BoxRec) -> (Forget BoxRec Box Box)`
+  に渡すことができている(展開しただけだから当たり前なのだが)
+
+  よりシンプルに考えると`Strong p => p BoxRec BoxRec`を`Forget BoxRec BoxRec BoxRec`に渡せるということになるが、それはなぜか？
+  こう渡したときこの`p`は、何が選択されるのだろう？
+
+  コンパイルされたjsを見ると、このようになっており、`p`は`Forget`が選択されている。
+  var _BoxExpanded1 = _BoxExpanded(Data_Lens_Internal_Forget.strongForget);
+
+  `getter2Unit`とか`viewExpanded`とかは`Forget`を受け取るようになっており、`Forget r`は`Strong`のインスタンスになっているから選択できるというわけか。
+  `Strong p`のように抽象的な型を返しているがゆえに、そのインスタンスになっている型を受ける様々な関数に渡せるわけだ。
+-}
+explanationZ :: Unit
+explanationZ = let
+  _ = getter2Unit _BoxExpanded -- unit
+  _ = viewExpanded _BoxExpanded (Box {value: "Value"}) -- { value: "Value" }
+  in unit
+  where
+  -- AGetterを展開した型を受ける関数
+  getter2Unit :: ((Forget BoxRec BoxRec BoxRec) -> (Forget BoxRec Box Box)) -> Unit
+  getter2Unit _ = unit
+
+  -- Getterの`view`関数を型を具体的にし且つ完全に展開した関数
+  viewExpanded :: ((Forget BoxRec BoxRec BoxRec) -> (Forget BoxRec Box Box)) -> Box -> BoxRec
+  viewExpanded l box = (unwrap (l (Forget identity))) box
+
+  -- Lens型ではなく展開した型を返す
+  _BoxExpanded :: forall p. Strong p => p BoxRec BoxRec -> p Box Box
+  _BoxExpanded = lensExpanded (\(Box a) -> a) (\_ -> Box)
+
+  -- Lensを完全に展開した型を返す
+  lensExpanded :: forall s t a b p. (s -> a) -> (s -> b -> t) -> Strong p => p a b -> p s t
+  lensExpanded get set = lens' (\s -> (Tuple (get s) \b -> set s b))
+
 
 {-
   `Forget r String Int`型が、`Strong p => p String Int`として扱え、
@@ -107,35 +145,3 @@ explanationY = let
   -- forget型の値を返す。この場合は、`Forget r`の`r`は明示しないといけない（この場合は`Int`）。
   forget :: Forget Int String Int
   forget = Forget (\_ -> 100)
-
-{-
-  完全に展開した`Lens`を、完全に展開した`AGetter`に渡してみる説明の関数
-  `Strong p => p BoxRec BoxRec -> p Box Box`
-  を
-  `(Forget BoxRec BoxRec BoxRec) -> (Forget BoxRec Box Box)`
-  に渡すことができている(展開しただけだから当たり前なのだが)
-
-  よりシンプルに考えると`Strong p => p BoxRec BoxRec`を`Forget BoxRec BoxRec BoxRec`に渡せるということになるが、それはなぜか？
-  こう渡したときこの`p`は、何が選択されるのだろう？
--}
-explanationZ :: Unit
-explanationZ = let
-  _ = getter2Unit _BoxExpanded -- unit
-  _ = viewExpanded _BoxExpanded (Box {value: "Value"}) -- { value: "Value" }
-  in unit
-  where
-  -- AGetterを展開した型を受ける関数
-  getter2Unit :: ((Forget BoxRec BoxRec BoxRec) -> (Forget BoxRec Box Box)) -> Unit
-  getter2Unit _ = unit
-
-  -- Getterの`view`関数を型を具体的にし且つ完全に展開した関数
-  viewExpanded :: ((Forget BoxRec BoxRec BoxRec) -> (Forget BoxRec Box Box)) -> Box -> BoxRec
-  viewExpanded l box = (unwrap (l (Forget identity))) box
-
-  -- Lens型ではなく展開した型を返す
-  _BoxExpanded :: forall p. Strong p => p BoxRec BoxRec -> p Box Box
-  _BoxExpanded = lensExpanded (\(Box a) -> a) (\_ -> Box)
-
-  -- Lensを完全に展開した型を返す
-  lensExpanded :: forall s t a b p. (s -> a) -> (s -> b -> t) -> Strong p => p a b -> p s t
-  lensExpanded get set = lens' (\s -> (Tuple (get s) \b -> set s b))
