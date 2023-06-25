@@ -19,9 +19,9 @@ newtype Forget r a b = Forget (a -> r) -- `b`は出てこない
 
 derive instance newtypeForget :: Newtype (Forget r a b) _
 
-derive newtype instance semigroupForget :: Semigroup r => Semigroup (Forget r a b)
+--derive newtype instance semigroupForget :: Semigroup r => Semigroup (Forget r a b)
 
-derive newtype instance monoidForget :: Monoid r => Monoid (Forget r a b)
+--derive newtype instance monoidForget :: Monoid r => Monoid (Forget r a b)
 
 
 instance profunctorForget :: Profunctor (Forget r) where

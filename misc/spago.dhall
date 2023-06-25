@@ -26,11 +26,13 @@ to generate this file without the comments in this block.
   , "prelude"
   , "profunctor"
   , "profunctor-lenses"
+  , "record"
   , "safe-coerce"
   , "spec"
   , "spec-discovery"
   , "strings"
   , "tuples"
+  , "typelevel-prelude"
   , "undefined"
   ]
 , packages = ./packages.dhall

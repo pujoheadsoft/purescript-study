@@ -42,6 +42,19 @@ type Optic :: (Type -> Type -> Type) -> Type -> Type -> Type -> Type -> Type
 type Optic p s t a b = p a b -> p s t
 
 
+-- | getter.
+-- |
+-- | Foldの定義から展開してみるとこうなる
+-- | Forget r a b -> Forget r s t
+-- | ↓
+-- | Forget (a -> r) -> Forget (s -> r)
+type Getter :: Type -> Type -> Type -> Type -> Type
+type Getter s t a b = forall r. Fold r s t a b
+
+-- | Getterじゃなくてこっちでよさそう
+-- | Forget r a a -> Forget r s s
+-- | Forget (a -> r) -> Forget (s -> r)
+type Getter' s a = Getter s s a a
 
 -- | A getter.
 -- |
@@ -51,6 +64,8 @@ type Optic p s t a b = p a b -> p s t
 -- | Forget (a -> a) -> Forget (s -> a)
 type AGetter :: Type -> Type -> Type -> Type -> Type
 type AGetter s t a b = Fold a s t a b
+
+type AGetter' s a = AGetter s s a a
 
 -- | A fold.
 -- | 

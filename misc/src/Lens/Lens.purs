@@ -17,14 +17,18 @@ import Data.Tuple (Tuple(..))
   
   つまり lens' の期待する↓の関数に対して get は a を取得するもの、set は t を取得するもの。
   (s -> Tuple a (b -> t))
+
+  lens'は`to`と`pab`2つの引数を受け取っているが、`to`しか渡していないので、
+  `Lens s t a b` すなわち `forall p. Strong p => p a b -> p s t`
+  が返る。
 -}
 lens :: forall s t a b. (s -> a) -> (s -> b -> t) -> Lens s t a b
-lens get set = lens' \s -> (Tuple (get s) \b -> set s b)
+lens get set = lens' (\s -> (Tuple (get s) \b -> set s b))
 
 
 {-
   ムズいので解説。
-  (引数が1つに見えるが、2つ渡されていてコンパイルエラーにもならないのがムズい)
+  (引数が1つに見えるが、2つ渡されていてコンパイルエラーにもならないのが不思議に思えた)
 
   Lensの定義はこうなっている。
   type Lens s t a b = forall p. Strong p => Optic p s t a b
