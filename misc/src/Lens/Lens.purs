@@ -56,6 +56,10 @@ lens get set = lens' (\s -> (Tuple (get s) \b -> set s b))
 
   追っていくと、s は 最終的には t になるな。
   Tuple の a も途中で b になっている
+
+  `lens`の定義から、`get`と`set`が絡んでくるのは`to`の部分なので、上記の関数合成の部分に当てはめると
+  `get`と`set`が絡んでくるのは最初の部分だけなんだな。
+
 -}
 lens' :: forall s t a b. (s -> Tuple a (b -> t)) -> Lens s t a b
 lens' to pab = dimap to (\(Tuple b f) -> f b) (first pab)
