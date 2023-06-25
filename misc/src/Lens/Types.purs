@@ -67,6 +67,18 @@ type AGetter s t a b = Fold a s t a b
 
 type AGetter' s a = AGetter s s a a
 
+-- | A Setter
+-- | 実体はOpticなのでこういう構造
+-- |   p a b  → p s t
+-- | 更に`Function`なのでこうなる
+-- |   (a -> b) -> (s -> t)
+type Setter s t a b = Optic Function s t a b
+
+-- | (a -> a) -> (s -> s)
+type Setter' s a = Setter s s a a
+
+
+
 -- | A fold.
 -- | 
 -- | Optic と Forget の定義は以下

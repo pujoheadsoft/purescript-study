@@ -35,7 +35,7 @@ fooGetter = foo
 spec :: Spec Unit
 spec = do
   describe "Getter Test" do
-    it "lens" do
+    it "view" do
       let
         box = view _Box (Box {value: "Value"})
       box `shouldEqual` {value: "Value"}
