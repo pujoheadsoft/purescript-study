@@ -88,6 +88,7 @@ lens get set = lens' (\s -> (Tuple (get s) \b -> set s b))
   この場合の`a`は`get`で取得した`a`。これが`z`に渡される。`z`は`identity`だったので`a`がそのまま返る。
 
   しかし`a`はそのまま`(\(Tuple b f) -> f b)`に渡せる保証がないな？
+  いや`Forget`の`dimapが`よばれるんだ。そっちを見なくては。
 -}
 lens' :: forall s t a b. (s -> Tuple a (b -> t)) -> Lens s t a b
 lens' to pab = dimap to (\(Tuple b f) -> f b) (first pab)
