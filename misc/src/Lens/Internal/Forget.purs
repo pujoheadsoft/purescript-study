@@ -32,6 +32,7 @@ instance profunctorForget :: Profunctor (Forget r) where
 instance strongForget :: Strong (Forget r) where
   first :: forall a b c. Forget r a b -> Forget r (Tuple a c) (Tuple b c)
   first (Forget z) = Forget (z <<< fst) -- Tuple b c は無視されて Tuple a c の a を fst で取って (a -> r) 渡している
+  --first (Forget z) = Forget (\(Tuple a _) -> z a) ↑はこういうこと
 
   second :: forall a b c. Forget r b c -> Forget r (Tuple a b) (Tuple a c)
   second (Forget z) = Forget ( z <<< snd)

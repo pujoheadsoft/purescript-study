@@ -50,9 +50,8 @@ lens get set = lens' (\s -> (Tuple (get s) \b -> set s b))
 
   まずfirstの定義はこう。
   first :: forall a b c. p a b -> p (Tuple a c) (Tuple b c)
-  これは Tuple の最初の要素だけ変換する関数を返す。
 
-  なので (first pab) の結果はこういう関数になる
+  例えば`p`が関数`->`の場合、`first pab`の結果はこういう関数になる
   (Tuple a c) -> (Tuple b c)
 
   dimapはいうてみれば関数合成なので結果はこうなる。
@@ -81,6 +80,14 @@ lens get set = lens' (\s -> (Tuple (get s) \b -> set s b))
   `get`と`set`を指定して`Lens`を作ったあとは、`pab`で操作することになる。
   なので結構この`pab`の部分はキモとなっていると思う。
   `pab`の`first`を呼び出しているので、`first`もか。
+
+  `pab`は `Strong p => p a b`という定義なので、`p`としてどのインスタンスが選択されるかで動きが変わる。
+  例えば、`Lens`を`Getter`として`view`関数で使った場合、`Getter`の定義から`p`は`Forget`になる。
+  更に`view`では`pab`として`Forget identity`が渡される。
+  `Forget r`の`first`は`Forget (\(Tuple a _) -> z a)`で、`z`は`a -> r`という関数。
+  この場合の`a`は`get`で取得した`a`。これが`z`に渡される。`z`は`identity`だったので`a`がそのまま返る。
+
+  しかし`a`はそのまま`(\(Tuple b f) -> f b)`に渡せる保証がないな？
 -}
 lens' :: forall s t a b. (s -> Tuple a (b -> t)) -> Lens s t a b
 lens' to pab = dimap to (\(Tuple b f) -> f b) (first pab)
