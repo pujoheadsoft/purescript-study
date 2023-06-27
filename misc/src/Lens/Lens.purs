@@ -1,12 +1,10 @@
 module Lens.Lens where
 
-import Prelude
 
 import Data.Profunctor (dimap)
-import Data.Profunctor.Strong (class Strong, first)
+import Data.Profunctor.Strong (first)
 import Data.Tuple (Tuple(..))
 import Lens.Types (Lens)
-import Undefined (undefined)
 
 {-
   中でlens'を呼び出している。
@@ -48,22 +46,49 @@ lens get set = lens' (\s -> (Tuple (get s) \b -> set s b))
   ---------------------------------------------------------
   コードの解説
 
-  まずfirstの定義はこう。
-  first :: forall a b c. p a b -> p (Tuple a c) (Tuple b c)
+  Profunctorの`dimap`とStrongの`first`が使われているのでまず定義を示す
+  [dimap]
+  class Profunctor p where
+    dimap :: forall a b c d. (a -> b) -> (c -> d) -> p b c -> p a d
 
-  例えば`p`が関数`->`の場合、`first pab`の結果はこういう関数になる
+  [first]
+  class Profunctor p <= Strong p where
+    first :: forall a b c. p a b -> p (Tuple a c) (Tuple b c)
+
+  これらは型クラスの関数で、`Lens`の実体は`Profunctor p => p a b -> p s t`なので、型変数`p`がどの型になるかによって動作が変わってくる。
+  
+  【`p`が`->`の場合】
+  `p`が関数`->`の場合、`first pab`の結果はこういう関数になる
   (Tuple a c) -> (Tuple b c)
 
-  dimapはいうてみれば関数合成なので結果はこうなる。
-  (s -> Tuple a (b -> t)) >>> ((Tuple a c) -> (Tuple b c)) >>> (\(Tuple b f) -> f b)
+  `->`の場合`dimap`は単なる関数合成と同じ実装になっているので、`to`や`first pab`とあわせるとこうなる(型変数名は定義にあわせた)。
+  (s -> Tuple a (b -> t)) >>> ((Tuple a f) -> (Tuple b f)) >>> ((Tuple b f) -> t)
+
+  つまり`s`を受けて、`t`を返す関数になっている。
+  `b -> t`という関数は`f`として最後の関数までそのまま引き回されて、実装では`f b`の部分で`t`への変換で使われている。  
+
+  【`p`が`Forget r`の場合】
+  まず定義から
+  [dimap]
+  instance profunctorForget :: Profunctor (Forget r) where
+    dimap :: forall a b c d. (a -> b) -> (c -> d) -> Forget r b c -> Forget r a d
+    dimap f _ (Forget z) = Forget (z <<< f)
   
-  上記は、定義と実際の関数が混在しているが、もうちょっと代入などしてわかりやすくするとこうなる  
-  (s -> Tuple a (b -> t)) >>> ((Tuple a (b -> t)) -> (Tuple b (b -> t))) >>> (\(Tuple b (b -> t)) -> (b -> t) b)
+  [first]
+  instance strongForget :: Strong (Forget r) where
+    first :: forall a b c. Forget r a b -> Forget r (Tuple a c) (Tuple b c)
+    first (Forget z) = Forget (z <<< fst)
+  
+  `dimap`の`_`にあたる部分が、`(\(Tuple b f) -> f b)`なのでこれは無視されてこうなる。
+  Forget ((s -> Tuple a (b -> t)) -> ((Tuple a b) -> r))
 
-  追っていくと、s は 最終的には t になるな。
-  Tuple の a も途中で b になっている
+  一部実装を交えてみるとこう。`b -> t`は無視されており、関数`z`の結果が返ることがわかる。
+  Forget ((s -> Tuple a (b -> t)) -> (\(Tuple a _) -> z a))
 
-  [`lens`の`get`と`set`が、どのタイミングで呼ばれているか]
+  この関数`z`は、例えばGetterの`view`関数の場合は`identity`なので、`a`がそのまま返される。
+  後述するが、無視された`(\(Tuple b f) -> f b)`の部分は`set`の部分なので、`Lens`の`set`は使われない。
+
+  【`lens`の`get`と`set`が、どのタイミングで呼ばれているか】
   上記の関数合成の部分を見てみると、`get`は最初の関数の`(s -> Tuple a (b -> t))`の`a`の部分を取得する際に使われることがわかる。
   また`set`は最初の関数`(s -> Tuple a (b -> t))`の`(b -> t)`の部分であるが、これは関数なので最初の関数が実行されるときは呼ばれない。
   `(b -> t)`がどこで実行されるか追っていくと。関数合成の最後の関数`(\(Tuple b (b -> t)) -> (b -> t) b)`で使われている。
@@ -74,21 +99,6 @@ lens get set = lens' (\s -> (Tuple (get s) \b -> set s b))
       (s -> Tuple (get s) (b -> t))
   >>> ((Tuple a (b -> t)) -> (Tuple b (b -> t)))
   >>> ((Tuple b (b -> t)) -> (\b -> set s b) b)
-
-  途中の関数は、`lens`や`lens'`で実装されている関数なので、関数の外側からコントロールできるのは
-  `get`, `set` と `pab` の部分となる。
-  `get`と`set`を指定して`Lens`を作ったあとは、`pab`で操作することになる。
-  なので結構この`pab`の部分はキモとなっていると思う。
-  `pab`の`first`を呼び出しているので、`first`もか。
-
-  `pab`は `Strong p => p a b`という定義なので、`p`としてどのインスタンスが選択されるかで動きが変わる。
-  例えば、`Lens`を`Getter`として`view`関数で使った場合、`Getter`の定義から`p`は`Forget`になる。
-  更に`view`では`pab`として`Forget identity`が渡される。
-  `Forget r`の`first`は`Forget (\(Tuple a _) -> z a)`で、`z`は`a -> r`という関数。
-  この場合の`a`は`get`で取得した`a`。これが`z`に渡される。`z`は`identity`だったので`a`がそのまま返る。
-
-  しかし`a`はそのまま`(\(Tuple b f) -> f b)`に渡せる保証がないな？
-  いや`Forget`の`dimapが`よばれるんだ。そっちを見なくては。
 -}
 lens' :: forall s t a b. (s -> Tuple a (b -> t)) -> Lens s t a b
 lens' to pab = dimap to (\(Tuple b f) -> f b) (first pab)

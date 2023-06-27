@@ -5,6 +5,7 @@ import Prelude
 import Data.Profunctor.Choice (class Choice)
 import Data.Profunctor.Strong (class Strong)
 import Lens.Internal.Forget (Forget)
+import Lens.Internal.Tagged (Tagged)
 
 
 -- | Lens
@@ -77,7 +78,16 @@ type Setter s t a b = Optic Function s t a b
 -- | (a -> a) -> (s -> s)
 type Setter' s a = Setter s s a a
 
+-- | A review.
+-- | Taggedの定義は以下
+-- | Tagged a b = Tagged b
+-- |
+-- | なのでこうなる(`s`や`a`は無視される)
+-- | Review s t a b = Tagged b -> Tagged t
+type Review :: Type -> Type -> Type -> Type -> Type
+type Review s t a b = Optic Tagged s t a b
 
+type Review' s a = Review s s a a
 
 -- | A fold.
 -- | 
