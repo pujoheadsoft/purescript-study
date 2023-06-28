@@ -2,7 +2,10 @@ module Lens.Index where
 
 import Prelude
 
-import Data.Maybe (Maybe)
+import Data.Array as A
+import Data.Either (Either(..))
+import Data.Maybe (Maybe, fromMaybe, maybe)
+import Lens.AffineTraversal (affineTraversal)
 import Lens.Lens (lens)
 import Lens.Prism.Maybe (_Just)
 import Lens.Types (AffineTraversal')
@@ -19,5 +22,11 @@ instance indexFn :: Eq i => Index (i -> a) i a where
 instance indexMaybe :: Index (Maybe a) Unit a where
   ix _ = _Just
 
--- instance indexArray :: Index (Array a) Int a where
---   ix n = affine
+instance indexArray :: Index (Array a) Int a where
+  ix n = affineTraversal set pre
+    where
+    set :: Array a -> a -> Array a
+    set s b = fromMaybe s $ A.updateAt n b s
+
+    pre :: Array a -> Either (Array a) a
+    pre s = maybe (Left s) Right $ A.index s n
