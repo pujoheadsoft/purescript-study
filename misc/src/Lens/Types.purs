@@ -54,6 +54,11 @@ type Prism' s a = Prism s s a a
 type Optic :: (Type -> Type -> Type) -> Type -> Type -> Type -> Type -> Type
 type Optic p s t a b = p a b -> p s t
 
+-- | An affine traversal
+-- | forall p. Strong p => Choice p => p a b -> p s t
+type AffineTraversal s t a b = forall p. Strong p => Choice p => Optic p s t a b
+type AffineTraversal' s a = AffineTraversal s s a a
+
 
 -- | getter.
 -- |
