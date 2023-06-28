@@ -7,6 +7,18 @@ import Data.Profunctor.Strong (class Strong)
 import Lens.Internal.Forget (Forget)
 import Lens.Internal.Tagged (Tagged)
 
+{-
+  type Lens s t a b    = forall p. Strong p => p a b -> p s t
+  type Lens' s a       = forall p. Strong p => p a a -> p s s
+  type Prism s t a b   = forall p. Choice p => p a b -> p s t
+  type Prism' s a      = forall p. Choice p => p a a -> p s s
+  type Getter s t a b  = forall r. Forget r a b -> Forget r s t
+  type Getter' s a     = forall r. Forget r a a -> Forget r s s
+  type AGetter s t a b = Forget a a b -> Forget a s t
+  type AGetter' s a    = Forget a a a -> Forget a s s
+  type Setter s t a b  = (a -> b) -> (s -> t)
+  type Review s t a b  = Tagged b -> Tagged t
+-}
 
 -- | Lens
 -- | 実体はOpticなのでこういう構造
