@@ -18,7 +18,10 @@ prism to fro pab = dimap fro (either identity identity) (right (rmap to pab))
 prism' :: forall s a. (a -> s) -> (s -> Maybe a) -> Prism' s a
 prism' to fro = prism to (\s -> maybe (Left s) Right (fro s))
 
-
-
+{-
+  展開するとこうなる
+  (Tagged a b -> Tagged s t) -> b -> t
+  `under`の定義から、`(Tagged a b -> Tagged s t) -> b`を渡すと`t`が返される。
+-}
 review :: forall s t a b. Review s t a b -> b -> t
 review = under Tagged
