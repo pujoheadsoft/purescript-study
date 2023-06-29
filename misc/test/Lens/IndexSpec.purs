@@ -16,10 +16,10 @@ spec = do
   describe "Index Test" do
     it "ix" do
       let
-        actual = ([1, 2, 3] :: Array Int) ^? ix 2
+        actual = [1, 2, 3] ^? ix 2
       actual `shouldEqual` Just 3
 
     it "ix (indexの範囲外)" do
       let
-        actual = ([1, 2, 3] :: Array Int) ^? ix 3
+        actual = [1, 2, 3] ^? ix 3
       actual `shouldEqual` Nothing
