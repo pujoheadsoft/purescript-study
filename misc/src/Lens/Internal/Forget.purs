@@ -2,8 +2,10 @@ module Lens.Internal.Forget where
 
 import Prelude
 
+import Data.Either (either)
 import Data.Newtype (class Newtype)
 import Data.Profunctor (class Profunctor)
+import Data.Profunctor.Choice (class Choice)
 import Data.Profunctor.Strong (class Strong)
 import Data.Tuple (Tuple, fst, snd)
 
@@ -25,10 +27,20 @@ instance profunctorForget :: Profunctor (Forget r) where
   dimap :: forall a b c d. (a -> b) -> (c -> d) -> Forget r b c -> Forget r a d
   dimap f _ (Forget z) = Forget (z <<< f)
 
--- instance choiceForget :: Monoid r => Choice (Forget r) where
---   left  (Forget z) = Forget (either z mempty)
---   right (Forget z) = Forget (either mempty z)
+{-
+  使用例
+  型クラス`Index`は、関数`ix`において、`AffineTraversal'`を引数としている。
+  `AffineTraversal'`は`Strong`と`Choice`両方の制約がついているので、このインスタンスがないといけない
+-}
+instance choiceForget :: Monoid r => Choice (Forget r) where
+  left  (Forget z) = Forget (either z mempty)
+  right (Forget z) = Forget (either mempty z)
 
+{-
+  使用例
+  type `Lens`は、`Strong`の制約がついているので、`Getter`として`Lens`を使いたい場合などに
+  このインスタンスが必要
+-}
 instance strongForget :: Strong (Forget r) where
   first :: forall a b c. Forget r a b -> Forget r (Tuple a c) (Tuple b c)
   first (Forget z) = Forget (z <<< fst) -- Tuple b c は無視されて Tuple a c の a を fst で取って (a -> r) 渡している
