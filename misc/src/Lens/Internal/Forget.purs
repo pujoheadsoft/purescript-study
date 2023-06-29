@@ -2,7 +2,7 @@ module Lens.Internal.Forget where
 
 import Prelude
 
-import Data.Either (either)
+import Data.Either (Either, either)
 import Data.Newtype (class Newtype)
 import Data.Profunctor (class Profunctor)
 import Data.Profunctor.Choice (class Choice)
@@ -28,12 +28,31 @@ instance profunctorForget :: Profunctor (Forget r) where
   dimap f _ (Forget z) = Forget (z <<< f)
 
 {-
+  (Forget r a b) に対して、以下が返る。
+  left  では Forget ((Either a c) -> r) が返る。
+  right では Forget ((Either c a) -> r) が返る。
+  
   使用例
   型クラス`Index`は、関数`ix`において、`AffineTraversal'`を引数としている。
   `AffineTraversal'`は`Strong`と`Choice`両方の制約がついているので、このインスタンスがないといけない
+
+  [left]
+  まず`z` は `a -> r`
+
+  `either`の定義はこう。
+  either :: forall a b c. (a -> c) -> (b -> c) -> Either a b -> c
+  つまり`z`を当てはめてみると
+  either (a -> r) (mempty :: c -> r)
+  なので`Forget ((Either a c) -> r)`を返せる
+
+  [right]
+  基本的に`left`と同じ。`either`の引数の順序が違うだけ。
 -}
 instance choiceForget :: Monoid r => Choice (Forget r) where
+  left :: forall a b c. (Forget r a b) -> (Forget r) (Either a c) (Either b c)
   left  (Forget z) = Forget (either z mempty)
+
+  right :: forall a b c. (Forget r a b) -> (Forget r) (Either c a) (Either c b)
   right (Forget z) = Forget (either mempty z)
 
 {-
@@ -48,6 +67,7 @@ instance strongForget :: Strong (Forget r) where
 
   second :: forall a b c. Forget r b c -> Forget r (Tuple a b) (Tuple a c)
   second (Forget z) = Forget ( z <<< snd)
+  --second (Forget z) = Forget (\(Tuple _ a) -> z a) 
 
 -- instance cochoiceForget :: Cochoice (Forget r) where
 --   unleft  (Forget z) = Forget (z <<< Left)
