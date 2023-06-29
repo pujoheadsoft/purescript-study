@@ -4,6 +4,7 @@ import Prelude
 
 import Lens.Types (Setter)
 
+infixr 4 set as .~
 
 -- | 関数を `Setter` の焦点に適用する。
 -- |
