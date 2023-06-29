@@ -49,7 +49,37 @@ affineTraversal set pre = affineTraversal' (set &&& pre)
     ↓
     second (Forget z) = Forget (\(Tuple _ a) -> z a) 
   
-    `z` は `(Either c a) -> r` なので、
+  3. `right`と`second`の結果
+  当て込むとこう
+    Forget (\(Tuple _ a) -> (z :: ((Either c a) -> r)) a) 
+  なので`a`は`(Either c a)`だとわかるから
+  `second`は以下を返す
+    Forget ((Tuple _ (Either c a)) -> ((Either c a) -> r)) 
+  
+  これは`diamp a2b c2d b2c`の`b2c`の部分で、`a2b`の部分は`(s -> Tuple (b -> t) (Either t a))`なので、関数が繋がった。
+  `Forget`の`demap`では`c2d`は無視される。
+  ちなみに`Tuple (b -> t) (Either t a)`の`b -> t`の部分は、`set`なので`Forget`のときはセッターは無視されている。
+
+  4. `Index`の`ix`で使われた場合（配列に対して使われた場合）
+  `Index (Array a)`の場合の`pre`の定義はこう
+    pre :: Array a -> Either (Array a) a
+    pre s = maybe (Left s) Right $ A.index s n
+
+    Forget ( (s -> Tuple (b -> t) (Either (Array a) a)) >>> ((Tuple _ (Either (Array a) a)) -> ((Either (Array a) a) -> r)) )
+
+  5. `Fold`の`preview`で `[5, 6, 7] ^? ix 2` のように使われた場合 ( `^?` は `flip preview` と同じ )
+  `ix 3`の結果は上記のような関数なのでこう。
+    preview p s = (unwrap <<< foldMapOf p (First <<< Just)) s
+    `s` = [5, 6, 7]
+    `p` = Forget ( (s -> Tuple (b -> t) (Either (Array a) a)) >>> ((Tuple _ (Either (Array a) a)) -> ((Either (Array a) a) -> r)) )
+
+    `(Either (Array a) a) -> r`の部分は、`pre`であった。
+      pre s = maybe (Left s) Right $ A.index s n
+    値は当て込んでみるとこうなる。
+      maybe (Left s) Right $ A.index [5, 6, 7] 2
+    結果は`Right 6`になる。
+
+  
     
 
 -}

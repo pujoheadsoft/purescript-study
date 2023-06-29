@@ -28,5 +28,6 @@ instance indexArray :: Index (Array a) Int a where
     set :: Array a -> a -> Array a
     set s b = fromMaybe s $ A.updateAt n b s
 
+    -- `A.index s n`がJustを返したら`Right`を適用、Nothinだったら`Left s`をデフォルト値として返す
     pre :: Array a -> Either (Array a) a
     pre s = maybe (Left s) Right $ A.index s n
