@@ -32,7 +32,14 @@ affineTraversal set pre = affineTraversal' (set &&& pre)
 
   関数`to`と引数`pab`だけ受けて、`AffineTraversal s t a b`を返すというのは、`Lens`の`lens'`と同じ構造。
 
-  [`pab` が `Forget r` の場合]
+  【`p` が `Forget r` の場合】
+  `p`を`Forget r`として展開すると、このようになる。
+  AffineTraversal s t a b = (Forget r a b) -> (Forget r s t)
+
+  実体的にはこうなる。
+  Forget (a -> r) -> Forget (s -> r)
+
+  つまり引数の`pab`は`(Forget r a b)`。
 
   1. `Choice (Forget r)`の定義
   instance choiceForget :: Monoid r => Choice (Forget r) where
@@ -41,7 +48,11 @@ affineTraversal set pre = affineTraversal' (set &&& pre)
 
   なので`right`は次の関数を返す
   forall r a c. Forget ((Either c a) -> r) 
-  
+
+  ちなみに`either`は今回の場合こうなる
+  `Left a`だったら`empty`を返す（例えば`Maybe`だったら`empty`は`Nothing`になる）
+  `Right a`だったら`(a -> r) a`を返す（つまり`r`が返る）
+
   2. `Strong (Forget r)`の定義
   instance strongForget :: Strong (Forget r) where
     second :: forall a b c. Forget r b c -> Forget r (Tuple a b) (Tuple a c)
@@ -65,22 +76,59 @@ affineTraversal set pre = affineTraversal' (set &&& pre)
     pre :: Array a -> Either (Array a) a
     pre s = maybe (Left s) Right $ A.index s n
 
-    Forget ( (s -> Tuple (b -> t) (Either (Array a) a)) >>> ((Tuple _ (Either (Array a) a)) -> ((Either (Array a) a) -> r)) )
+  affineTraversal' :: forall s t a b  (s -> Tuple (b -> t) (Either t a)) -> (Forget r a b) -> (Forget r s t)
+  ↓
+  affineTraversal' :: forall s t a b  (s -> Tuple _ (Either (Array a) a)) -> (Forget r a b) -> (Forget r s (Array a))
+
+  Forgetの`dimap`
+    dimap :: forall a b c d. (a -> b) -> (c -> d) -> Forget r b c -> Forget r a d
+    dimap f _ (Forget z) = Forget (z <<< f)
+
+  今回の場合だと型変数は
+    a: s
+    b: Tuple (b -> t) (Either t a)
+  だから型としてはこうなる。
+    dimap
+      :: forall s t a b c d r
+       . (s -> Tuple (b -> t) (Either t a))
+       -> (c -> d)
+       -> Forget r (Tuple (b -> t) (Either t a)) c
+       -> Forget r s d
+  `Forget`の`dimap`なので、`(c -> d)`は無視される。
+
+  これの`AffineTraversal s t a b`の部分だけに着目すると`AffineTraversal`として返るのはこういう型。
+    Forget r (Tuple (b -> t) (Either t a)) c -> Forget r s d
+    ↓ 配列を当て込むとこう
+    Forget r (Tuple (b -> t) (Either (Array a) a)) c -> Forget r s d
+    
 
   5. `Fold`の`preview`で `[5, 6, 7] ^? ix 2` のように使われた場合 ( `^?` は `flip preview` と同じ )
   `ix 3`の結果は上記のような関数なのでこう。
     preview p s = (unwrap <<< foldMapOf p (First <<< Just)) s
     `s` = [5, 6, 7]
-    `p` = Forget ( (s -> Tuple (b -> t) (Either (Array a) a)) >>> ((Tuple _ (Either (Array a) a)) -> ((Either (Array a) a) -> r)) )
+    `p` = Forget r (Tuple (b -> t) (Either (Array a) a)) c -> Forget r s d
 
-    `(Either (Array a) a) -> r`の部分は、`pre`であった。
+    `Forget`の`foldMapOf`はこうなる。
+    (Forget (a -> r) -> Forget (s -> r)) -> (a -> r) -> s -> r
+
+    今回の`(a -> r)`は`(First <<< Just)`である。
+    冗長に書くとこう。
+    ((\x -> Just x) >>> (\x -> First x)) :: x -> First x
+
+    `p`の実体はこう。
+    Forget (Tuple (b -> t) (Either (Array a) a) -> r) -> Forget (s -> r)
+    ↓
+    Forget (Tuple (b -> t) (Either (Array a) a) -> First r) -> Forget (s -> r)
+
+    `First r`は`Left (Array a)`か`Right a`を元に作る。
+
+    で、`(Either (Array a) a) -> r`の部分は、`pre`であった。
       pre s = maybe (Left s) Right $ A.index s n
     値は当て込んでみるとこうなる。
       maybe (Left s) Right $ A.index [5, 6, 7] 2
     結果は`Right 6`になる。
-
-  
-    
+    この6をFirstに渡して First 6。これをunwrapしてJust 6
+    これが戻り値
 
 -}
 affineTraversal'

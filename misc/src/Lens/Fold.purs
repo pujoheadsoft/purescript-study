@@ -54,7 +54,18 @@ under
   -> b
 under _ ts a = (coerce ts) a
 
-
+{-
+  x は (a -> r)
+  y は (s -> r)
+  (Forget r a b) は Forget (a -> r)
+  (Forget r s t) は Forget (s -> r)
+  なので
+  ((Forget r a b) -> (Forget r s t))
+  これをcoerceすると
+  ((a -> r) -> (s -> r))
+  となる。
+  これに対して (a -> r) を渡すと (s -> r) が返ってくるという感じ
+-}
 under'
   :: forall t a s b r x y
    . Newtype (Forget r a b) x
