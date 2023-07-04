@@ -69,13 +69,6 @@ spec = do
     
     it "view nested" do
       let
-        {-
-          view (_Container <<< _Box) としたとき選択されるinsntaceは`Forget`なので
-          _Box は Forget BoxRec BoxRec BoxRec -> Forget BoxRec Box Box
-          _Container は Forget Box Box Box -> Forget Box Container Container
-          となる。
-          Forget BoxRec BoxRec BoxRec -> Forget BoxRec Container Container
-        -}
         box = view (_Container <<< _Box) (Container $ Box {value: "Value"})
       box `shouldEqual` {value: "Value"}
     
