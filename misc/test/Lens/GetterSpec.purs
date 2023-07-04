@@ -23,8 +23,15 @@ instance showBox :: Show Box where
 instance eqBox :: Eq Box where
   eq (Box b1) (Box b2) = _.value b1 == _.value b2
 
+newtype Container = Container Box
+derive newtype instance showContainer :: Show Container
+derive newtype instance eqContainer :: Eq Container
+
 _Box :: Lens' Box BoxRec
 _Box = lens (\(Box a) -> a) (\_ -> Box)
+
+_Container :: Lens' Container Box
+_Container = lens (\(Container b) -> b) (\_ -> Container)
 
 foo :: forall a b r. Lens { foo :: a | r } { foo :: b | r } a b
 foo = prop (Proxy :: Proxy "foo")
@@ -32,12 +39,44 @@ foo = prop (Proxy :: Proxy "foo")
 fooGetter :: forall x. Getter' { foo :: x } x
 fooGetter = foo
 
+
+_Box' :: forall p. Strong p => p BoxRec BoxRec -> p Box Box
+_Box' = _Box
+
+_Container' :: forall p. Strong p => p Box Box -> p Container Container
+_Container' = _Container
+
+-- 合成
+composed1 :: forall p. Strong p => p BoxRec BoxRec -> p Container Container
+composed1 = _Container <<< _Box
+
+-- 合成をLensで書いた
+composed2 :: Lens' Container BoxRec
+composed2 = _Container <<< _Box
+
+-- 合成をForgetで書いた (Forget (BoxRec -> BoxRec) -> Forget (Container -> BoxRec))
+composed3 :: Forget BoxRec BoxRec BoxRec -> Forget BoxRec Container Container
+composed3 = _Container <<< _Box
+
+
 spec :: Spec Unit
 spec = do
   describe "Getter Test" do
     it "view" do
       let
         box = view _Box (Box {value: "Value"})
+      box `shouldEqual` {value: "Value"}
+    
+    it "view nested" do
+      let
+        {-
+          view (_Container <<< _Box) としたとき選択されるinsntaceは`Forget`なので
+          _Box は Forget BoxRec BoxRec BoxRec -> Forget BoxRec Box Box
+          _Container は Forget Box Box Box -> Forget Box Container Container
+          となる。
+          Forget BoxRec BoxRec BoxRec -> Forget BoxRec Container Container
+        -}
+        box = view (_Container <<< _Box) (Container $ Box {value: "Value"})
       box `shouldEqual` {value: "Value"}
     
     it "prop" do
