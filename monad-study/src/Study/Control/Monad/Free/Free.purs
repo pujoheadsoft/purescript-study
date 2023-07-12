@@ -79,13 +79,14 @@ instance freeFunctor :: Functor (Free f) where
   map k f = pure <<< k =<< f
 
 instance freeBind :: Bind (Free f) where
+  bind :: forall a b. Free f a -> (a -> Free f b) -> Free f b
   bind (Free v s) k = 
     -- 普通のbindは関数だが、FreeのbindはFree自体を返す
     -- このFreeは、引数のview(Bind or Return)と同じviewを持ち、CatListにbindの関数kを結合した新しいFreeとなる
     -- ちなみに一連の処理で最初にくるFreeは↓pureで作られたFree(jsをdebugするとわかる)
     Free v (snoc s (ExpF (unsafeCoerceBind k)))
     where
-    unsafeCoerceBind :: forall a b. (a -> Free f b) -> Val -> Free f Val
+    unsafeCoerceBind :: (a -> Free f b) -> Val -> Free f Val
     unsafeCoerceBind = unsafeCoerce
 
 instance freeApplicative :: Applicative (Free f) where
