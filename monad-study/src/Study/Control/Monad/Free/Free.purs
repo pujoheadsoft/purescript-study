@@ -76,6 +76,7 @@ instance ord1Free :: (Functor f, Ord1 f) => Ord1 (Free f) where
   compare1 = compare
 
 instance freeFunctor :: Functor (Free f) where
+  map :: forall a b. (a -> b) -> Free f a -> Free f b
   map k f = pure <<< k =<< f
 
 instance freeBind :: Bind (Free f) where
@@ -90,9 +91,11 @@ instance freeBind :: Bind (Free f) where
     unsafeCoerceBind = unsafeCoerce
 
 instance freeApplicative :: Applicative (Free f) where
+  pure :: forall a. a -> Free f a
   pure = fromView <<< Return
 
 instance freeApply :: Apply (Free f) where
+  apply :: forall a b. Free f (a -> b) -> Free f a -> Free f b
   apply = ap
 
 instance freeMonad :: Monad (Free f)
