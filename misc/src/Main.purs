@@ -4,6 +4,7 @@ import Prelude
 
 import Effect (Effect)
 import Effect.Console (log)
+import Pattern.ReaderT as RederTPattern
 
 {-
   似た関数として
@@ -15,4 +16,5 @@ import Effect.Console (log)
 
 main :: Effect Unit
 main = do
+  RederTPattern.main
   log "🍝"
