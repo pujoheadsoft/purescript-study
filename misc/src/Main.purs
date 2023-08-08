@@ -3,18 +3,12 @@ module Main where
 import Prelude
 
 import Effect (Effect)
-import Effect.Console (log)
 import Pattern.ReaderT as RederTPattern
-
-{-
-  似た関数として
-  view
-  review
-  preview
-  がある
--}
+import Pattern.ThreeLayer.Main as ThreeLayer
+import Pattern.FourLayer.Main as FourLayer
 
 main :: Effect Unit
 main = do
   RederTPattern.main
-  log "🍝"
+  ThreeLayer.main
+  FourLayer.main

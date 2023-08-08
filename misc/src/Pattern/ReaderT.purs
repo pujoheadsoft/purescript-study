@@ -4,7 +4,10 @@ import Prelude
 
 import Control.Monad.Reader (class MonadReader, ReaderT, ask, runReaderT)
 import Data.Either (Either(..))
+import Data.Generic.Rep (class Generic, Sum)
 import Data.Maybe (Maybe(..))
+import Data.Monoid.Generic (genericMempty)
+import Data.Semigroup.Generic (genericAppend, genericAppend')
 import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Console (log, logShow)
