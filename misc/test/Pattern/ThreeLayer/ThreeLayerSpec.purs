@@ -5,7 +5,7 @@ import Prelude
 import Control.Monad.Reader (class MonadAsk, Reader, ask, runReader)
 import Pattern.ThreeLayer.Layer2 (class GetUserName, class LogToScreen, program)
 import Pattern.ThreeLayer.Layer3 (Name(..))
-import Test.PMock (Param, any, fun, mock, verify, (:>))
+import Test.PMock (any, fun, mock, verifySequence, (:>))
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 
@@ -45,11 +45,17 @@ spec = do
   describe "Three Layer Test" do
     it "program test" do
       let
-        logMock = mock $ (any :: Param String) :> (pure unit :: TestM Unit)
+        logMock = mock $ any :> (pure unit :: TestM Unit)
         functions = { 
           log: fun logMock,
           getUserName: pure (Name "John")
         }
+
+      -- run  
       runTest program functions `shouldEqual` unit
-      verify logMock "What is your name?"
-      verify logMock "You name is John"
+
+      -- verify
+      verifySequence logMock [
+        "What is your name?",
+        "You name is John"
+      ]
