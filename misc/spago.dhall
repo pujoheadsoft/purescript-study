@@ -30,6 +30,7 @@ to generate this file without the comments in this block.
   , "profunctor"
   , "profunctor-lenses"
   , "record"
+  , "refs"
   , "safe-coerce"
   , "spec"
   , "spec-discovery"

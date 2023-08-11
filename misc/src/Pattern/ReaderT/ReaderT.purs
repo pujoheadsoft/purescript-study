@@ -1,23 +1,23 @@
-module Pattern.ReaderT where
+module Pattern.ReaderT.ReaderT where
 
 import Prelude
 
 import Control.Monad.Reader (class MonadReader, ReaderT, ask, runReaderT)
-import Data.Either (Either(..))
-import Data.Generic.Rep (class Generic, Sum)
-import Data.Maybe (Maybe(..))
-import Data.Monoid.Generic (genericMempty)
-import Data.Semigroup.Generic (genericAppend, genericAppend')
+import Control.Monad.State as State
 import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
-import Effect.Console (log, logShow)
-import Undefined (undefined)
+import Effect.Console (log)
+import Effect.Ref (Ref)
+import Effect.Ref as Ref
 
 {-
   https://www.fpcomplete.com/blog/2017/06/readert-design-pattern/
 -}
 
-data Env = Env { envLog :: String -> Effect Unit }
+data Env = Env { 
+  envLog :: String -> Effect Unit,
+  envBalance :: Ref Int
+}
 
 class HasLog a where
   getLog :: a -> (String -> Effect Unit)
@@ -26,6 +26,26 @@ instance HasLog (String -> Effect Unit) where
 else instance HasLog Env where
   getLog (Env {envLog}) = envLog
 
+class HasBalance a where
+  getBalance :: a -> Ref Int
+instance HasBalance (Ref Int) where
+  getBalance = identity
+instance HasBalance Env where
+  getBalance (Env {envBalance}) = envBalance
+
+class Monad m <= MonadBalance m where
+  modifyBalance :: (Int -> Int) -> m Unit
+instance (HasBalance env, MonadEffect m) => MonadBalance (ReaderT env m) where
+  modifyBalance f = do
+    env <- ask
+    liftEffect $ Ref.modify_ f (getBalance env)
+instance Monad m => MonadBalance (State.StateT Int m) where
+  modifyBalance = State.modify_
+
+modify :: forall m. MonadBalance m => (Int -> Int) -> m Unit
+modify f = do
+  -- Now I know there's no way I'm performing IO here
+  modifyBalance f
 
 {-
   `ReaderT`は`MonadReader`や`MonadEffect`のインスタンスになっている。
@@ -71,8 +91,7 @@ logSomething msg = do
   env <- ask
   liftEffect $ getLog env msg
 
+
 main :: Effect Unit
 main = do
-  let
-    env = Env { envLog: log }
-  runReaderT (logSomething "message") env
+  runReaderT (logSomething "message") log

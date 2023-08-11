@@ -3,6 +3,7 @@ module Test.Pattern.ThreeLayer.ThreeLayerSpec where
 import Prelude
 
 import Control.Monad.Reader (class MonadAsk, Reader, ask, runReader)
+import Data.Either (Either(..))
 import Pattern.ThreeLayer.Layer2 (class GetUserName, class LogToScreen, program)
 import Pattern.ThreeLayer.Layer3 (Name(..))
 import Test.PMock (any, fun, mock, verifySequence, (:>))
