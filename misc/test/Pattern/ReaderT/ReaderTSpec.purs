@@ -2,14 +2,57 @@ module Test.Pattern.ReaderT.ReaderTSpec where
 
 import Prelude
 
-import Control.Monad.Reader (runReaderT)
 import Control.Monad.State as State
-import Effect.Class (liftEffect)
-import Effect.Ref (new, read)
+import Control.Monad.Reader (class MonadReader, ReaderT, ask, runReaderT)
+import Effect (Effect)
+import Effect.Class (class MonadEffect, liftEffect)
+import Effect.Ref (Ref, new, read)
 import Effect.Ref as Ref
-import Pattern.ReaderT.ReaderT (logSomething, modify)
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
+
+data Env = Env { 
+  envLog :: String -> Effect Unit,
+  envBalance :: Ref Int
+}
+
+class HasLog a where
+  getLog :: a -> (String -> Effect Unit)
+instance HasLog (String -> Effect Unit) where
+  getLog = identity
+else instance HasLog Env where
+  getLog (Env {envLog}) = envLog
+
+class HasBalance a where
+  getBalance :: a -> Ref Int
+instance HasBalance (Ref Int) where
+  getBalance = identity
+instance HasBalance Env where
+  getBalance (Env {envBalance}) = envBalance
+
+class Monad m <= MonadBalance m where
+  modifyBalance :: (Int -> Int) -> m Unit
+instance (HasBalance env, MonadEffect m) => MonadBalance (ReaderT env m) where
+  modifyBalance f = do
+    env <- ask
+    liftEffect $ Ref.modify_ f (getBalance env)
+instance Monad m => MonadBalance (State.StateT Int m) where
+  modifyBalance = State.modify_
+
+modify :: forall m. MonadBalance m => (Int -> Int) -> m Unit
+modify f = do
+  modifyBalance f
+
+logSomething
+  :: forall m env
+   . HasLog env
+  => MonadReader env m 
+  => MonadEffect m
+  => String
+  -> m Unit
+logSomething msg = do
+  env <- ask
+  liftEffect $ getLog env msg
 
 spec :: Spec Unit
 spec = do
