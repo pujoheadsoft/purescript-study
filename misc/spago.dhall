@@ -18,6 +18,7 @@ to generate this file without the comments in this block.
   , "console"
   , "const"
   , "contravariant"
+  , "datetime"
   , "effect"
   , "either"
   , "foldable-traversable"
