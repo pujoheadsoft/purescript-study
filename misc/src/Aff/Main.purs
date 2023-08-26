@@ -5,6 +5,7 @@ import Prelude
 import Aff.Bracket as Bracket
 import Aff.Delay as Delay
 import Aff.Fork as Fork
+import Aff.Kill as Kill
 import Aff.Supervise as Supervise
 import Aff.Suspend as Suspend
 import Aff.Util (affLog)
@@ -24,3 +25,4 @@ main = launchAff_ do
   execute Suspend.example "Suspend"
   execute Bracket.example "Bracket"
   execute Supervise.example "Supervise"
+  execute Kill.example "Kill"
