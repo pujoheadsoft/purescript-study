@@ -2,10 +2,14 @@ module Aff.Main where
 
 import Prelude
 
+import Aff.Apathize as Apathize
+import Aff.Attempt as Attempt
 import Aff.Bracket as Bracket
 import Aff.Delay as Delay
+import Aff.Finally as Finally
 import Aff.Fork as Fork
 import Aff.Kill as Kill
+import Aff.MakeAff as MakeAff
 import Aff.Supervise as Supervise
 import Aff.Suspend as Suspend
 import Aff.Util (affLog)
@@ -14,15 +18,19 @@ import Effect.Aff (Aff, Fiber, joinFiber, launchAff_)
 
 execute :: Aff (Fiber Unit) -> String -> Aff Unit
 execute a title = do
-  affLog $ "\n[" <> title <> " Example Start]"
+  affLog $ "\n[" <> title <> " example start]"
   joinFiber =<< a
-  affLog $ "[" <> title <> " Example End]"
+  affLog $ "[" <> title <> " example end]"
 
 main :: Effect Unit
 main = launchAff_ do
-  execute Delay.example "Delay"
-  execute Fork.example "Fork"
-  execute Suspend.example "Suspend"
-  execute Bracket.example "Bracket"
-  execute Supervise.example "Supervise"
-  execute Kill.example "Kill"
+  execute Delay.example "delay"
+  execute Fork.example "forkAff"
+  execute Suspend.example "suspend"
+  execute Bracket.example "bracket"
+  execute Supervise.example "supervise"
+  execute Kill.example "killFiber"
+  execute Attempt.example "attempt"
+  execute Apathize.example "apathize"
+  execute Finally.example "finally"
+  execute MakeAff.example "makeAff"

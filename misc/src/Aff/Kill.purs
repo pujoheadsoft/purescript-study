@@ -10,9 +10,14 @@ import Effect.Aff (Aff, Canceler(..), Fiber, Milliseconds(..), delay, error, for
 example :: Aff (Fiber Unit)
 example = forkAff do
   fiber <- forkAff do
+    affLog "child start."
+    -- killFiberするとCancelerが呼ばれる
+    -- callbackを使わないでcancelerだけ返す
     _ <- makeAff \_ -> pure $ Canceler \_ -> do
       affLog "Cancelled."
-    affLog "Call child."
+      
+    -- killされるとこれは呼ばれない
+    affLog "child end."
   
   delay (Milliseconds 50.0)
   killFiber (error "Nope") fiber
