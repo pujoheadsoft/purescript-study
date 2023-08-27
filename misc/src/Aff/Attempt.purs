@@ -4,11 +4,11 @@ import Prelude
 
 import Aff.Util (affLog)
 import Data.Either (Either(..))
-import Effect.Aff (Aff, Fiber, attempt, forkAff, message)
+import Effect.Aff (Aff, attempt, forkAff, message)
 import Effect.Class.Console (error)
 
-example :: Aff (Fiber Unit)
-example = forkAff do
+example :: Aff Unit
+example = do
   -- attemptはtryと書くのと同じ
   v <- attempt $ forkAff do
     error "error"

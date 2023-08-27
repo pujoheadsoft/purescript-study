@@ -5,10 +5,10 @@ import Prelude
 import Aff.Util (affLog)
 import Data.Bifunctor (lmap)
 import Data.Either (Either(..))
-import Effect.Aff (Aff, Canceler(..), Fiber, Milliseconds(..), delay, error, forkAff, joinFiber, killFiber, makeAff, message, try)
+import Effect.Aff (Aff, Canceler(..), Milliseconds(..), delay, error, forkAff, joinFiber, killFiber, makeAff, message, try)
 
-example :: Aff (Fiber Unit)
-example = forkAff do
+example :: Aff Unit
+example = do
   fiber <- forkAff do
     affLog "child start."
     -- killFiberするとCancelerが呼ばれる

@@ -2,14 +2,12 @@ module Aff.Finally where
 
 import Prelude
 
-import Aff.Util (affLog)
 import Data.Either (Either(..))
-import Effect.Aff (Aff, Canceler(..), Fiber, bracket, cancelWith, error, finally, forkAff, killFiber, makeAff, nonCanceler, runAff)
-import Effect.Class (liftEffect)
+import Effect.Aff (Aff, error, finally, makeAff)
 import Effect.Console (log)
 
-example :: Aff (Fiber Unit)
-example = forkAff do
+example :: Aff Unit
+example = do
   let
     a1 = makeAff \callback -> do
       log "call 1st fn"

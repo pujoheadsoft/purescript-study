@@ -16,10 +16,10 @@ import Aff.Util (affLog)
 import Effect (Effect)
 import Effect.Aff (Aff, Fiber, joinFiber, launchAff_)
 
-execute :: Aff (Fiber Unit) -> String -> Aff Unit
+execute :: Aff Unit -> String -> Aff Unit
 execute a title = do
   affLog $ "\n[" <> title <> " example start]"
-  joinFiber =<< a
+  a
   affLog $ "[" <> title <> " example end]"
 
 main :: Effect Unit

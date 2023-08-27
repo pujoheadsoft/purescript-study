@@ -4,11 +4,11 @@ import Prelude
 
 import Aff.Util (affLog)
 import Data.Either (Either(..))
-import Effect.Aff (Aff, Canceler(..), Fiber, error, forkAff, killFiber, makeAff, message, nonCanceler)
+import Effect.Aff (Aff, Canceler(..), error, forkAff, killFiber, makeAff, message, nonCanceler)
 import Effect.Console (log)
 
-example :: Aff (Fiber Unit)
-example = forkAff do
+example :: Aff Unit
+example = do
   fiber1 <- forkAff do
     a <- makeAff \callback -> do
       log "use effect 1."

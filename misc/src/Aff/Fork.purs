@@ -4,10 +4,10 @@ import Prelude
 
 import Aff.Util (affLog)
 import Data.Traversable (traverse)
-import Effect.Aff (Aff, Fiber, Milliseconds(..), delay, forkAff, joinFiber)
+import Effect.Aff (Aff, Milliseconds(..), delay, forkAff, joinFiber)
 
-example :: Aff (Fiber Unit)
-example = forkAff do
+example :: Aff Unit
+example = do
   affLog "Parent Start"
   a <- forkAff do
     delay (Milliseconds 500.0)

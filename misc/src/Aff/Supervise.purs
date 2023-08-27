@@ -3,12 +3,12 @@ module Aff.Supervise where
 import Prelude
 
 import Aff.Util (affLog)
-import Effect.Aff (Aff, Fiber, Milliseconds(..), delay, forkAff, supervise)
+import Effect.Aff (Aff, Milliseconds(..), delay, forkAff, supervise)
 import Effect.Class (liftEffect)
 import Effect.Exception (throw)
 
-example :: Aff (Fiber Unit)
-example = forkAff do
+example :: Aff Unit
+example = do
   affLog "Parent process start."
   supervise do
     _ <- forkAff do

@@ -2,13 +2,13 @@ module Aff.Bracket where
 
 import Prelude
 
-import Effect.Aff (Aff, Fiber, Milliseconds(..), bracket, delay, forkAff)
+import Effect.Aff (Aff, Milliseconds(..), bracket, delay)
 import Effect.Class (liftEffect)
 import Effect.Console (log)
 import Effect.Ref as Ref
 
-example :: Aff (Fiber Unit)
-example = forkAff do
+example :: Aff Unit
+example = do
   ref <- liftEffect $ Ref.new ""
   let
     action s = do
