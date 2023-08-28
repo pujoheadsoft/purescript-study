@@ -14,7 +14,7 @@ import Aff.Supervise as Supervise
 import Aff.Suspend as Suspend
 import Aff.Util (affLog)
 import Effect (Effect)
-import Effect.Aff (Aff, Fiber, joinFiber, launchAff_)
+import Effect.Aff (Aff, launchAff_)
 
 execute :: Aff Unit -> String -> Aff Unit
 execute a title = do

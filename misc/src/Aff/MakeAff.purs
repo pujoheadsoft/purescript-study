@@ -7,6 +7,7 @@ import Data.Either (Either(..))
 import Effect.Aff (Aff, Canceler(..), error, forkAff, killFiber, makeAff, message, nonCanceler)
 import Effect.Console (log)
 
+
 example :: Aff Unit
 example = do
   fiber1 <- forkAff do
