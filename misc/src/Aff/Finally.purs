@@ -19,6 +19,10 @@ example = do
       callback (Left $ error "fail")
       pure mempty
   
+  -- 次のようにした場合、aの実行でエラーになり処理は止まりfinalizerは呼ばれないが、finallyを使えばfinalizerは絶対に呼ばれる
+  -- _ <- joinFiber =<< forkAff a
+  -- _ <- joinFiber =<< forkAff finalizer
+  
   _ <- try $ finally finalizer a
   
   pure unit
