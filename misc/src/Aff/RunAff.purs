@@ -3,7 +3,7 @@ module Aff.RunAff where
 import Prelude
 
 import Aff.Util (affLog)
-import Data.Either (Either(..), either)
+import Data.Either (either)
 import Effect (Effect)
 import Effect.Aff (joinFiber, launchAff_, message, runAff, runAff_, runSuspendedAff)
 import Effect.Class.Console (log)
