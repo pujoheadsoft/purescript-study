@@ -8,6 +8,7 @@ import Aff.Bracket as Bracket
 import Aff.Delay as Delay
 import Aff.Finally as Finally
 import Aff.Fork as Fork
+import Aff.Invincible as Invincible
 import Aff.Kill as Kill
 import Aff.MakeAff as MakeAff
 import Aff.Supervise as Supervise
@@ -34,3 +35,4 @@ main = launchAff_ do
   execute Apathize.example "apathize"
   execute Finally.example "finally"
   execute MakeAff.example "makeAff"
+  execute Invincible.example "invincible"
