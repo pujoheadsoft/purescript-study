@@ -2,14 +2,14 @@ module Aff.Supervise where
 
 import Prelude
 
-import Aff.Util (affLog)
 import Effect.Aff (Aff, Milliseconds(..), delay, forkAff, supervise)
 import Effect.Class (liftEffect)
+import Effect.Class.Console (log)
 import Effect.Exception (throw)
 
 example :: Aff Unit
 example = do
-  affLog "Parent process start."
+  log "Parent process start."
   supervise do
     _ <- forkAff do
       delay (Milliseconds 3000.0)
@@ -17,10 +17,10 @@ example = do
 
     _ <- forkAff do
       delay (Milliseconds 10.0)
-      affLog "child2" -- こいつは親より時間がかからないから呼ばれる
+      log "child2" -- こいつは親より時間がかからないから呼ばれる
 
     delay (Milliseconds 100.0)
-    affLog "done"
+    log "done"
 
-  affLog "Parent process end."
+  log "Parent process end."
   

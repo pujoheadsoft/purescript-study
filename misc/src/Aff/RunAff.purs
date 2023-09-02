@@ -2,7 +2,6 @@ module Aff.RunAff where
 
 import Prelude
 
-import Aff.Util (affLog)
 import Data.Either (either)
 import Effect (Effect)
 import Effect.Aff (joinFiber, launchAff_, message, runAff, runAff_, runSuspendedAff)
@@ -14,21 +13,21 @@ example = do
   suspendedFiber <- runSuspendedAff
     (either (log <<< message) log) -- Left(エラー)でもRight(成功)でもログ出力
     do 
-      affLog "runSuspendedAff"
+      log "runSuspendedAff"
       pure "runSuspendedAff result"
 
   -- 実行されて返り値を使える
   fiber <- runAff
     (either (log <<< message) log)
     do
-      affLog "runAff"
+      log "runAff"
       pure "runAff result"
   
   -- 実行されるが返り値はない
   runAff_
     (either (log <<< message) log)
     do
-      affLog "runAff_"
+      log "runAff_"
       pure "runAff_ result"
   
   launchAff_ $ joinFiber fiber

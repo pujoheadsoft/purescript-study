@@ -2,10 +2,9 @@ module Aff.Attempt where
 
 import Prelude
 
-import Aff.Util (affLog)
 import Data.Either (Either(..))
 import Effect.Aff (Aff, attempt, forkAff, message)
-import Effect.Class.Console (error)
+import Effect.Class.Console (error, log)
 
 example :: Aff Unit
 example = do
@@ -14,5 +13,5 @@ example = do
     error "error"
     pure "unit"
   case v of
-    Left e -> affLog $ message e
+    Left e -> log $ message e
     Right _ -> pure unit

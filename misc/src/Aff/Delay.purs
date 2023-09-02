@@ -2,12 +2,12 @@ module Aff.Delay where
 
 import Prelude
 
-import Aff.Util (affLog)
 import Data.Time.Duration (Milliseconds(..))
 import Effect.Aff (Aff, delay)
+import Effect.Class.Console (log)
 
 example :: Aff Unit
 example = do
-  affLog "Before Delay"
+  log "Before Delay"
   delay (Milliseconds 500.0)
-  affLog "After Delay"
+  log "After Delay"

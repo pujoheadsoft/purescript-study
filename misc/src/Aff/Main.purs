@@ -15,16 +15,15 @@ import Aff.MakeAff as MakeAff
 import Aff.RunAff as RunAff
 import Aff.Supervise as Supervise
 import Aff.Suspend as Suspend
-import Aff.Util (affLog)
 import Effect (Effect)
 import Effect.Aff (Aff, launchAff_)
-import Effect.Console (log)
+import Effect.Class.Console (log)
 
 execute :: Aff Unit -> String -> Aff Unit
 execute a title = do
-  affLog $ "\n[" <> title <> " example start]"
+  log $ "\n[" <> title <> " example start]"
   a
-  affLog $ "[" <> title <> " example end]"
+  log $ "[" <> title <> " example end]"
 
 executeEff :: Effect Unit -> String -> Effect Unit
 executeEff a title = do

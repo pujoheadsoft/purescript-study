@@ -2,20 +2,20 @@ module Aff.Fork where
 
 import Prelude
 
-import Aff.Util (affLog)
 import Data.Traversable (traverse)
 import Effect.Aff (Aff, Milliseconds(..), delay, forkAff, joinFiber)
+import Effect.Class.Console (log)
 
 example :: Aff Unit
 example = do
-  affLog "Parent Start"
+  log "Parent Start"
   a <- forkAff do
     delay (Milliseconds 500.0)
-    affLog "Call Child1"
+    log "Call Child1"
   b <- forkAff do
-    affLog "Call Child2"
+    log "Call Child2"
   c <- forkAff do
     delay (Milliseconds 200.0)
-    affLog "Call Child3"
+    log "Call Child3"
   _ <- traverse joinFiber [a, b, c]
-  affLog "Parent End"
+  log "Parent End"
