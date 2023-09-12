@@ -1,6 +1,7 @@
 {
   "private": true,
   "devDependencies": {
+    "eslint": "^8.49.0",
     "parcel": "1.12.3",
     "purescript": "^0.14.0",
     "spago": "^0.19.1"
