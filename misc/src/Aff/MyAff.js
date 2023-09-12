@@ -3,9 +3,6 @@
 /* globals setImmediate, clearImmediate, setTimeout, clearTimeout */
 /* eslint-disable no-unused-vars, no-prototype-builtins, no-use-before-define, no-unused-labels, no-param-reassign */
 var Aff = function () {
-  // A unique value for empty.
-  var EMPTY = {};
-
   var PURE = "Pure";
   var SYNC = "Sync";
   var ASYNC = "Async";
@@ -28,16 +25,6 @@ var Aff = function () {
     };
     fn.tag = tag;
     return fn;
-  }
-
-  function runEff(eff) {
-    try {
-      eff();
-    } catch (error) {
-      setTimeout(function () {
-        throw error;
-      }, 0);
-    }
   }
 
   function runSync(eff) {
@@ -116,17 +103,12 @@ var Aff = function () {
         switch (status) {
           case STEP_BIND:
             status = CONTINUE;
-            try {
-              step = bhead(step);
-              if (btail === null) {
-                bhead = null;
-              } else {
-                bhead = btail._1;
-                btail = btail._2;
-              }
-            } catch (e) {
-              status = RETURN;
-              step = null;
+            step = bhead(step);
+            if (btail === null) {
+              bhead = null;
+            } else {
+              bhead = btail._1;
+              btail = btail._2;
             }
             break;
 
@@ -173,9 +155,6 @@ var Aff = function () {
                     }
                     runTick++;
                     Scheduler.enqueue(function () {
-                      // It's possible to interrupt the fiber between enqueuing and
-                      // resuming, so we need to check that the runTick is still
-                      // valid.
                       if (runTick !== localRunTick + 1) {
                         return;
                       }
@@ -189,10 +168,8 @@ var Aff = function () {
 
               case FORK:
                 status = STEP_RESULT;
-                tmp = Fiber(step._2);
-                if (step._1) {
-                  tmp.run();
-                }
+                tmp = Fiber(step._1);
+                tmp.run();
                 step = tmp;
                 break;
 
@@ -210,16 +187,14 @@ var Aff = function () {
           case SUSPENDED:
             status = CONTINUE;
             break;
-          case PENDING: return;
+          case PENDING:
+            return;
         }
       }
     }
 
 
     return {
-      isSuspended: function () {
-        return status === SUSPENDED;
-      },
       run: function () {
         if (status === SUSPENDED) {
           if (!Scheduler.isDraining()) {
@@ -235,7 +210,6 @@ var Aff = function () {
   }
 
 
-  Aff.EMPTY = EMPTY;
   Aff.Pure = AffCtr(PURE);
   Aff.Sync = AffCtr(SYNC);
   Aff.Async = AffCtr(ASYNC);
@@ -267,19 +241,17 @@ export function _bind(aff) {
   };
 }
 
-export function _fork(immediate) {
+export function _fork() {
   return function (aff) {
-    return Aff.Fork(immediate, aff);
+    return Aff.Fork(aff);
   };
 }
 
 export const _liftEffect = Aff.Sync;
 
-export const makeAff = Aff.Async;
-
-export function _makeFiber(util, aff) {
+export function _makeFiber(aff) {
   return function () {
-    return Aff.Fiber(util, null, aff);
+    return Aff.Fiber(aff);
   };
 }
 
