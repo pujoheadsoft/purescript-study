@@ -29,17 +29,14 @@ instance monadEffectAff :: MonadEffect Aff where
 
 newtype Fiber = Fiber { run :: Effect Unit }
 
-launchAff :: Aff Unit -> Effect Fiber
-launchAff aff = do
+launchAff_ :: Aff Unit -> Effect Unit
+launchAff_ aff = do
   fiber <- makeFiber aff
   case fiber of Fiber f -> f.run
-  pure fiber
+  pure unit
 
-launchAff_ :: Aff Unit -> Effect Unit
-launchAff_ = void <<< launchAff
-
-forkAff :: Aff Unit -> Aff Fiber
-forkAff = _fork unit
+forkAff :: Aff Unit -> Aff Unit
+forkAff = void <<< _fork unit
 
 delay :: Milliseconds -> Aff Unit
 delay (Milliseconds n) = Fn.runFn2 _delay Right n

@@ -13,11 +13,11 @@ import Pattern.ThreeLayer.Main as ThreeLayer
 
 main :: Effect Unit
 main = launchAff_ do
-  _ <- forkAff do
+  forkAff do
     delay $ Milliseconds 100.0
     log "hoge"
 
-  _ <- forkAff do
+  forkAff do
     log "moge"
 
   pure unit
