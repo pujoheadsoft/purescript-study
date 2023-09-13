@@ -60,7 +60,7 @@ var Aff = function () {
         return draining;
       },
       enqueue: function (cb) {
-        var i, tmp;
+        var tmp;
         if (size === limit) {
           tmp = draining;
           drain();
@@ -107,6 +107,7 @@ var Aff = function () {
             if (btail === null) {
               bhead = null;
             } else {
+              console.log("tailあったよ");
               bhead = btail._1;
               btail = btail._2;
             }
@@ -134,11 +135,10 @@ var Aff = function () {
               case PURE:
                 if (bhead === null) {
                   status = RETURN;
-                  step = step._1;
                 } else {
                   status = STEP_BIND;
-                  step = step._1;
                 }
+                step = step._1;
                 break;
 
               case SYNC:
