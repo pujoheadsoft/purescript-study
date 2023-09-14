@@ -15,7 +15,6 @@ import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Exception (Error)
 import Effect.Unsafe (unsafePerformEffect)
-import Partial.Unsafe (unsafeCrashWith)
 
 -- | An `Aff a` is an asynchronous computation with effects. The
 -- | computation may either error with an exception, or produce a result of
