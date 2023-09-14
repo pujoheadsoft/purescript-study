@@ -2,21 +2,18 @@ module Aff.MyAff where
 
 import Prelude
 
-import Control.Alt (class Alt)
 import Control.Apply (lift2)
 import Control.Lazy (class Lazy)
-import Control.Monad.Error.Class (class MonadError, class MonadThrow, throwError, catchError, try)
 import Control.Monad.Rec.Class (class MonadRec, Step(..))
 import Control.Monad.ST.Class (class MonadST, liftST)
 import Control.Monad.ST.Global (Global)
-import Control.Plus (class Plus)
 import Data.Either (Either(..))
 import Data.Function.Uncurried as Fn
 import Data.Newtype (class Newtype)
 import Data.Time.Duration (Milliseconds(..))
 import Effect (Effect)
 import Effect.Class (class MonadEffect, liftEffect)
-import Effect.Exception (Error, error)
+import Effect.Exception (Error)
 import Effect.Unsafe (unsafePerformEffect)
 import Partial.Unsafe (unsafeCrashWith)
 
@@ -72,14 +69,14 @@ instance monadSTAff :: MonadST Global Aff where
 
 type OnComplete a =
   { rethrow :: Boolean
-  , handler :: (Either Error a -> Effect Unit) -> Effect Unit
+  , handler :: (a -> Effect Unit) -> Effect Unit
   }
 
 -- | Represents a forked computation by way of `forkAff`. `Fiber`s are
 -- | memoized, so their results are only computed once.
 newtype Fiber a = Fiber
   { run :: Effect Unit
-  , join :: (Either Error a -> Effect Unit) -> Effect (Effect Unit)
+  , join :: (a -> Effect Unit) -> Effect (Effect Unit)
   , onComplete :: OnComplete a -> Effect (Effect Unit)
   , isSuspended :: Effect Boolean
   }
@@ -171,7 +168,7 @@ foreign import _makeFiber :: forall a. Fn.Fn2 FFIUtil (Aff a) (Effect (Fiber a))
 -- | `Canceler` effect should be returned to cancel the pending action. The
 -- | supplied callback may be invoked only once. Subsequent invocation are
 -- | ignored.
-foreign import makeAff :: forall a. ((Either Error a -> Effect Unit) -> Effect Canceler) -> Aff a
+foreign import makeAff :: forall a. ((a -> Effect Unit) -> Effect Canceler) -> Aff a
 
 makeFiber :: forall a. Aff a -> Effect (Fiber a)
 makeFiber aff = Fn.runFn2 _makeFiber ffiUtil aff

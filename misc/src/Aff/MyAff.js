@@ -64,21 +64,12 @@ var Aff = function () {
     }
   }
 
-  function runSync(left, right, eff) {
-    try {
-      return right(eff());
-    } catch (error) {
-      return left(error);
-    }
+  function runSync(right, eff) {
+    return right(eff());
   }
 
-  function runAsync(left, eff, k) {
-    try {
-      return eff(k)();
-    } catch (error) {
-      k(left(error))();
-      return nonCanceler;
-    }
+  function runAsync(eff, k) {
+    return eff(k)();
   }
 
   var Scheduler = function () {
@@ -143,7 +134,6 @@ var Aff = function () {
 
     // The current point of interest for the state machine branch.
     var step      = aff;  // Successful step
-    var fail      = null; // Failure step
 
     // Stack of continuations for the current fiber.
     var bhead = null;
@@ -158,7 +148,6 @@ var Aff = function () {
     // Each join gets a new id so they can be revoked.
     var joinId  = 0;
     var joins   = null;
-    var rethrow = true;
 
     // Each invocation of `run` requires a tick. When an asynchronous effect is
     // resolved, we must check that the local tick coincides with the fiber
@@ -186,7 +175,6 @@ var Aff = function () {
             }
           } catch (e) {
             status = RETURN;
-            fail   = util.left(e);
             step   = null;
           }
           break;
@@ -194,7 +182,6 @@ var Aff = function () {
         case STEP_RESULT:
           if (util.isLeft(step)) {
             status = RETURN;
-            fail   = step;
             step   = null;
           } else if (bhead === null) {
             status = RETURN;
@@ -227,12 +214,12 @@ var Aff = function () {
 
           case SYNC:
             status = STEP_RESULT;
-            step   = runSync(util.left, util.right, step._1);
+            step   = runSync(util.right, step._1);
             break;
 
           case ASYNC:
             status = PENDING;
-            step   = runAsync(util.left, step._1, function (result) {
+            step   = runAsync(step._1, function (result) {
               return function () {
                 if (runTick !== localRunTick) {
                   return;
@@ -272,7 +259,6 @@ var Aff = function () {
           // invoke all join callbacks. Otherwise we need to resume.
           if (attempts === null) {
             status = COMPLETED;
-            step   = fail || step;
           } else {
             // The interrupt status for the enqueued item.
             tmp      = attempts._3;
@@ -282,39 +268,23 @@ var Aff = function () {
             switch (attempt.tag) {
             // We cannot resume from an unmasked interrupt or exception.
             case RESUME:
-              // As with Catch, we only want to ignore in the case of an
-              // interrupt since enqueing the item.
-              if (fail) {
-                status = RETURN;
-              } else {
-                bhead  = attempt._1;
-                btail  = attempt._2;
-                status = STEP_BIND;
-                step   = util.fromRight(step);
-              }
+              bhead  = attempt._1;
+              btail  = attempt._2;
+              status = STEP_BIND;
+              step   = util.fromRight(step);
               break;
 
             // Enqueue the appropriate handler. We increase the bracket count
             // because it should not be cancelled.
             case RELEASE:
-              attempts = new Aff(CONS, new Aff(FINALIZED, step, fail), attempts, null);
+              attempts = new Aff(CONS, new Aff(FINALIZED, step, null), attempts, null);
               status   = CONTINUE;
-              // It has only been killed if the interrupt status has changed
-              // since we enqueued the item, and the bracket count is 0. If the
-              // bracket count is non-zero then we are in a masked state so it's
-              // impossible to be killed.
-              if (fail) {
-                step = attempt._1.failed(util.fromLeft(fail))(attempt._2);
-              } else {
-                step = attempt._1.completed(util.fromRight(step))(attempt._2);
-              }
-              fail = null;
+              step = attempt._1.completed(util.fromRight(step))(attempt._2);
               break;
 
             case FINALIZED:
               status = RETURN;
               step   = attempt._1;
-              fail   = attempt._2;
               break;
             }
           }
@@ -323,28 +293,10 @@ var Aff = function () {
         case COMPLETED:
           for (var k in joins) {
             if (joins.hasOwnProperty(k)) {
-              rethrow = rethrow && joins[k].rethrow;
               runEff(joins[k].handler(step));
             }
           }
           joins = null;
-          // If we have an interrupt and a fail, then the thread threw while
-          // running finalizers. This should always rethrow in a fresh stack.
-          if (fail) {
-            setTimeout(function () {
-              throw util.fromLeft(fail);
-            }, 0);
-          // If we have an unhandled exception, and no other fiber has joined
-          // then we need to throw the exception in a fresh stack.
-          } else if (util.isLeft(step) && rethrow) {
-            setTimeout(function () {
-              // Guard on reathrow because a completely synchronous fiber can
-              // still have an observer which was added after-the-fact.
-              if (rethrow) {
-                throw util.fromLeft(step);
-              }
-            }, 0);
-          }
           return;
         case SUSPENDED:
           status = CONTINUE;
@@ -357,7 +309,6 @@ var Aff = function () {
     function onComplete(join) {
       return function () {
         if (status === COMPLETED) {
-          rethrow = rethrow && join.rethrow;
           join.handler(step)();
           return function () {};
         }
