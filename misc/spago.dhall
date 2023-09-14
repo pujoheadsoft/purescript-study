@@ -17,6 +17,7 @@ to generate this file without the comments in this block.
   , "bifunctors"
   , "console"
   , "contravariant"
+  , "control"
   , "datetime"
   , "effect"
   , "either"
@@ -26,6 +27,8 @@ to generate this file without the comments in this block.
   , "identity"
   , "maybe"
   , "newtype"
+  , "parallel"
+  , "partial"
   , "pmock"
   , "prelude"
   , "profunctor"
@@ -34,11 +37,14 @@ to generate this file without the comments in this block.
   , "safe-coerce"
   , "spec"
   , "spec-discovery"
+  , "st"
   , "strings"
+  , "tailrec"
   , "transformers"
   , "tuples"
   , "typelevel-prelude"
   , "undefined"
+  , "unsafe-coerce"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs", "test/**/*.purs" ]
