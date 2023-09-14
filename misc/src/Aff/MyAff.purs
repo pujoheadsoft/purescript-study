@@ -48,12 +48,6 @@ instance semigroupAff :: Semigroup a => Semigroup (Aff a) where
 instance monoidAff :: Monoid a => Monoid (Aff a) where
   mempty = pure mempty
 
-instance altAff :: Alt Aff where
-  alt a1 a2 = catchError a1 (const a2)
-
-instance plusAff :: Plus Aff where
-  empty = throwError (error "Always fails")
-
 -- | This instance is provided for compatibility. `Aff` is always stack-safe
 -- | within a given fiber. This instance will just result in unnecessary
 -- | bind overhead.
@@ -65,12 +59,6 @@ instance monadRecAff :: MonadRec Aff where
       case res of
         Done r -> pure r
         Loop b -> go b
-
-instance monadThrowAff :: MonadThrow Error Aff where
-  throwError = _throwError
-
-instance monadErrorAff :: MonadError Error Aff where
-  catchError = _catchError
 
 instance monadEffectAff :: MonadEffect Aff where
   liftEffect = _liftEffect
@@ -143,18 +131,18 @@ launchSuspendedAff = makeFiber
 
 -- | Forks an `Aff` from an `Effect` context and also takes a callback to run when
 -- | it completes. Returns the pending `Fiber`.
-runAff :: forall a. (Either Error a -> Effect Unit) -> Aff a -> Effect (Fiber Unit)
-runAff k aff = launchAff $ liftEffect <<< k =<< try aff
+runAff :: forall a. (a -> Effect Unit) -> Aff a -> Effect (Fiber Unit)
+runAff k aff = launchAff $ liftEffect <<< k =<< aff
 
 -- | Forks an `Aff` from an `Effect` context and also takes a callback to run when
 -- | it completes, discarding the `Fiber`.
-runAff_ :: forall a. (Either Error a -> Effect Unit) -> Aff a -> Effect Unit
+runAff_ :: forall a. (a -> Effect Unit) -> Aff a -> Effect Unit
 runAff_ k aff = void $ runAff k aff
 
 -- | Suspends an `Aff` from an `Effect` context and also takes a callback to run
 -- | when it completes. Returns the suspended `Fiber`.
-runSuspendedAff :: forall a. (Either Error a -> Effect Unit) -> Aff a -> Effect (Fiber Unit)
-runSuspendedAff k aff = launchSuspendedAff $ liftEffect <<< k =<< try aff
+runSuspendedAff :: forall a. (a -> Effect Unit) -> Aff a -> Effect (Fiber Unit)
+runSuspendedAff k aff = launchSuspendedAff $ liftEffect <<< k =<< aff
 
 -- | Forks an `Aff` from within a parent `Aff` context, returning the `Fiber`.
 forkAff :: forall a. Aff a -> Aff (Fiber a)
@@ -170,18 +158,7 @@ suspendAff = _fork false
 delay :: Milliseconds -> Aff Unit
 delay (Milliseconds n) = Fn.runFn2 _delay Right n
 
--- | A monomorphic version of `try`. Catches thrown errors and lifts them
--- | into an `Either`.
-attempt :: forall a. Aff a -> Aff (Either Error a)
-attempt = try
-
--- | Ignores any errors.
-apathize :: forall a. Aff a -> Aff Unit
-apathize = attempt >>> map (const unit)
-
 foreign import _pure :: forall a. a -> Aff a
-foreign import _throwError :: forall a. Error -> Aff a
-foreign import _catchError :: forall a. Aff a -> (Error -> Aff a) -> Aff a
 foreign import _fork :: forall a. Boolean -> Aff a -> Aff (Fiber a)
 foreign import _map :: forall a b. (a -> b) -> Aff a -> Aff b
 foreign import _bind :: forall a b. Aff a -> (a -> Aff b) -> Aff b

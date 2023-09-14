@@ -24,8 +24,6 @@ var Aff = function () {
 
   */
   var PURE    = "Pure";
-  var THROW   = "Throw";
-  var CATCH   = "Catch";
   var SYNC    = "Sync";
   var ASYNC   = "Async";
   var BIND    = "Bind";
@@ -255,26 +253,6 @@ var Aff = function () {
             });
             return;
 
-          case THROW:
-            status = RETURN;
-            fail   = util.left(step._1);
-            step   = null;
-            break;
-
-          // Enqueue the Catch so that we can call the error handler later on
-          // in case of an exception.
-          case CATCH:
-            if (bhead === null) {
-              attempts = new Aff(CONS, step, attempts, null);
-            } else {
-              attempts = new Aff(CONS, step, new Aff(CONS, new Aff(RESUME, bhead, btail), attempts, null), null);
-            }
-            bhead    = null;
-            btail    = null;
-            status   = CONTINUE;
-            step     = step._1;
-            break;
-
           case FORK:
             status = STEP_RESULT;
             tmp    = Fiber(util, step._2);
@@ -302,20 +280,6 @@ var Aff = function () {
             attempts = attempts._2;
 
             switch (attempt.tag) {
-            // We cannot recover from an unmasked interrupt. Otherwise we should
-            // continue stepping, or run the exception handler if an exception
-            // was raised.
-            case CATCH:
-              // We should compare the interrupt status as well because we
-              // only want it to apply if there has been an interrupt since
-              // enqueuing the catch.
-              if (fail) {
-                status = CONTINUE;
-                step   = attempt._2(util.fromLeft(fail));
-                fail   = null;
-              }
-              break;
-
             // We cannot resume from an unmasked interrupt or exception.
             case RESUME:
               // As with Catch, we only want to ignore in the case of an
@@ -446,8 +410,6 @@ var Aff = function () {
 
   Aff.EMPTY       = EMPTY;
   Aff.Pure        = AffCtr(PURE);
-  Aff.Throw       = AffCtr(THROW);
-  Aff.Catch       = AffCtr(CATCH);
   Aff.Sync        = AffCtr(SYNC);
   Aff.Async       = AffCtr(ASYNC);
   Aff.Bind        = AffCtr(BIND);
@@ -460,13 +422,6 @@ var Aff = function () {
 }();
 
 export const _pure = Aff.Pure;
-export const _throwError = Aff.Throw;
-
-export function _catchError(aff) {
-  return function (k) {
-    return Aff.Catch(aff, k);
-  };
-}
 
 export function _map(f) {
   return function (aff) {
