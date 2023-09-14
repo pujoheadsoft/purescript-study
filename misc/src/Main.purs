@@ -1,13 +1,12 @@
 module Main where
 
-import Aff.MyAff as MyAff
-
 import Prelude
 
 import Aff.Main as AffMain
+import Aff.MyAff as MyAff
 import Data.Time.Duration (Milliseconds(..))
 import Effect (Effect)
-import Effect.Aff (delay, forkAff, launchAff_)
+import Effect.Aff (delay, forkAff, joinFiber, launchAff_)
 import Effect.Class.Console (log)
 import Pattern.FourLayer.Main as FourLayer
 import Pattern.ReaderT.ReaderT as RederTPattern
@@ -16,24 +15,30 @@ import Pattern.ThreeLayer.Main as ThreeLayer
 main :: Effect Unit
 main = do
   launchAff_ do
-    _ <- forkAff do
+    a <- forkAff do
       delay $ Milliseconds 100.0
       log "hoge"
+      pure "a"
 
-    _ <- forkAff do
+    b <- forkAff do
       log "moge"
+      pure "b"
 
-    pure unit
+    log =<< joinFiber a
+    log =<< joinFiber b
 
   MyAff.launchAff_ do
-    _ <- MyAff.forkAff do
+    a <- MyAff.forkAff do
       MyAff.delay $ Milliseconds 100.0
-      log "foo"
+      log "hoge"
+      pure "a"
 
-    _ <- MyAff.forkAff do
-      log "bar"
+    b <- MyAff.forkAff do
+      log "moge"
+      pure "b"
 
-    pure unit
+    log =<< MyAff.joinFiber a
+    log =<< MyAff.joinFiber b
 
 -- main :: Effect Unit
 -- main = do

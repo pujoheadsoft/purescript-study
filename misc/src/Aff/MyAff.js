@@ -31,9 +31,6 @@ var Aff = function () {
 
   // Various constructors used in interpretation
   var CONS      = "Cons";      // Cons-list, for stacks
-  var RESUME    = "Resume";    // Continue indiscriminately
-  var RELEASE   = "Release";   // Continue with bracket finalizers
-  var FINALIZED = "Finalized"; // Marker for finalization
 
   function Aff(tag, _1, _2, _3) {
     this.tag = tag;
@@ -64,8 +61,8 @@ var Aff = function () {
     }
   }
 
-  function runSync(right, eff) {
-    return right(eff());
+  function runSync(eff) {
+    return eff();
   }
 
   function runAsync(eff, k) {
@@ -124,8 +121,8 @@ var Aff = function () {
   var RETURN      = 5; // The current stack has returned.
   var COMPLETED   = 6; // The entire fiber has completed.
 
-  function Fiber(util, aff) {
-    console.log("aff", aff)
+  function Fiber(aff) {
+    console.log("myaff", aff)
     // Monotonically increasing tick, increased on each asynchronous turn.
     var runTick = 0;
 
@@ -138,12 +135,6 @@ var Aff = function () {
     // Stack of continuations for the current fiber.
     var bhead = null;
     var btail = null;
-
-    // Stack of attempts and finalizers for error recovery. Every `Cons` is also
-    // tagged with current `interrupt` state. We use this to track which items
-    // should be ignored or evaluated as a result of a kill.
-    var attempts = null;
-
     
     // Each join gets a new id so they can be revoked.
     var joinId  = 0;
@@ -180,14 +171,10 @@ var Aff = function () {
           break;
 
         case STEP_RESULT:
-          if (util.isLeft(step)) {
-            status = RETURN;
-            step   = null;
-          } else if (bhead === null) {
+          if (bhead === null) {
             status = RETURN;
           } else {
             status = STEP_BIND;
-            step   = util.fromRight(step);
           }
           break;
 
@@ -205,7 +192,7 @@ var Aff = function () {
           case PURE:
             if (bhead === null) {
               status = RETURN;
-              step   = util.right(step._1);
+              step = step._1;
             } else {
               status = STEP_BIND;
               step   = step._1;
@@ -214,7 +201,7 @@ var Aff = function () {
 
           case SYNC:
             status = STEP_RESULT;
-            step   = runSync(util.right, step._1);
+            step   = runSync(step._1);
             break;
 
           case ASYNC:
@@ -242,11 +229,11 @@ var Aff = function () {
 
           case FORK:
             status = STEP_RESULT;
-            tmp    = Fiber(util, step._2);
+            tmp    = Fiber(step._2);
             if (step._1) {
               tmp.run();
             }
-            step = util.right(tmp);
+            step = tmp;
             break;
           }
           break;
@@ -254,40 +241,7 @@ var Aff = function () {
         case RETURN:
           bhead = null;
           btail = null;
-          // If the current stack has returned, and we have no other stacks to
-          // resume or finalizers to run, the fiber has halted and we can
-          // invoke all join callbacks. Otherwise we need to resume.
-          if (attempts === null) {
-            status = COMPLETED;
-          } else {
-            // The interrupt status for the enqueued item.
-            tmp      = attempts._3;
-            attempt  = attempts._1;
-            attempts = attempts._2;
-
-            switch (attempt.tag) {
-            // We cannot resume from an unmasked interrupt or exception.
-            case RESUME:
-              bhead  = attempt._1;
-              btail  = attempt._2;
-              status = STEP_BIND;
-              step   = util.fromRight(step);
-              break;
-
-            // Enqueue the appropriate handler. We increase the bracket count
-            // because it should not be cancelled.
-            case RELEASE:
-              attempts = new Aff(CONS, new Aff(FINALIZED, step, null), attempts, null);
-              status   = CONTINUE;
-              step = attempt._1.completed(util.fromRight(step))(attempt._2);
-              break;
-
-            case FINALIZED:
-              status = RETURN;
-              step   = attempt._1;
-              break;
-            }
-          }
+          status = COMPLETED;
           break;
 
         case COMPLETED:
@@ -328,7 +282,6 @@ var Aff = function () {
     function join(cb) {
       return function () {
         var canceler = onComplete({
-          rethrow: false,
           handler: cb
         })();
         if (status === SUSPENDED) {
@@ -402,9 +355,9 @@ export const _liftEffect = Aff.Sync;
 
 export const makeAff = Aff.Async;
 
-export function _makeFiber(util, aff) {
+export function _makeFiber(aff) {
   return function () {
-    return Aff.Fiber(util, aff);
+    return Aff.Fiber(aff);
   };
 }
 

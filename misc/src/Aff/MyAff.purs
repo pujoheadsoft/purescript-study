@@ -161,7 +161,7 @@ foreign import _map :: forall a b. (a -> b) -> Aff a -> Aff b
 foreign import _bind :: forall a b. Aff a -> (a -> Aff b) -> Aff b
 foreign import _delay :: forall a. Fn.Fn2 (Unit -> Either a Unit) Number (Aff Unit)
 foreign import _liftEffect :: forall a. Effect a -> Aff a
-foreign import _makeFiber :: forall a. Fn.Fn2 FFIUtil (Aff a) (Effect (Fiber a))
+foreign import _makeFiber :: forall a. Fn.Fn1 (Aff a) (Effect (Fiber a))
 
 
 -- | Constructs an `Aff` from low-level `Effect` effects using a callback. A
@@ -171,36 +171,4 @@ foreign import _makeFiber :: forall a. Fn.Fn2 FFIUtil (Aff a) (Effect (Fiber a))
 foreign import makeAff :: forall a. ((a -> Effect Unit) -> Effect Canceler) -> Aff a
 
 makeFiber :: forall a. Aff a -> Effect (Fiber a)
-makeFiber aff = Fn.runFn2 _makeFiber ffiUtil aff
-
-newtype FFIUtil = FFIUtil
-  { isLeft :: forall a b. Either a b -> Boolean
-  , fromLeft :: forall a b. Either a b -> a
-  , fromRight :: forall a b. Either a b -> b
-  , left :: forall a b. a -> Either a b
-  , right :: forall a b. b -> Either a b
-  }
-
-ffiUtil :: FFIUtil
-ffiUtil = FFIUtil
-  { isLeft
-  , fromLeft: unsafeFromLeft
-  , fromRight: unsafeFromRight
-  , left: Left
-  , right: Right
-  }
-  where
-  isLeft :: forall a b. Either a b -> Boolean
-  isLeft = case _ of
-    Left _ -> true
-    Right _ -> false
-
-  unsafeFromLeft :: forall a b. Either a b -> a
-  unsafeFromLeft = case _ of
-    Left a -> a
-    Right _ -> unsafeCrashWith "unsafeFromLeft: Right"
-
-  unsafeFromRight :: forall a b. Either a b -> b
-  unsafeFromRight = case _ of
-    Right a -> a
-    Left _ -> unsafeCrashWith "unsafeFromRight: Left"
+makeFiber aff = Fn.runFn1 _makeFiber aff
