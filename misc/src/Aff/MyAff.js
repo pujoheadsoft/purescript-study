@@ -102,6 +102,7 @@ var Aff = function () {
         }
 
         queue[(ix + size) % limit] = cb;
+        console.log("enqueue", queue)
         size++;
 
         if (!draining) {
@@ -140,33 +141,21 @@ var Aff = function () {
     var joinId  = 0;
     var joins   = null;
 
-    // Each invocation of `run` requires a tick. When an asynchronous effect is
-    // resolved, we must check that the local tick coincides with the fiber
-    // tick before resuming. This prevents multiple async continuations from
-    // accidentally resuming the same fiber. A common example may be invoking
-    // the provided callback in `makeAff` more than once, but it may also be an
-    // async effect resuming after the fiber was already cancelled.
     function run(localRunTick) {
-      var tmp, result, attempt;
+      var tmp, result;
       while (true) {
         tmp       = null;
         result    = null;
-        attempt   = null;
 
         switch (status) {
         case STEP_BIND:
           status = CONTINUE;
-          try {
-            step   = bhead(step);
-            if (btail === null) {
-              bhead = null;
-            } else {
-              bhead = btail._1;
-              btail = btail._2;
-            }
-          } catch (e) {
-            status = RETURN;
-            step   = null;
+          step   = bhead(step);
+          if (btail === null) {
+            bhead = null;
+          } else {
+            bhead = btail._1;
+            btail = btail._2;
           }
           break;
 
@@ -206,16 +195,17 @@ var Aff = function () {
 
           case ASYNC:
             status = PENDING;
+            // step._1 は joinFiber のときは次の関数
+            //   \k -> effectCanceler <$> t.join k
+            // この関数の結果が次の step になり return される
             step   = runAsync(step._1, function (result) {
+              console.log("result", result)
               return function () {
                 if (runTick !== localRunTick) {
                   return;
                 }
                 runTick++;
                 Scheduler.enqueue(function () {
-                  // It's possible to interrupt the fiber between enqueuing and
-                  // resuming, so we need to check that the runTick is still
-                  // valid.
                   if (runTick !== localRunTick + 1) {
                     return;
                   }
