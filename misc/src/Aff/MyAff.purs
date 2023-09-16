@@ -59,24 +59,12 @@ instance monadRecAff :: MonadRec Aff where
 instance monadEffectAff :: MonadEffect Aff where
   liftEffect = _liftEffect
 
-instance lazyAff :: Lazy (Aff a) where
-  defer f = pure unit >>= f
-
-instance monadSTAff :: MonadST Global Aff where
-  liftST = liftST >>> liftEffect
-
-
-type OnComplete a =
-  { rethrow :: Boolean
-  , handler :: (a -> Effect Unit) -> Effect Unit
-  }
 
 -- | Represents a forked computation by way of `forkAff`. `Fiber`s are
 -- | memoized, so their results are only computed once.
 newtype Fiber a = Fiber
   { run :: Effect Unit
-  , join :: (a -> Effect Unit) -> Effect (Effect Unit)
-  , onComplete :: OnComplete a -> Effect (Effect Unit)
+  , join :: (a -> Effect Unit) -> Effect Unit
   , isSuspended :: Effect Boolean
   }
 
@@ -92,23 +80,7 @@ instance applicativeFiber :: Applicative Fiber where
 -- | Blocks until the fiber completes, yielding the result. If the fiber
 -- | throws an exception, it is rethrown in the current fiber.
 joinFiber :: Fiber ~> Aff
-joinFiber (Fiber t) = makeAff \k -> effectCanceler <$> t.join k
-
--- | A cancellation effect for actions run via `makeAff`. If a `Fiber` is
--- | killed, and an async action is pending, the canceler will be called to
--- | clean it up.
-newtype Canceler = Canceler (Error -> Aff Unit)
-
-derive instance newtypeCanceler :: Newtype Canceler _
-
-
--- | A canceler which does not cancel anything.
-nonCanceler :: Canceler
-nonCanceler = Canceler (const (pure unit))
-
--- | A canceler from an Effect action.
-effectCanceler :: Effect Unit -> Canceler
-effectCanceler = Canceler <<< const <<< liftEffect
+joinFiber (Fiber t) = makeAff \k -> t.join k
 
 -- | Forks an `Aff` from an `Effect` context, returning the `Fiber`.
 launchAff :: forall a. Aff a -> Effect (Fiber a)
@@ -167,7 +139,7 @@ foreign import _makeFiber :: forall a. Fn.Fn1 (Aff a) (Effect (Fiber a))
 -- | `Canceler` effect should be returned to cancel the pending action. The
 -- | supplied callback may be invoked only once. Subsequent invocation are
 -- | ignored.
-foreign import makeAff :: forall a. ((a -> Effect Unit) -> Effect Canceler) -> Aff a
+foreign import makeAff :: forall a. ((a -> Effect Unit) -> Effect Unit) -> Aff a
 
 makeFiber :: forall a. Aff a -> Effect (Fiber a)
 makeFiber aff = Fn.runFn1 _makeFiber aff

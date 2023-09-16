@@ -47,18 +47,8 @@ var Aff = function () {
     return fn;
   }
 
-  function nonCanceler(error) {
-    return new Aff(PURE, void 0);
-  }
-
   function runEff(eff) {
-    try {
-      eff();
-    } catch (error) {
-      setTimeout(function () {
-        throw error;
-      }, 0);
-    }
+    eff();
   }
 
   function runSync(eff) {
@@ -261,24 +251,16 @@ var Aff = function () {
         var jid    = joinId++;
         joins      = joins || {};
         joins[jid] = join;
-
-        return function() {
-          if (joins !== null) {
-            delete joins[jid];
-          }
-        };
       };
     }
 
     function join(cb) {
       return function () {
-        var canceler = onComplete({
-          handler: cb
-        })();
+        onComplete({ handler: cb })();
         if (status === SUSPENDED) {
           run(runTick);
         }
-        return canceler;
+        return;
       };
     }
 
@@ -311,7 +293,6 @@ var Aff = function () {
   Aff.Fork        = AffCtr(FORK);
   Aff.Fiber       = Fiber;
   Aff.Scheduler   = Scheduler;
-  Aff.nonCanceler = nonCanceler;
 
   return Aff;
 }();

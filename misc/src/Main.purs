@@ -15,32 +15,34 @@ import Pattern.ThreeLayer.Main as ThreeLayer
 
 main :: Effect Unit
 main = do
-  -- launchAff_ do
-  --   a <- forkAff do
-  --     pure "a"
+--   launchAff_ do
+--     a <- forkAff do
+-- --      delay $ Milliseconds 100.0
+--       pure "a"
 
-  --   _ <- forkAff do
-  --     a' <- joinFiber a
-  --     log $ "bar" <> a'
+--     _ <- forkAff do
+--       a' <- joinFiber a
+--       log $ "bar" <> a'
 
-  --   _ <- forkAff do
-  --     a' <- joinFiber a
-  --     log $ "baz" <> a'
+--     _ <- forkAff do
+--       a' <- joinFiber a
+--       log $ "baz" <> a'
 
-  --   pure unit
+--     pure unit
 
 
   MyAff.launchAff_ do
     a <- MyAff.forkAff do
+      MyAff.delay $ Milliseconds 100.0
       pure "a"
 
     _ <- MyAff.forkAff do
       a' <- MyAff.joinFiber a
-      log $ "bar" <> a'
+      log $ "bar " <> a'
 
     _ <- MyAff.forkAff do
       a' <- MyAff.joinFiber a
-      log $ "baz" <> a'
+      log $ "baz " <> a'
 
     pure unit
 
