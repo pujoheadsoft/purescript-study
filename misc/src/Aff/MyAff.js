@@ -197,6 +197,7 @@ var Aff = function () {
             status = PENDING;
             // step._1 は joinFiber のときは次の関数
             //   \k -> effectCanceler <$> t.join k
+            // kはrunAsyncの引数の関数(function (result) {....})である。
             // この関数の結果が次の step になり return される
             step   = runAsync(step._1, function (result) {
               console.log("result", result)
