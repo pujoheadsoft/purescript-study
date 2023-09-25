@@ -210,10 +210,8 @@ var Aff = function () {
 
           case FORK:
             status = STEP_RESULT;
-            tmp    = Fiber(step._2);
-            if (step._1) {
-              tmp.run();
-            }
+            tmp    = Fiber(step._1);
+            tmp.run();
             step = tmp;
             break;
           }
@@ -317,10 +315,8 @@ export function _bind(aff) {
   };
 }
 
-export function _fork(immediate) {
-  return function (aff) {
-    return Aff.Fork(immediate, aff);
-  };
+export function _fork(aff) {
+  return Aff.Fork(aff);
 }
 
 export const _liftEffect = Aff.Sync;
