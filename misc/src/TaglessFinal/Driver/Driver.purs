@@ -2,9 +2,14 @@ module TaglessFinal.Driver.Driver where
 
 import Prelude
 
+import Control.Monad.Reader (ReaderT(..))
 import Control.Monad.State (class MonadState, modify_)
 import Effect.Aff (Aff)
 import TaglessFinal.State.State (State)
+import Type.Equality (class TypeEquals, to)
+import Type.Row (type (+))
+
+-- 型クラスにしなくてもいいかもしれねえ
 
 type ArticleIndexJson = {id :: String}
 
@@ -27,5 +32,6 @@ instance articleDriverAff :: ArticleDriver Aff where
 class Monad m <= ArticleStateDriver m where
   update :: String -> m Unit
 
-instance stateDriver :: MonadState State m => ArticleStateDriver m where
+instance instanceArticleStateDriver :: MonadState State m => ArticleStateDriver m where
+  --update :: forall m. MonadState State m => String -> m Unit
   update title = modify_ \state -> state { article = { title: title } }

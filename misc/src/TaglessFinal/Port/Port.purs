@@ -2,9 +2,11 @@ module TaglessFinal.Port.Port where
 
 import Prelude
 
-import TaglessFinal.Domain.Article (Article)
 import Control.Monad.Reader (ReaderT(..))
+import Control.Monad.State (class MonadState)
 import Effect.Aff (Aff)
+import TaglessFinal.Domain.Article (Article)
+import TaglessFinal.State.State (State)
 import Type.Equality (class TypeEquals, to)
 import Type.Row (type (+))
 
@@ -32,7 +34,7 @@ type ArticlePresenterFunction m r = (
 )
 
 instance instanceArticlePresenterReaderT
-  :: (Monad m 
+  :: (MonadState State m 
    , TypeEquals f (Record (ArticlePresenterFunction m + r)))
   => ArticlePresenterPort (ReaderT f m) where
   update title = ReaderT $ to >>> \f ->
