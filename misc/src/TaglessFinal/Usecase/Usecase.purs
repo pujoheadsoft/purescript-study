@@ -10,7 +10,6 @@ execute
   :: forall m
    . ArticlePort m
   => ArticlePresenterPort m
-  => MonadState State m
   => String
   -> m Unit
 execute title = do
