@@ -19,7 +19,7 @@ type ArticlePortFunction m r = (
 )
 
 instance instancePortReaderT
-  :: (MonadAff m, TypeEquals f (Record (ArticlePortFunction m + r)))
+  :: (Monad m, TypeEquals f (Record (ArticlePortFunction m + r)))
   => ArticlePort (ReaderT f m) where
   findByTitle title = ReaderT $ to >>> \f ->
     f.findByTitle title
@@ -33,8 +33,7 @@ type ArticlePresenterFunction m r = (
 )
 
 instance instanceArticlePresenterReaderT
-  :: (MonadState State m 
-   , TypeEquals f (Record (ArticlePresenterFunction m + r)))
+  :: (Monad m, TypeEquals f (Record (ArticlePresenterFunction m + r)))
   => ArticlePresenterPort (ReaderT f m) where
   update title = ReaderT $ to >>> \f ->
     f.update title
