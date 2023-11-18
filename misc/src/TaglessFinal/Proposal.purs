@@ -1,4 +1,4 @@
-module TaglessFinal.Definition where
+module TaglessFinal.Proposal where
 
 import Prelude
 
@@ -6,6 +6,11 @@ import Control.Monad.Reader (ReaderT(..))
 import Effect.Aff (Aff)
 import Type.Equality as TE
 import Type.Row (type (+))
+
+{-
+  Tagless Finalの合成案
+  このアイデアを発展させたものが Main および Usecase, Port などの各レイヤーにある
+-}
 
 type User = { id :: String, name :: String, optionId :: String }
 

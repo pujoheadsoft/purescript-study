@@ -1,16 +1,16 @@
-module Test.TaglessFinal.TaglessFinalSpec where
+module Test.TaglessFinal.ProposalSpec where
 
 import Prelude
 
 import Control.Monad.Reader (runReaderT)
-import TaglessFinal.Definition (displayTrialStatus, findUserOptionByUserId, findUserWithDisplayTrialStatus)
+import TaglessFinal.Proposal (displayTrialStatus, findUserOptionByUserId, findUserWithDisplayTrialStatus)
 import Test.PMock (any, fun, mock, mockFun, verify, (:>))
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 
 spec :: Spec Unit
 spec = do
-  describe "Tagless Final With Monad Transformer Spec" do
+  describe "Tagless Final With Monad Transformer Spec (案)" do
     describe "UserRepositryのテスト" do
       it "指定したIDのユーザーのオプションを取得することができる" do
         let
