@@ -16,8 +16,8 @@ createArticlePortFunction :: forall m. MonadAff m => Record (ArticlePortFunction
 createArticlePortFunction = {
   findByTitle: \title -> do
     index <- findIndexByTitle title
-    json <- findJsonById index.id
-    pure {title: json.title}
+    json <- findJsonById ""
+    pure [{title: json.title}]
 }
 
 {-

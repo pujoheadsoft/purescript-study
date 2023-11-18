@@ -14,5 +14,5 @@ import Type.Row (type (+))
 -}
 createArticlePresenterPortFunction :: forall m. MonadState State m => Record (ArticlePresenterFunction m + ())
 createArticlePresenterPortFunction = {
-  update: \title -> Driver.update title
+  update: \articles -> Driver.update [""]
 }

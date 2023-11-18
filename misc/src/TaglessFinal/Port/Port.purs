@@ -26,11 +26,11 @@ import Type.Row (type (+))
   　更にテストも容易になる。
 -}
 class Monad m <= ArticlePort m where
-  findByTitle :: String -> m Article
+  findByTitle :: String -> m (Array Article)
 
 -- 型クラスの関数と同じシグニチャの関数を持つレコード。あとで合成できるように拡張可能にしてある。
 type ArticlePortFunction m r = (
-  findByTitle :: String -> m Article
+  findByTitle :: String -> m (Array Article)
   | r
 )
 
@@ -44,15 +44,15 @@ instance instancePortReaderT
     f.findByTitle title
 
 class Monad m <= ArticlePresenterPort m where
-  update :: String -> m Unit
+  update :: (Array Article) -> m Unit
 
 type ArticlePresenterFunction m r = (
-  update :: String -> m Unit
+  update :: (Array Article) -> m Unit
   | r
 )
 
 instance instanceArticlePresenterReaderT
   :: (Monad m, TypeEquals f (Record (ArticlePresenterFunction m + r)))
   => ArticlePresenterPort (ReaderT f m) where
-  update title = ReaderT $ to >>> \f ->
-    f.update title
+  update articles = ReaderT $ to >>> \f ->
+    f.update articles

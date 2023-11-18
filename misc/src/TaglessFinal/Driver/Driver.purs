@@ -15,10 +15,10 @@ import Type.Row (type (+))
 type ArticleIndexJson = {id :: String}
 
 class Monad m <= ArticleESDriver m where
-  findIndexByTitle :: String -> m ArticleIndexJson
+  findIndexByTitle :: String -> m (Array ArticleIndexJson)
 
 instance esDriverAff :: MonadAff m => ArticleESDriver m where
-  findIndexByTitle title = pure {id: "dummy"}
+  findIndexByTitle title = pure [{id: "dummy"}]
 
 
 type ArticleJson = {id :: String, title :: String}
@@ -30,8 +30,8 @@ instance articleDriverAff :: MonadAff m => ArticleDriver m where
   findJsonById id = pure {id: id, title: "test"}
 
 class Monad m <= ArticleStateDriver m where
-  update :: String -> m Unit
+  update :: Array String -> m Unit
 
 instance instanceArticleStateDriver :: MonadState State m => ArticleStateDriver m where
   --update :: forall m. MonadState State m => String -> m Unit
-  update title = modify_ \state -> state { article = { title: title } }
+  update titles = modify_ \state -> state { titles = titles }

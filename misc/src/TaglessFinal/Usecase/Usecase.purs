@@ -13,5 +13,5 @@ execute
   => String
   -> m Unit
 execute title = do
-  article <- findByTitle title
-  update article.title
+  articles <- findByTitle title
+  update articles
