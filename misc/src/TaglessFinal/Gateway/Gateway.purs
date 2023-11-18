@@ -15,7 +15,7 @@ import Type.Row (type (+))
 -}
 createArticlePortFunction :: forall m. Monad m => ArticleDataRepositoryFunction m -> Record (ArticlePortFunction m + ())
 createArticlePortFunction functions = {
-  findByTitle: \title -> runReaderT (findByTitle2 title) functions
+  findByTitle: \title -> runReaderT (findByTitle title) functions
 }
 
 type ArticleDataId = String
@@ -36,8 +36,8 @@ instance instancePortReaderT
   findIdsByTitle title = ReaderT $ to >>> \f -> f.findIdsByTitle title
   findById id = ReaderT $ to >>> \f -> f.findById id
 
-findByTitle2 :: forall m. Monad m => ArticleDataRepository m => String -> m (Array Article)
-findByTitle2 title = do
+findByTitle :: forall m. Monad m => ArticleDataRepository m => String -> m (Array Article)
+findByTitle title = do
   index <- findIdsByTitle title
   json <- findById ""
   pure [{title: json.title}]
