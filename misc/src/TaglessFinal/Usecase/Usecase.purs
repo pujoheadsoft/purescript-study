@@ -2,10 +2,10 @@ module TaglessFinal.Usecase.Usecase where
 
 import Prelude
 
-import Control.Monad.State (class MonadState)
 import TaglessFinal.Port.Port (class ArticlePort, class ArticlePresenterPort, findByTitle, update)
-import TaglessFinal.State.State (State)
 
+-- UseCaseは型クラスを組み合わせて使うだけ
+-- Port(UseCaseのレイヤー)にしか依存しない
 execute 
   :: forall m
    . ArticlePort m

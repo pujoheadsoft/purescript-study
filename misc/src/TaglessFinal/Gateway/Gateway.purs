@@ -7,6 +7,11 @@ import TaglessFinal.Driver.Driver (findIndexByTitle, findJsonById)
 import TaglessFinal.Port.Port (ArticlePortFunction)
 import Type.Row (type (+))
 
+{-
+  Gateway
+  Portに依存している。
+  またこのレイヤーではじめてMonadAffという具体的なMonadが登場する。
+-}
 createArticlePortFunction :: forall m. MonadAff m => Record (ArticlePortFunction m + ())
 createArticlePortFunction = {
   findByTitle: \title -> do
