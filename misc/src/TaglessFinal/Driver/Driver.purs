@@ -2,36 +2,30 @@ module TaglessFinal.Driver.Driver where
 
 import Prelude
 
-import Control.Monad.Reader (ReaderT(..))
 import Control.Monad.State (class MonadState, modify_)
-import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff)
+import TaglessFinal.Gateway.Gateway (ArticleData, ArticleDataRepositoryFunction, ArticleDataId)
+import TaglessFinal.Presenter.Presenter (ArticleStatePortFunction)
 import TaglessFinal.State.State (State)
-import Type.Equality (class TypeEquals, to)
 import Type.Row (type (+))
 
--- 型クラスにしなくてもいいかもしれねえ
+findIndexByTitle :: forall m. MonadAff m => String -> m (Array ArticleDataId)
+findIndexByTitle title = pure ["dummy"]
 
-type ArticleIndexJson = {id :: String}
+findJsonById :: forall m. MonadAff m => String -> m ArticleData
+findJsonById id = pure {id: id, title: "test"}
 
-class Monad m <= ArticleESDriver m where
-  findIndexByTitle :: String -> m (Array ArticleIndexJson)
+createArticleDataRepositoryFunction:: forall m. MonadAff m => ArticleDataRepositoryFunction m
+createArticleDataRepositoryFunction = {
+  findIdsByTitle: findIndexByTitle,
+  findById: findJsonById
+}
 
-instance esDriverAff :: MonadAff m => ArticleESDriver m where
-  findIndexByTitle title = pure [{id: "dummy"}]
 
+update :: forall m. MonadState State m => Array String -> m Unit
+update titles = modify_ \state -> state { titles = titles }
 
-type ArticleJson = {id :: String, title :: String}
-
-class Monad m <= ArticleDriver m where
-  findJsonById :: String -> m ArticleJson
-
-instance articleDriverAff :: MonadAff m => ArticleDriver m where
-  findJsonById id = pure {id: id, title: "test"}
-
-class Monad m <= ArticleStateDriver m where
-  update :: Array String -> m Unit
-
-instance instanceArticleStateDriver :: MonadState State m => ArticleStateDriver m where
-  --update :: forall m. MonadState State m => String -> m Unit
-  update titles = modify_ \state -> state { titles = titles }
+createArticleStatePortFunction:: forall m. MonadState State m => ArticleStatePortFunction m
+createArticleStatePortFunction = {
+  update
+}

@@ -10,7 +10,7 @@ import Effect.Aff.Class (class MonadAff)
 import Effect.Class.Console (log, logShow)
 import Record.Builder (build, merge)
 import TaglessFinal.Domain.Article (Article)
-import TaglessFinal.Driver.Driver (findIndexByTitle, findJsonById)
+import TaglessFinal.Driver.Driver (createArticleDataRepositoryFunction, createArticleStatePortFunction, findIndexByTitle, findJsonById)
 import TaglessFinal.Driver.Driver as Driver
 import TaglessFinal.Gateway.Gateway (createArticlePortFunction)
 import TaglessFinal.Port.Port (ArticlePortFunction, ArticlePresenterFunction)
@@ -29,7 +29,8 @@ main = launchAff_ do
   log "★★★★★★★★★"
   let
     -- 関数が定義されたレコードをマージ
-    functions = build (merge createArticlePortFunction) createArticlePresenterPortFunction
+    functions = build (merge (createArticlePortFunction createArticleDataRepositoryFunction)) 
+      (createArticlePresenterPortFunction createArticleStatePortFunction)
   
   result <- exec (execute "title") functions {titles: []}
   

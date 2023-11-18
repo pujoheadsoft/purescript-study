@@ -2,9 +2,10 @@ module TaglessFinal.Gateway.Gateway where
 
 import Prelude
 
-import Effect.Aff.Class (class MonadAff)
-import TaglessFinal.Driver.Driver (findIndexByTitle, findJsonById)
+import Control.Monad.Reader (ReaderT(..), runReaderT)
+import TaglessFinal.Domain.Article (Article)
 import TaglessFinal.Port.Port (ArticlePortFunction)
+import Type.Equality (class TypeEquals, to)
 import Type.Row (type (+))
 
 {-
@@ -12,13 +13,34 @@ import Type.Row (type (+))
   Portに依存している。
   またこのレイヤーではじめてMonadAffという具体的なMonadが登場する。
 -}
-createArticlePortFunction :: forall m. MonadAff m => Record (ArticlePortFunction m + ())
-createArticlePortFunction = {
-  findByTitle: \title -> do
-    index <- findIndexByTitle title
-    json <- findJsonById ""
-    pure [{title: json.title}]
+createArticlePortFunction :: forall m. Monad m => ArticleDataRepositoryFunction m -> Record (ArticlePortFunction m + ())
+createArticlePortFunction functions = {
+  findByTitle: \title -> runReaderT (findByTitle2 title) functions
 }
+
+type ArticleDataId = String
+type ArticleData = {id :: String, title :: String}
+
+class Monad m <= ArticleDataRepository m where
+  findIdsByTitle :: String -> m (Array ArticleDataId)
+  findById :: String -> m ArticleData
+
+type ArticleDataRepositoryFunction m = {
+  findIdsByTitle :: String -> m (Array ArticleDataId),
+  findById :: String -> m ArticleData
+}
+
+instance instancePortReaderT
+  :: (Monad m, TypeEquals f (ArticleDataRepositoryFunction m))
+  => ArticleDataRepository (ReaderT f m) where
+  findIdsByTitle title = ReaderT $ to >>> \f -> f.findIdsByTitle title
+  findById id = ReaderT $ to >>> \f -> f.findById id
+
+findByTitle2 :: forall m. Monad m => ArticleDataRepository m => String -> m (Array Article)
+findByTitle2 title = do
+  index <- findIdsByTitle title
+  json <- findById ""
+  pure [{title: json.title}]
 
 {-
   MonadAff を ArticlePortのインスタンスにしようとすると Orphan instance でコンパイルエラーになってしまう
