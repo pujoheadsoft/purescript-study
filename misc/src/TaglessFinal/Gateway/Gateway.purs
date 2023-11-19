@@ -3,6 +3,7 @@ module TaglessFinal.Gateway.Gateway where
 import Prelude
 
 import Control.Monad.Reader (ReaderT(..), runReaderT)
+import Data.Traversable (traverse)
 import TaglessFinal.Domain.Article (Article)
 import TaglessFinal.Port.Port (ArticlePortFunction)
 import Type.Equality (class TypeEquals, to)
@@ -38,9 +39,9 @@ instance instancePortReaderT
 
 findByTitle :: forall m. Monad m => ArticleDataRepository m => String -> m (Array Article)
 findByTitle title = do
-  index <- findIdsByTitle title
-  json <- findById ""
-  pure [{title: json.title}]
+  ids <- findIdsByTitle title
+  articles <- traverse findById ids
+  pure $ (\a -> {title: a.title}) <$> articles
 
 {-
   MonadAff を ArticlePortのインスタンスにしようとすると Orphan instance でコンパイルエラーになってしまう
