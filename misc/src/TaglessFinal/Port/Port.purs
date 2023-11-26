@@ -5,7 +5,6 @@ import Prelude
 import Control.Monad.Reader (ReaderT(..))
 import TaglessFinal.Domain.Article (Article)
 import Type.Equality (class TypeEquals, to)
-import Type.Row (type (+))
 
 {-
   Portの定義
