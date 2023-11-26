@@ -7,14 +7,13 @@ import Data.Traversable (traverse)
 import TaglessFinal.Domain.Article (Article)
 import TaglessFinal.Port.Port (ArticlePortFunction)
 import Type.Equality (class TypeEquals, to)
-import Type.Row (type (+))
 
 {-
   Gateway
   Portに依存している。
   またこのレイヤーではじめてMonadAffという具体的なMonadが登場する。
 -}
-createArticlePortFunction :: forall m. Monad m => ArticleDataRepositoryFunction m -> Record (ArticlePortFunction m + ())
+createArticlePortFunction :: forall m. Monad m => ArticleDataRepositoryFunction m -> ArticlePortFunction m ()
 createArticlePortFunction functions = {
   findByTitle: \title -> runReaderT (findByTitle title) functions
 }

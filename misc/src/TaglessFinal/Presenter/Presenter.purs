@@ -6,13 +6,12 @@ import Control.Monad.Reader (ReaderT(..), runReaderT)
 import TaglessFinal.Domain.Article (Article)
 import TaglessFinal.Port.Port (ArticlePresenterFunction)
 import Type.Equality (class TypeEquals, to)
-import Type.Row (type (+))
 
 {-
   Presenter
   Gatewayと同じくここではじめてMonadStateとStateという具体的な型が登場する
 -}
-createArticlePresenterPortFunction :: forall m. Monad m => ArticleStatePortFunction m -> Record (ArticlePresenterFunction m + ())
+createArticlePresenterPortFunction :: forall m. Monad m => ArticleStatePortFunction m -> ArticlePresenterFunction m ()
 createArticlePresenterPortFunction functions = {
   update: \articles -> runReaderT (update2 articles) functions
 }

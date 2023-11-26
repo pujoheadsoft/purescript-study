@@ -29,16 +29,16 @@ class Monad m <= ArticlePort m where
   findByTitle :: String -> m (Array Article)
 
 -- 型クラスの関数と同じシグニチャの関数を持つレコード。あとで合成できるように拡張可能にしてある。
-type ArticlePortFunction m r = (
+type ArticlePortFunction m r = {
   findByTitle :: String -> m (Array Article)
   | r
-)
+}
 
 -- ReaderTをインスタンスとする
 -- これにより関数を実行時に外側から自由に差し込める。
 -- TypeEqualsによって関数が定義されていることを保証している。
 instance instancePortReaderT
-  :: (Monad m, TypeEquals f (Record (ArticlePortFunction m + r)))
+  :: (Monad m, TypeEquals f (ArticlePortFunction m r))
   => ArticlePort (ReaderT f m) where
   findByTitle title = ReaderT $ to >>> \f ->
     f.findByTitle title
@@ -46,13 +46,13 @@ instance instancePortReaderT
 class Monad m <= ArticlePresenterPort m where
   update :: (Array Article) -> m Unit
 
-type ArticlePresenterFunction m r = (
+type ArticlePresenterFunction m r = {
   update :: (Array Article) -> m Unit
   | r
-)
+}
 
 instance instanceArticlePresenterReaderT
-  :: (Monad m, TypeEquals f (Record (ArticlePresenterFunction m + r)))
+  :: (Monad m, TypeEquals f (ArticlePresenterFunction m r))
   => ArticlePresenterPort (ReaderT f m) where
   update articles = ReaderT $ to >>> \f ->
     f.update articles

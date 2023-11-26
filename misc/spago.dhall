@@ -13,6 +13,7 @@ to generate this file without the comments in this block.
 { name = "my-project"
 , dependencies =
   [ "aff"
+  , "aff-promise"
   , "arrays"
   , "bifunctors"
   , "console"
@@ -36,7 +37,6 @@ to generate this file without the comments in this block.
   , "refs"
   , "safe-coerce"
   , "spec"
-  , "spec-discovery"
   , "st"
   , "strings"
   , "tailrec"
