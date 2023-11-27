@@ -3,6 +3,7 @@ module TaglessFinal.Port.Port where
 import Prelude
 
 import Control.Monad.Reader (ReaderT(..))
+import Data.Function (applyFlipped)
 import TaglessFinal.Domain.Article (Article)
 import Type.Equality (class TypeEquals, to)
 
@@ -33,14 +34,18 @@ type ArticlePortFunction m r = {
   | r
 }
 
+
+xxx :: forall r m a x. TypeEquals r x => (x -> m a) -> ReaderT r m a
+xxx f = ReaderT $ to >>> f
+
 -- ReaderTをインスタンスとする
 -- これにより関数を実行時に外側から自由に差し込める。
 -- TypeEqualsによって関数が定義されていることを保証している。
 instance instancePortReaderT
   :: (Monad m, TypeEquals f (ArticlePortFunction m r))
   => ArticlePort (ReaderT f m) where
-  findByTitle title = ReaderT $ to >>> \f ->
-    f.findByTitle title
+  findByTitle title = xxx \f -> f.findByTitle title
+
 
 class Monad m <= ArticlePresenterPort m where
   update :: (Array Article) -> m Unit
