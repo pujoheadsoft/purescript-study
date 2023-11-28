@@ -74,21 +74,22 @@ type TFunction m = {
 xxx :: forall r m a x. TypeEquals r x => (x -> m a) -> ReaderT r m a
 xxx f = ReaderT $ to >>> f
 
-zzz :: forall r m a x y. TypeEquals r x => (x -> y -> m a) -> y -> ReaderT r m a
-zzz f y = ReaderT \r -> do
+--moge ::                TypeEquals r x => (x -> (a1 -> m a)) -> (a1 -> ReaderT r m a)
+zzz :: forall r m a x y. TypeEquals r x => (x -> y -> m a) -> (y -> ReaderT r m a)
+zzz f = \y -> ReaderT \r -> do
   let
     xValue = to r
     func = f xValue
   func y
 
-abc :: forall r m a x y z. TypeEquals r x => (x -> y -> z -> m a) -> y -> z -> ReaderT r m a
-abc f y z = ReaderT \r -> do
+abc :: forall r m a x y z. TypeEquals r x => (x -> y -> z -> m a) -> (y -> z -> ReaderT r m a)
+abc f = \y z -> ReaderT \r -> do
   let
     xValue = to r
     func = f xValue
   func y z
 
-class Moge r x fun returnFun | fun -> returnFun where
+class Moge r x fun returnFun | r -> x, x -> fun, fun -> returnFun where
   moge :: TypeEquals r x => (x -> fun) -> returnFun
 
 instance moge1 :: Moge r x (a1 -> m a) (a1 -> ReaderT r m a) where
@@ -105,10 +106,7 @@ instance moge1 :: Moge r x (a1 -> m a) (a1 -> ReaderT r m a) where
 instance instanceT
   :: (Monad m, TypeEquals f (TFunction m))
   => T (ReaderT f m) where
-  a1 t = do
-    let
-      z = moge (\(f :: TFunction m) -> f.a1)
-    z t
+  a1 t = moge _.a1 t
 --  a1 t = (moge _.a1) ""
   -- a2 t1 t2 = xxx \f -> f.a2 t1 t2
   -- a3 t1 t2 t3 = xxx \f -> f.a3 t1 t2 t3
