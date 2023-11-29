@@ -3,9 +3,11 @@ module TaglessFinal.Port.Port where
 import Prelude
 
 import Control.Monad.Reader (ReaderT(..))
+import Data.Newtype (class Newtype)
+import Effect (Effect)
+import Effect.Class.Console (log)
 import TaglessFinal.Domain.Article (Article)
 import Type.Equality (class TypeEquals, to)
-import Undefined (undefined)
 
 {-
   Portの定義
@@ -43,7 +45,7 @@ instance instancePortReaderT
   :: (Monad m, TypeEquals f (ArticlePortFunction m r))
   => ArticlePort (ReaderT f m) where
   --findByTitle title = xxx \f -> f.findByTitle title
-  findByTitle = zzz _.findByTitle
+  findByTitle = z1 _.findByTitle
 
 
 class Monad m <= ArticlePresenterPort m where
@@ -60,27 +62,29 @@ instance instanceArticlePresenterReaderT
   update articles = ReaderT $ to >>> \f ->
     f.update articles
 
-class Monad m <= T m where
-  a1 :: String -> m Unit
-  -- a2 :: String -> String -> m Unit
-  -- a3 :: String -> String -> String -> m Unit
-
-type TFunction m = {
-  a1 :: String -> m Unit,
-  a2 :: String -> String -> m Unit,
-  a3 :: String -> String -> String -> m Unit
-}
-
 xxx :: forall r m a x. TypeEquals r x => (x -> m a) -> ReaderT r m a
 xxx f = ReaderT $ to >>> f
 
---moge ::                TypeEquals r x => (x -> (a1 -> m a)) -> (a1 -> ReaderT r m a)
-zzz :: forall r m a x y. TypeEquals r x => (x -> y -> m a) -> (y -> ReaderT r m a)
-zzz f = \y -> ReaderT \r -> do
+z1 :: forall r m a x a1. TypeEquals r x => (x -> a1 -> m a) -> (a1 -> ReaderT r m a)
+z1 f = \a1 -> ReaderT \r -> do
   let
-    xValue = to r
-    func = f xValue
-  func y
+    x = to r
+    func = f x
+  func a1
+
+z2 :: forall r m a x a1 a2. TypeEquals r x => (x -> a1 -> a2 -> m a) -> (a1 -> a2 -> ReaderT r m a)
+z2 f = \a1 a2 -> ReaderT \r -> do
+  let
+    x = to r
+    func = f x
+  func a1 a2
+
+z3 :: forall r m a x a1 a2 a3. TypeEquals r x => (x -> a1 -> a2 -> a3 -> m a) -> (a1 -> a2 -> a3 -> ReaderT r m a)
+z3 f = \a1 a2 a3 -> ReaderT \r -> do
+  let
+    x = to r
+    func = f x
+  func a1 a2 a3
 
 abc :: forall r m a x y z. TypeEquals r x => (x -> y -> z -> m a) -> (y -> z -> ReaderT r m a)
 abc f = \y z -> ReaderT \r -> do
@@ -89,12 +93,59 @@ abc f = \y z -> ReaderT \r -> do
     func = f xValue
   func y z
 
-class Moge r x fun returnFun | r -> x, x -> fun, fun -> returnFun where
-  moge :: TypeEquals r x => (x -> fun) -> returnFun
+class A args return | args -> return where
+  get :: args -> return
 
-instance moge1 :: Moge r x (a1 -> m a) (a1 -> ReaderT r m a) where
-  moge :: TypeEquals r x => (x -> (a1 -> m a)) -> (a1 -> ReaderT r m a)
-  moge f = undefined
+instance instanceA3 :: A (a -> b -> c) (a -> b -> c -> String) where
+  get _ = \_ _ _ -> "3"
+else
+instance instanceA2 :: A (a -> b) (a -> b -> String) where
+  get _ = \_ _ -> "2"
+else
+instance instanceA1 :: A a (a -> String) where
+  get _ = \_ -> "1"
+
+class B args return | args -> return where
+  reader :: args -> return
+
+instance b2 :: B (r -> a1 -> a2 -> m a) (a1 -> a2 -> ReaderT r m a) where
+  reader f = \a1 a2 -> do
+    ReaderT $ \r -> do
+      let func = f r
+      func a1 a2
+else
+instance b1 :: B (r -> a1 -> m a) (a1 -> ReaderT r m a) where
+  reader f = \a1 -> do
+    ReaderT $ \r -> do
+      let func = f r
+      func a1
+
+execB1 :: forall r m. Monad m => String -> ReaderT r m Unit
+execB1 = reader (\r -> \a1 -> pure unit)
+
+execB2 :: forall r m. Monad m => String -> String -> ReaderT r m Unit
+execB2 = reader (\r -> \a1 a2 -> pure unit)
+
+main :: Effect Unit
+main = do
+  log $ (get "") ""
+  log $ (get (\_ -> "")) "" ""
+  log $ (get (\_ _ -> "")) "" "" ""
+  
+-- class Moge r x fun return | r -> x, x -> fun, fun -> return where
+--   moge :: TypeEquals r x => (x -> fun) -> return
+
+-- instance moge2 :: Moge r x (a1 -> a2 -> m a) (a1 -> a2 -> ReaderT r m a) where
+--   moge f = undefined
+-- else
+-- instance moge1 :: Moge r x (a1 -> m a) (a1 -> ReaderT r m a) where
+--   moge f = undefined
+
+-- else
+-- instance moge3 :: Moge r m a x (a1 -> a2 -> a3) where
+--   moge :: TypeEquals r x => (x -> (a1 -> a2 -> a3) -> m a) -> ((a1 -> a2 -> a3) -> ReaderT r m a)
+--   moge f = undefined
+
   --  \a1 -> do
   --   ReaderT \r -> do
   --     let
@@ -102,15 +153,33 @@ instance moge1 :: Moge r x (a1 -> m a) (a1 -> ReaderT r m a) where
   --       func = f xValue
   --     func a1
 
+class Monad m <= T m where
+  a1 :: String -> m Unit
+  a2 :: String -> String -> m Unit
+  -- a3 :: String -> String -> String -> m Unit
 
-instance instanceT
-  :: (Monad m, TypeEquals f (TFunction m))
-  => T (ReaderT f m) where
-  a1 t = moge _.a1 t
---  a1 t = (moge _.a1) ""
-  -- a2 t1 t2 = xxx \f -> f.a2 t1 t2
-  -- a3 t1 t2 t3 = xxx \f -> f.a3 t1 t2 t3
+type TFunction m = {
+  a1 :: String -> m Unit,
+  a2 :: String -> String -> m Unit,
+  a3 :: String -> String -> String -> m Unit
+}
 
+newtype TFunction2 m = TFunction2 {
+  a1 :: String -> m Unit,
+  a2 :: String -> String -> m Unit,
+  a3 :: String -> String -> String -> m Unit
+}
+derive instance newtypeReaderT :: Newtype (TFunction2 m) _
+
+instance instanceT2 :: Monad m => T (ReaderT (TFunction2 m) m) where
+  a1 = reader (\(TFunction2 r) -> r.a1)
+  a2 = reader (\(TFunction2 r) -> r.a2)
+--  a3 t1 t2 t3 = xxx \f -> f.a3 t1 t2 t3
+
+{-
+  (a -> b) -> (b -> c)
+  (a1 -> a2 -> (r -> m a))
+-}
 
 oge :: { a1 :: (String -> Unit) } -> (String -> Unit)
 oge = _.a1
