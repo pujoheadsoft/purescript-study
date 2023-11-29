@@ -59,29 +59,17 @@ instance instanceArticlePresenterReaderT
 class C input output | input -> output, output -> input where
   reader2 :: input -> output
 
+xxx :: forall r x a. TypeEquals r x => r -> (x -> a) -> a
+xxx r f = f $ to r
+
 instance c3 :: TypeEquals r x => C (x -> a1 -> a2 -> a3 -> m a) (a1 -> a2 -> a3 -> ReaderT r m a) where
-  reader2 f = \a1 a2 a3 -> do
-    ReaderT $ \r -> do
-      let
-        x = to r
-        func = f x
-      func a1 a2 a3
+  reader2 f = \a1 a2 a3 -> ReaderT \r -> xxx r f a1 a2 a3
 else
 instance c2 :: TypeEquals r x => C (x -> a1 -> a2 -> m a) (a1 -> a2 -> ReaderT r m a) where
-  reader2 f = \a1 a2 -> do
-    ReaderT $ \r -> do
-      let
-        x = to r
-        func = f x
-      func a1 a2
+  reader2 f = \a1 a2 -> ReaderT \r -> xxx r f a1 a2
 else
 instance c1 :: TypeEquals r x => C (x -> a1 -> m a) (a1 -> ReaderT r m a) where
-  reader2 f = \a1 -> do
-    ReaderT $ \r -> do
-      let
-        x = to r
-        func = f x
-      func a1
+  reader2 f = \a1 -> ReaderT \r -> xxx r f a1
 
 class Monad m <= T m where
   a1 :: String -> m Unit
