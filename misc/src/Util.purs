@@ -3,31 +3,44 @@ module Util where
 import Prelude
 
 import Control.Monad.Reader (ReaderT(..))
-import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Type.Equality (class TypeEquals, to)
 import Undefined (undefined)
 
 
-{-
-  func a b = \r -> f r a b
-  ↓
-  func a b = ex f a b
+class X g r c | g->r,r->g where
+  x :: c -> g -> r
 
-  ReaderT (\r -> (get r) a b)
--}
+instance x3 :: X (i -> (a1 -> a2 -> a3 -> o)) (a1 -> a2 -> a3 -> ret) ((i -> o) -> ret) where
+  x constructor getter = \a1 a2 a3 -> do
+    let i2o = \i -> getter i a1 a2 a3
+    constructor i2o
+else
+instance x2 :: X (i -> (a1 -> a2 -> o)) (a1 -> a2 -> ret) ((i -> o) -> ret) where
+  x constructor getter = \a1 a2 -> do
+    let i2o = \i -> getter i a1 a2
+    constructor i2o
+else
+instance x1 :: X (i -> (a1 -> o)) (a1 -> ret) ((i -> o) -> ret) where
+  x constructor getter = \a1 -> do
+    let i2o = \i -> getter i a1
+    constructor i2o
 
-class X i f o | i -> f, i -> o, f -> o, o -> i, o -> f where
-  x :: (i -> f) -> o
+f1 :: String -> Effect Unit
+f1 _ = pure unit
+f2 :: String -> String -> Effect Unit
+f2 _ _ = pure unit
+f3 :: String -> String -> String -> Effect Unit
+f3 _ _ _ = pure unit
 
-instance x1 :: X r (a1 -> out) (a1 -> out) where
-  x = undefined
+r1 :: String -> ReaderT Int Effect Unit
+r1 = x ReaderT (\_ -> f1)
+r2 :: String -> String -> ReaderT Int Effect Unit
+r2 = x ReaderT (\_ -> f2)
+r3 :: String -> String -> String -> ReaderT Int Effect Unit
+r3 = x ReaderT (\_ -> f3)
 
-f a b = pure unit
 
-xx a b = ReaderT (\r -> f a b)
---yy = x ReaderT identity
---yy = x ReaderT (to >>> _.f)
 
 class Converter input mid output | input -> output, input -> mid, mid -> output, mid -> input, output -> input where
   convert :: input -> mid -> output
