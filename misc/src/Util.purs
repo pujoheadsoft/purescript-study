@@ -26,8 +26,8 @@ instance x1 :: X r (a1 -> out) (a1 -> out) where
 f a b = pure unit
 
 xx a b = ReaderT (\r -> f a b)
---yy = x ReaderT f
-
+--yy = x ReaderT identity
+--yy = x ReaderT (to >>> _.f)
 
 class Converter input mid output | input -> output, input -> mid, mid -> output, mid -> input, output -> input where
   convert :: input -> mid -> output
