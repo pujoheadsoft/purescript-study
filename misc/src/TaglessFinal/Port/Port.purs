@@ -90,4 +90,3 @@ instance instanceT
   a2 = reader2 _.a2
   a3 = reader2 _.a3
 
-
