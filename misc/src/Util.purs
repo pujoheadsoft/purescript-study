@@ -9,6 +9,26 @@ import Type.Equality (class TypeEquals, to)
 import Undefined (undefined)
 
 
+{-
+  func a b = \r -> f r a b
+  ↓
+  func a b = ex f a b
+
+  ReaderT (\r -> (get r) a b)
+-}
+
+class X i f o | i -> f, i -> o, f -> o, o -> i, o -> f where
+  x :: (i -> f) -> o
+
+instance x1 :: X r (a1 -> out) (a1 -> out) where
+  x = undefined
+
+f a b = pure unit
+
+xx a b = ReaderT (\r -> f a b)
+--yy = x ReaderT f
+
+
 class Converter input mid output | input -> output, input -> mid, mid -> output, mid -> input, output -> input where
   convert :: input -> mid -> output
 
