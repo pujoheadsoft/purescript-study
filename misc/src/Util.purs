@@ -9,26 +9,26 @@ import Effect (Effect)
 import Type.Equality (class TypeEquals, to)
 
 
-class X g r c | g->r, r->g where
-  x :: c -> g -> r
+class X function return construcor | function -> return, return -> function where
+  x :: construcor -> function -> return
 
 instance x3 :: X (i -> (a1 -> a2 -> a3 -> o)) (a1 -> a2 -> a3 -> ret) ((i -> o) -> ret) where
-  x constructor getter a1 a2 a3 = constructor $ \i -> getter i a1 a2 a3
+  x constructor function a1 a2 a3 = constructor $ \i -> function i a1 a2 a3
 else
 instance xr3 :: X (a1 -> a2 -> a3 -> o) (a1 -> a2 -> a3 -> m o) (o -> m o) where
-  x constructor getter a1 a2 a3 = constructor $ getter a1 a2 a3
+  x constructor function a1 a2 a3 = constructor $ function a1 a2 a3
 else
 instance x2 :: X (i -> (a1 -> a2 -> o)) (a1 -> a2 -> ret) ((i -> o) -> ret) where
-  x constructor getter a1 a2 = constructor $ \i -> getter i a1 a2
+  x constructor function a1 a2 = constructor $ \i -> function i a1 a2
 else
 instance xr2 :: X (a1 -> a2 -> o) (a1 -> a2 -> m o) (o -> m o) where
-  x constructor getter a1 a2 = constructor $ getter a1 a2
+  x constructor function a1 a2 = constructor $ function a1 a2
 else
 instance x1 :: X (i -> (a1 -> o)) (a1 -> ret) ((i -> o) -> ret) where
-  x constructor getter a1 = constructor $ \i -> getter i a1
+  x constructor function a1 = constructor $ \i -> function i a1
 else
 instance xr1 :: X (a1 -> o) (a1 -> m o) (o -> m o) where
-  x constructor getter a1 = constructor $ getter a1
+  x constructor function a1 = constructor $ function a1
 
 
 
