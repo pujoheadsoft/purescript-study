@@ -2,7 +2,9 @@ module Util where
 
 import Prelude
 
+import Control.Monad.Maybe.Trans (MaybeT)
 import Control.Monad.Reader (ReaderT(..))
+import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Type.Equality (class TypeEquals, to)
 
@@ -11,19 +13,34 @@ class X g r c | g->r, r->g where
   x :: c -> g -> r
 
 instance x3 :: X (i -> (a1 -> a2 -> a3 -> o)) (a1 -> a2 -> a3 -> ret) ((i -> o) -> ret) where
-  x constructor getter = \a1 a2 a3 -> do
-    let i2o = \i -> getter i a1 a2 a3
-    constructor i2o
+  x constructor getter a1 a2 a3 = constructor $ \i -> getter i a1 a2 a3
+else
+instance xr3 :: X (a1 -> a2 -> a3 -> o) (a1 -> a2 -> a3 -> m o) (o -> m o) where
+  x constructor getter a1 a2 a3 = constructor $ getter a1 a2 a3
 else
 instance x2 :: X (i -> (a1 -> a2 -> o)) (a1 -> a2 -> ret) ((i -> o) -> ret) where
-  x constructor getter = \a1 a2 -> do
-    let i2o = \i -> getter i a1 a2
-    constructor i2o
+  x constructor getter a1 a2 = constructor $ \i -> getter i a1 a2
+else
+instance xr2 :: X (a1 -> a2 -> o) (a1 -> a2 -> m o) (o -> m o) where
+  x constructor getter a1 a2 = constructor $ getter a1 a2
 else
 instance x1 :: X (i -> (a1 -> o)) (a1 -> ret) ((i -> o) -> ret) where
-  x constructor getter = \a1 -> do
-    let i2o = \i -> getter i a1
-    constructor i2o
+  x constructor getter a1 = constructor $ \i -> getter i a1
+else
+instance xr1 :: X (a1 -> o) (a1 -> m o) (o -> m o) where
+  x constructor getter a1 = constructor $ getter a1
+
+
+
+m1 :: Int -> Maybe Int
+m1 = x Just i1
+m2 :: Int -> Int -> Maybe Int
+m2 = x Just i2
+m3 :: Int -> Int -> Int -> Maybe Int
+m3 a b c = x Just i3 a b c
+
+mt2 :: Int -> Int -> MaybeT Effect Int
+mt2 = x pure i2
 
 f1 :: String -> Effect Unit
 f1 _ = pure unit
@@ -32,12 +49,20 @@ f2 _ _ = pure unit
 f3 :: String -> String -> String -> Effect Unit
 f3 _ _ _ = pure unit
 
+i1 :: Int -> Int
+i1 _ = 1
+i2 :: Int -> Int -> Int
+i2 _ _ = 10
+i3 :: Int -> Int -> Int -> Int
+i3 _ _ _ = 100
+
 r1 :: String -> ReaderT Int Effect Unit
 r1 = x ReaderT (\_ -> f1)
 r2 :: String -> String -> ReaderT Int Effect Unit
 r2 = x ReaderT (\_ -> f2)
 r3 :: String -> String -> String -> ReaderT Int Effect Unit
 r3 = x ReaderT (\_ -> f3)
+
 
 
 class C input output | input -> output, output -> input where
