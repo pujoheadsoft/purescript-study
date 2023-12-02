@@ -9,25 +9,25 @@ import Effect (Effect)
 import Type.Equality (class TypeEquals, to)
 
 
-class X function return construcor | function -> return, return -> function where
+class VariadicFunctionComposer function return construcor | function -> return, return -> function where
   compose :: construcor -> function -> return
 
-instance x3 :: X (i -> (a1 -> a2 -> a3 -> o)) (a1 -> a2 -> a3 -> ret) ((i -> o) -> ret) where
+instance x3 :: VariadicFunctionComposer (i -> (a1 -> a2 -> a3 -> o)) (a1 -> a2 -> a3 -> ret) ((i -> o) -> ret) where
   compose constructor function a1 a2 a3 = constructor $ \i -> function i a1 a2 a3
 else
-instance xr3 :: X (a1 -> a2 -> a3 -> o) (a1 -> a2 -> a3 -> m o) (o -> m o) where
+instance xr3 :: VariadicFunctionComposer (a1 -> a2 -> a3 -> o) (a1 -> a2 -> a3 -> m o) (o -> m o) where
   compose constructor function a1 a2 a3 = constructor $ function a1 a2 a3
 else
-instance x2 :: X (i -> (a1 -> a2 -> o)) (a1 -> a2 -> ret) ((i -> o) -> ret) where
+instance x2 :: VariadicFunctionComposer (i -> (a1 -> a2 -> o)) (a1 -> a2 -> ret) ((i -> o) -> ret) where
   compose constructor function a1 a2 = constructor $ \i -> function i a1 a2
 else
-instance xr2 :: X (a1 -> a2 -> o) (a1 -> a2 -> m o) (o -> m o) where
+instance xr2 :: VariadicFunctionComposer (a1 -> a2 -> o) (a1 -> a2 -> m o) (o -> m o) where
   compose constructor function a1 a2 = constructor $ function a1 a2
 else
-instance x1 :: X (i -> (a1 -> o)) (a1 -> ret) ((i -> o) -> ret) where
+instance x1 :: VariadicFunctionComposer (i -> (a1 -> o)) (a1 -> ret) ((i -> o) -> ret) where
   compose constructor function a1 = constructor $ \i -> function i a1
 else
-instance xr1 :: X (a1 -> o) (a1 -> m o) (o -> m o) where
+instance xr1 :: VariadicFunctionComposer (a1 -> o) (a1 -> m o) (o -> m o) where
   compose constructor function a1 = constructor $ function a1
 
 infixr 10 compose as <<*
