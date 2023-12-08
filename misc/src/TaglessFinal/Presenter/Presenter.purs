@@ -2,10 +2,11 @@ module TaglessFinal.Presenter.Presenter where
 
 import Prelude
 
-import Control.Monad.Reader (ReaderT(..), runReaderT)
+import Control.Monad.Reader (ReaderT, runReaderT)
+import Data.ReaderTEtaConversionTransformer (readerT)
 import TaglessFinal.Domain.Article (Article)
 import TaglessFinal.Port.Port (ArticlePresenterFunction)
-import Type.Equality (class TypeEquals, to)
+import Type.Equality (class TypeEquals)
 
 {-
   Presenter
@@ -26,7 +27,7 @@ type ArticleStatePortFunction m = {
 instance instancePortReaderT
   :: (Monad m, TypeEquals f (ArticleStatePortFunction m))
   => ArticleStatePort (ReaderT f m) where
-  update titles = ReaderT $ to >>> \f -> f.update titles
+  update = readerT _.update
 
 update2 :: forall m. Monad m => ArticleStatePort m => Array Article -> m Unit
 update2 articles = update []

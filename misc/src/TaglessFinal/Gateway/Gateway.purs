@@ -2,11 +2,12 @@ module TaglessFinal.Gateway.Gateway where
 
 import Prelude
 
-import Control.Monad.Reader (ReaderT(..), runReaderT)
+import Control.Monad.Reader (ReaderT, runReaderT)
+import Data.ReaderTEtaConversionTransformer (readerT)
 import Data.Traversable (traverse)
 import TaglessFinal.Domain.Article (Article)
 import TaglessFinal.Port.Port (ArticlePortFunction)
-import Type.Equality (class TypeEquals, to)
+import Type.Equality (class TypeEquals)
 
 {-
   Gateway
@@ -33,8 +34,8 @@ type ArticleDataRepositoryFunction m = {
 instance instancePortReaderT
   :: (Monad m, TypeEquals f (ArticleDataRepositoryFunction m))
   => ArticleDataRepository (ReaderT f m) where
-  findIdsByTitle title = ReaderT $ to >>> \f -> f.findIdsByTitle title
-  findById id = ReaderT $ to >>> \f -> f.findById id
+  findIdsByTitle = readerT _.findIdsByTitle
+  findById = readerT _.findById
 
 findByTitle :: forall m. Monad m => ArticleDataRepository m => String -> m (Array Article)
 findByTitle title = do
