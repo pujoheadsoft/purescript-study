@@ -1,0 +1,42 @@
+package:
+  dependencies:
+    - aff
+    - aff-promise
+    - arrays
+    - bifunctors
+    - console
+    - contravariant
+    - control
+    - datetime
+    - effect
+    - either
+    - exceptions
+    - foldable-traversable
+    - functions
+    - identity
+    - maybe
+    - newtype
+    - parallel
+    - partial
+    - pmock
+    - prelude
+    - profunctor
+    - record
+    - refs
+    - safe-coerce
+    - spec
+    - st
+    - strings
+    - tailrec
+    - transformers
+    - tuples
+    - type-equality
+    - typelevel-prelude
+    - undefined
+    - unsafe-coerce
+  name: my-project
+workspace:
+  extra_packages: {}
+  package_set:
+    url: https://raw.githubusercontent.com/purescript/package-sets/psc-0.15.12-20231121/packages.json
+    hash: sha256-uWl4e38E+a4YeSiARhV+CJrp5urbvINKLd3BuTmBxbk=
