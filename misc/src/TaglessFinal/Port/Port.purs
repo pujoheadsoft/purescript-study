@@ -2,9 +2,10 @@ module TaglessFinal.Port.Port where
 
 import Prelude
 
-import Control.Monad.Reader (ReaderT(..))
+import Control.Monad.Reader (ReaderT)
+import Data.ReaderTEtaConversionTransformer (readerT)
 import TaglessFinal.Domain.Article (Article)
-import Type.Equality (class TypeEquals, to)
+import Type.Equality (class TypeEquals)
 
 {-
   Portの定義
@@ -39,7 +40,7 @@ type ArticlePortFunction m r = {
 instance instancePortReaderT
   :: (Monad m, TypeEquals f (ArticlePortFunction m r))
   => ArticlePort (ReaderT f m) where
-  findByTitle = reader2 _.findByTitle
+  findByTitle = readerT _.findByTitle
 
 
 class Monad m <= ArticlePresenterPort m where
@@ -53,40 +54,5 @@ type ArticlePresenterFunction m r = {
 instance instanceArticlePresenterReaderT
   :: (Monad m, TypeEquals f (ArticlePresenterFunction m r))
   => ArticlePresenterPort (ReaderT f m) where
-  update = reader2 _.update
-
--- 双方向の関数重属性とする（でないとコンパイルエラーになる）
-class C input output | input -> output, output -> input where
-  reader2 :: input -> output
-
-extract :: forall r x a. TypeEquals r x => r -> (x -> a) -> a
-extract r f = f $ to r
-
-instance c3 :: TypeEquals r x => C (x -> a1 -> a2 -> a3 -> m a) (a1 -> a2 -> a3 -> ReaderT r m a) where
-  reader2 f a1 a2 a3 = ReaderT \r -> extract r f a1 a2 a3
-else
-instance c2 :: TypeEquals r x => C (x -> a1 -> a2 -> m a) (a1 -> a2 -> ReaderT r m a) where
-  reader2 f a1 a2 = ReaderT \r -> extract r f a1 a2
-else
-instance c1 :: TypeEquals r x => C (x -> a1 -> m a) (a1 -> ReaderT r m a) where
-  reader2 f a1 = ReaderT \r -> extract r f a1
-
-class Monad m <= T m where
-  a1 :: String -> m Unit
-  a2 :: String -> String -> m Unit
-  a3 :: String -> String -> String -> m Unit
-
-
-type TFunction m = {
-  a1 :: String -> m Unit,
-  a2 :: String -> String -> m Unit,
-  a3 :: String -> String -> String -> m Unit
-}
-
-instance instanceT 
-  :: (Monad m, TypeEquals f (TFunction m))
-  => T (ReaderT f m) where
-  a1 = reader2 _.a1
-  a2 = reader2 _.a2
-  a3 = reader2 _.a3
+  update = readerT _.update
 

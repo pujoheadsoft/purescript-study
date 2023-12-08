@@ -10,6 +10,7 @@ package:
     - datetime
     - effect
     - either
+    - eta-conversion
     - exceptions
     - foldable-traversable
     - functions
@@ -38,5 +39,4 @@ package:
 workspace:
   extra_packages: {}
   package_set:
-    url: https://raw.githubusercontent.com/purescript/package-sets/psc-0.15.12-20231121/packages.json
-    hash: sha256-uWl4e38E+a4YeSiARhV+CJrp5urbvINKLd3BuTmBxbk=
+    registry: 47.3.0
