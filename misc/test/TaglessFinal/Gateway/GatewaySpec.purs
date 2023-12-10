@@ -5,7 +5,7 @@ import Prelude
 import Control.Monad.Reader (runReaderT)
 import Effect.Aff (Aff)
 import TaglessFinal.Gateway.Gateway (findByTitle)
-import Test.PMock (any, fun, mock, namedMock, namedMockFun, verify, verifySequence, (:>))
+import Test.PMock (namedMockFun, (:>))
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldEqual)
 
