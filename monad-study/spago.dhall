@@ -13,6 +13,7 @@ to generate this file without the comments in this block.
 { name = "my-project"
 , dependencies =
   [ "aff"
+  , "aff-promise"
   , "affjax"
   , "affjax-web"
   , "arrays"
@@ -36,7 +37,6 @@ to generate this file without the comments in this block.
   , "psci-support"
   , "simple-json"
   , "spec"
-  , "spec-discovery"
   , "strings"
   , "tailrec"
   , "transformers"
