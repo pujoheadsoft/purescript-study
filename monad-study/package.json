@@ -1,5 +1,8 @@
 {
   "scripts": {
     "serve": "parcel dev/index.html --open"
+  },
+  "dependencies": {
+    "purescript": "^0.15.15"
   }
 }
