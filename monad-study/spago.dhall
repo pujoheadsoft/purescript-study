@@ -43,6 +43,7 @@ to generate this file without the comments in this block.
   , "tuples"
   , "type-equality"
   , "typelevel-prelude"
+  , "undefined"
   , "unsafe-coerce"
   , "variant"
   ]
