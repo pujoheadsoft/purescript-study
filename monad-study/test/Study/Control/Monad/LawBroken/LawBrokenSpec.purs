@@ -4,7 +4,7 @@ import Prelude
 import Study.Control.Monad.LawBroken.LawBroken
 
 import Test.Spec (Spec, describe, it)
-import Test.Spec.Assertions (shouldNotEqual)
+import Test.Spec.Assertions ( shouldNotEqual)
 
 spec :: Spec Unit
 spec = do
@@ -12,7 +12,7 @@ spec = do
     it "壊れてること" do
       let 
         -- (m >>= id) >>= id
-        left = broken 1 >>= (\_ -> broken 2) >>= (\_ -> broken 3)
+        left = (broken 1 *> broken 2) *> broken 3
         -- m >>= (\x -> id x >>= id)
-        right = broken 1 >>= (\_ -> broken 2 >>= (\_ -> broken 3))
+        right = broken 1 *> (broken 2 *> broken 3)
       value left `shouldNotEqual` value right
