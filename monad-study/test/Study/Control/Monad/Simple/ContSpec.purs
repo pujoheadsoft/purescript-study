@@ -22,6 +22,9 @@ spec = do
     describe "Bindである" do
       it "bind" do
         let
-          cont = pure@(Cont Int) 300 >>= \k -> pure@(Cont Int) (show k)
-          v = runCont cont length
+          c :: Cont Int String
+          c = do
+            a <- pure 300
+            pure (show a)
+          v = runCont c length
         v `shouldEqual` 3
