@@ -12,7 +12,7 @@ spec = do
     describe "結合律を満たさない" do
       it "(m >>= f) >>= g ≠ m >>= (\x -> f x >>= g)" do
         let
-          m = AssociativeLawBroken {r: 1, a: unit}
-          f = \_ -> AssociativeLawBroken {r: 2, a: unit}
-          g = \_ -> AssociativeLawBroken {r: 3, a: unit}
+          m = AssociativeLawBroken {value: 1, a: unit}
+          f = \a -> AssociativeLawBroken {value: 2, a}
+          g = \a -> AssociativeLawBroken {value: 3, a}
         ((m >>= f) >>= g) `shouldNotEqual` (m >>= (\x -> f x >>= g))
