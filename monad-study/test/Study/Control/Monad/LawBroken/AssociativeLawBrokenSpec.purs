@@ -1,8 +1,8 @@
-module Test.Study.Control.Monad.LawBroken.LawBrokenSpec where
+module Test.Study.Control.Monad.LawBroken.AssociativeLawBrokenSpec where
 
 import Prelude
 
-import Study.Control.Monad.LawBroken.LawBroken (LawBroken(..))
+import Study.Control.Monad.LawBroken.AssociativeLawBroken (AssociativeLawBroken(..))
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (shouldNotEqual)
 
@@ -12,7 +12,7 @@ spec = do
     describe "結合律を満たさない" do
       it "(m >>= f) >>= g ≠ m >>= (\x -> f x >>= g)" do
         let
-          m = LawBroken {r: 1, a: unit}
-          f = \_ -> LawBroken {r: 2, a: unit}
-          g = \_ -> LawBroken {r: 3, a: unit}
+          m = AssociativeLawBroken {r: 1, a: unit}
+          f = \_ -> AssociativeLawBroken {r: 2, a: unit}
+          g = \_ -> AssociativeLawBroken {r: 3, a: unit}
         ((m >>= f) >>= g) `shouldNotEqual` (m >>= (\x -> f x >>= g))
