@@ -10,15 +10,14 @@ import Test.Spec.Assertions (shouldEqual, shouldNotEqual)
 spec :: Spec Unit
 spec = do
   describe "単位元律を満たさない" do
-    let
-      a = "x"
-      f = \x -> UnitLawBroken (Just x)
-
     it "左単位元律を満たさない: pure a >>= f ≠ f a" do
-      (pure @UnitLawBroken "x" >>= f) `shouldNotEqual` (f a)
+      let
+        a = "a"
+        f = \x -> UnitLawBroken (Just x)
+      (pure a >>= f) `shouldNotEqual` (f a)
     
     it "右単位元律を満たさない: m >>= pure ≠ m" do
-      let m = UnitLawBroken (Just a)
+      let m = UnitLawBroken (Just "a")
       (m >>= pure) `shouldNotEqual` m
 
   describe "結合律を満たす" do
